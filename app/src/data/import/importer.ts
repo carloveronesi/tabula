@@ -22,6 +22,7 @@ import { buildInventory } from "@/data/import/buildInventory";
 import { dayToRanges, type DaySlotConfig } from "@/data/import/dayToRanges";
 import { resolveEntry } from "@/data/import/resolveEntry";
 import { mapTodos } from "@/data/import/mapTodos";
+import { buildContacts } from "@/data/import/buildContacts";
 
 export interface ImportResult {
   entries: Entry[];
@@ -76,6 +77,8 @@ export function importFromExport(
   const inventory = buildInventory(parsed, makeId, now);
   const config = slotConfigFromSettings(parsed.settings);
 
+  const { contacts } = buildContacts(parsed, inventory.clientIdByKey, makeId);
+
   const entries: Entry[] = [];
   const days: DayMeta[] = [];
 
@@ -100,7 +103,7 @@ export function importFromExport(
     clients: inventory.clients,
     projects: inventory.projects,
     people: inventory.people,
-    contacts: [],
+    contacts,
     recurrences: [],
     todos: mapTodos(parsed.todos, inventory),
     days,
