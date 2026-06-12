@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Token di design base; da rifinire nelle fasi UI. */
+:root {
+  --si-bg: #f4f3fb;
+  --si-surface: #ffffff;
+  --si-ink: #1b1b2e;
+  --si-gray: #7676a0;
+  --si-border: #e7e6f2;
+  --si-accent: #6366f1;
+}
+
+.dark {
+  --si-bg: #0e0e1a;
+  --si-surface: #17172b;
+  --si-ink: #e9e7ff;
+  --si-gray: #9a9ac0;
+  --si-border: #2b2b44;
+  --si-accent: #6366f1;
+}

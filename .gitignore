@@ -1,0 +1,36 @@
+# dipendenze
+node_modules/
+
+# build
+app/dist/
+dist/
+
+# coverage
+coverage/
+app/coverage/
+
+# fixture dati REALI (mai committare: contengono dati confidenziali)
+app/test/local/
+
+# documentazione di lavoro (solo locale, non tracciata)
+/01-analisi-iniziale/
+/02-verifica/
+/03-strategia-riscrittura/
+/04-piano-sviluppo/
+
+# backup storia git precedente (solo locale)
+/.history-backup.bundle
+
+# cache TS / Vite
+**/.tmp/
+*.tsbuildinfo
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# log
+npm-debug.log*
+*.log
