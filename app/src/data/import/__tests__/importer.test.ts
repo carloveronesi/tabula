@@ -55,6 +55,7 @@ const raw = stringifyValues({
     workHours: { morningStart: 540, morningEnd: 780, afternoonStart: 840, afternoonEnd: 1080 },
     slotMinutes: 30,
   },
+  dailylog_todos: [{ id: "td1", title: "Todo", isDone: false, project: "P", createdAt: 5 }],
 });
 
 describe("importFromExport", () => {
@@ -93,10 +94,16 @@ describe("importFromExport", () => {
     });
   });
 
-  it("contatti/ricorrenze/todo ancora rinviati (vuoti)", () => {
+  it("mappa i todo; contatti/ricorrenze ancora rinviati (vuoti)", () => {
     const r = importFromExport(raw, { makeId: seqIds() });
     expect(r.contacts).toEqual([]);
     expect(r.recurrences).toEqual([]);
-    expect(r.todos).toEqual([]);
+    expect(r.todos).toHaveLength(1);
+    expect(r.todos[0]).toMatchObject({
+      id: "td1",
+      title: "Todo",
+      projectId: "id2", // progetto "P"
+      done: false,
+    });
   });
 });

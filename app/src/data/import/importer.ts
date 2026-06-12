@@ -21,6 +21,7 @@ import { parseExport, type ParsedExport } from "@/data/import/parseExport";
 import { buildInventory } from "@/data/import/buildInventory";
 import { dayToRanges, type DaySlotConfig } from "@/data/import/dayToRanges";
 import { resolveEntry } from "@/data/import/resolveEntry";
+import { mapTodos } from "@/data/import/mapTodos";
 
 export interface ImportResult {
   entries: Entry[];
@@ -101,7 +102,7 @@ export function importFromExport(
     people: inventory.people,
     contacts: [],
     recurrences: [],
-    todos: [],
+    todos: mapTodos(parsed.todos, inventory),
     days,
   };
 }
