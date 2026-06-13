@@ -106,4 +106,13 @@ describe("importFromExport", () => {
       done: false,
     });
   });
+
+  it("normalizza i settings dall'export", () => {
+    const r = importFromExport(raw, { makeId: seqIds() });
+    expect(r.settings).toMatchObject({
+      id: "app",
+      slotMinutes: 30,
+      workHours: { morningStart: 540, afternoonEnd: 1080 },
+    });
+  });
 });

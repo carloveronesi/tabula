@@ -15,5 +15,6 @@ export async function persistImport(result: ImportResult): Promise<void> {
     await db.recurrences.bulkPut(result.recurrences);
     await db.todos.bulkPut(result.todos);
     await db.days.bulkPut(result.days);
+    await db.settings.put(result.settings);
   });
 }

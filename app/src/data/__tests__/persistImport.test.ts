@@ -68,6 +68,7 @@ describe("persistImport", () => {
     expect(await db.projects.count()).toBe(r.projects.length);
     expect(await db.people.count()).toBe(r.people.length);
     expect(await db.days.count()).toBe(r.days.length);
+    expect(await db.settings.get("app")).toMatchObject({ id: "app" });
   });
 
   it("round-trip: rilegge una entry per id", async () => {

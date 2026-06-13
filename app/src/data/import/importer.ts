@@ -15,6 +15,7 @@ import type {
   Person,
   Project,
   Recurrence,
+  Settings,
   Todo,
 } from "@/data/types";
 import { parseExport, type ParsedExport } from "@/data/import/parseExport";
@@ -23,6 +24,7 @@ import { dayToRanges, type DaySlotConfig } from "@/data/import/dayToRanges";
 import { resolveEntry } from "@/data/import/resolveEntry";
 import { mapTodos } from "@/data/import/mapTodos";
 import { buildContacts } from "@/data/import/buildContacts";
+import { normalizeSettings } from "@/data/settings";
 
 export interface ImportResult {
   entries: Entry[];
@@ -33,6 +35,7 @@ export interface ImportResult {
   recurrences: Recurrence[];
   todos: Todo[];
   days: DayMeta[];
+  settings: Settings;
 }
 
 export interface ImportOptions {
@@ -107,5 +110,6 @@ export function importFromExport(
     recurrences: [],
     todos: mapTodos(parsed.todos, inventory),
     days,
+    settings: normalizeSettings(parsed.settings),
   };
 }
