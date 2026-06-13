@@ -17,6 +17,7 @@ app/test/local/
 /02-verifica/
 /03-strategia-riscrittura/
 /04-piano-sviluppo/
+/05-ui-spec/
 
 # backup storia git precedente (solo locale)
 /.history-backup.bundle
