@@ -1,10 +1,14 @@
 import { useRef, useState } from "react";
 import { importExportFile, type ImportSummary } from "@/data/importExportFile";
+import { collectExport } from "@/data/export/collectExport";
+import { exportFilename } from "@/data/export/buildExport";
+import { triggerDownload } from "@/data/export/triggerDownload";
 import { viewRange } from "@/domain/calendarNav";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useInventoryStore } from "@/store/inventory";
 import { useCalendarStore } from "@/store/calendar";
+import { useToastStore } from "@/store/toast";
 import { Button } from "@/ui";
 
 const ROWS: { key: keyof ImportSummary; label: string }[] = [
@@ -26,10 +30,25 @@ export function SettingsView() {
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const loadInventory = useInventoryStore((s) => s.loadInventory);
   const loadRange = useCalendarStore((s) => s.loadRange);
+  const notify = useToastStore((s) => s.notify);
+
+  async function onExport() {
+    setExporting(true);
+    try {
+      const doc = await collectExport();
+      triggerDownload(exportFilename(new Date()), JSON.stringify(doc, null, 2));
+      notify(`Esportate ${doc.entries.length} attività`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Errore imprevisto durante l'export.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function onFile(file: File) {
     setBusy(true);
@@ -106,6 +125,20 @@ export function SettingsView() {
             </dl>
           </div>
         )}
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+        <div>
+          <h3 className="font-medium text-ink">Esporta dati</h3>
+          <p className="mt-1 text-sm text-muted">
+            Scarica un backup completo (.json) di tutto l'archivio: attività,
+            anagrafiche e impostazioni. Resta tutto sul tuo dispositivo.
+          </p>
+        </div>
+
+        <Button variant="subtle" disabled={exporting} onClick={() => void onExport()}>
+          {exporting ? "Export in corso…" : "Esporta backup…"}
+        </Button>
       </section>
     </div>
   );
