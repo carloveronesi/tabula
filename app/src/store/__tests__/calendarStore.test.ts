@@ -53,4 +53,35 @@ describe("useCalendarStore", () => {
       .sort();
     expect(ids).toEqual(["a", "b"]);
   });
+
+  it("saveEntry scrive su DB e aggiunge allo stato", async () => {
+    const e = entry("a", "2026-06-12T09:00:00", "2026-06-12T10:00:00");
+    await useCalendarStore.getState().saveEntry(e);
+
+    expect(await db.entries.get("a")).toEqual(e);
+    expect(useCalendarStore.getState().entries.map((x) => x.id)).toEqual(["a"]);
+  });
+
+  it("saveEntry sostituisce una entry con lo stesso id (no duplicati)", async () => {
+    const e = entry("a", "2026-06-12T09:00:00", "2026-06-12T10:00:00");
+    await useCalendarStore.getState().saveEntry(e);
+    await useCalendarStore
+      .getState()
+      .saveEntry({ ...e, title: "modificata" });
+
+    const entries = useCalendarStore.getState().entries;
+    expect(entries).toHaveLength(1);
+    expect(entries[0].title).toBe("modificata");
+    expect((await db.entries.get("a"))?.title).toBe("modificata");
+  });
+
+  it("removeEntry elimina da DB e stato", async () => {
+    const e = entry("a", "2026-06-12T09:00:00", "2026-06-12T10:00:00");
+    await useCalendarStore.getState().saveEntry(e);
+
+    await useCalendarStore.getState().removeEntry("a");
+
+    expect(await db.entries.get("a")).toBeUndefined();
+    expect(useCalendarStore.getState().entries).toEqual([]);
+  });
 });
