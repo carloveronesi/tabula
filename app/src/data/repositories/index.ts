@@ -21,6 +21,11 @@ export function entriesInRange(
   return db.entries.where("startsAt").between(from, to, true, true).toArray();
 }
 
+/** Tutte le entry (per le aggregazioni che attraversano l'intero archivio). */
+export function allEntries(): Promise<Entry[]> {
+  return db.entries.toArray();
+}
+
 export function putEntry(entry: Entry): Promise<string> {
   return db.entries.put(entry);
 }

@@ -12,6 +12,7 @@ import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { SummaryView } from "@/features/summary/SummaryView";
+import { ProjectsView } from "@/features/projects/ProjectsView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 
@@ -95,8 +96,9 @@ export function AppShell() {
           <MonthGrid date={activeDate} entries={entries} onOpenDay={openDay} />
         )}
         {view === "riepilogo" && <SummaryView />}
+        {view === "projects" && <ProjectsView />}
         {view === "settings" && <SettingsView />}
-        {(view === "projects" || view === "todo") && (
+        {view === "todo" && (
           <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>
         )}
       </main>
