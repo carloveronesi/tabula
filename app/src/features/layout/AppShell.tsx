@@ -13,6 +13,7 @@ import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { SummaryView } from "@/features/summary/SummaryView";
 import { ProjectsView } from "@/features/projects/ProjectsView";
+import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 
@@ -23,6 +24,7 @@ const VIEW_LABEL: Record<ViewMode, string> = {
   riepilogo: "Riepilogo",
   projects: "Progetti",
   todo: "Todo",
+  search: "Ricerca",
   settings: "Impostazioni",
 };
 
@@ -97,6 +99,7 @@ export function AppShell() {
         )}
         {view === "riepilogo" && <SummaryView />}
         {view === "projects" && <ProjectsView />}
+        {view === "search" && <SearchView />}
         {view === "settings" && <SettingsView />}
         {view === "todo" && (
           <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>

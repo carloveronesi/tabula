@@ -53,6 +53,14 @@ export function TopBar() {
           + Nuova
         </Button>
         <IconButton
+          label="Ricerca"
+          size="sm"
+          aria-pressed={view === "search"}
+          onClick={() => setView("search")}
+        >
+          ⌕
+        </IconButton>
+        <IconButton
           label="Impostazioni"
           size="sm"
           aria-pressed={view === "settings"}

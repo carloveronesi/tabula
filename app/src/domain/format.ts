@@ -38,6 +38,9 @@ export function formatPeriod(date: Date, view: ViewMode): string {
     case "riepilogo":
       return `Riepilogo · ${cap(fmt(date, { month: "long", year: "numeric" }))}`;
 
+    case "search":
+      return "Ricerca";
+
     case "week": {
       const monday = addDays(date, -dowMon0(date));
       const sunday = addDays(monday, 6);

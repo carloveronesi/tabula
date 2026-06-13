@@ -6,4 +6,5 @@ export type ViewMode =
   | "riepilogo"
   | "projects"
   | "todo"
+  | "search"
   | "settings";
