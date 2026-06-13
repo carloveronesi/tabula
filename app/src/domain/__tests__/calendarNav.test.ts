@@ -1,0 +1,62 @@
+import { describe, it, expect } from "vitest";
+import {
+  addDays,
+  addMonths,
+  dowMon0,
+  shiftFocus,
+  workWeekDays,
+} from "@/domain/calendarNav";
+
+const D = (y: number, m0: number, d: number) => new Date(y, m0, d);
+
+describe("addDays / addMonths", () => {
+  it("addDays somma i giorni", () => {
+    expect(addDays(D(2026, 5, 15), 1)).toEqual(D(2026, 5, 16));
+    expect(addDays(D(2026, 5, 1), -1)).toEqual(D(2026, 4, 31));
+  });
+
+  it("addMonths fa clamp all'ultimo giorno valido", () => {
+    expect(addMonths(D(2026, 0, 31), 1)).toEqual(D(2026, 1, 28)); // 31 gen → 28 feb
+  });
+});
+
+describe("dowMon0", () => {
+  it("lunedì = 0, domenica = 6", () => {
+    expect(dowMon0(D(2026, 5, 1))).toBe(0); // lun 1 giu
+    expect(dowMon0(D(2026, 5, 7))).toBe(6); // dom 7 giu
+  });
+});
+
+describe("shiftFocus", () => {
+  it("day → ±1 giorno", () => {
+    expect(shiftFocus(D(2026, 5, 15), "day", 1)).toEqual(D(2026, 5, 16));
+    expect(shiftFocus(D(2026, 5, 15), "day", -1)).toEqual(D(2026, 5, 14));
+  });
+
+  it("week → ±7 giorni", () => {
+    expect(shiftFocus(D(2026, 5, 15), "week", 1)).toEqual(D(2026, 5, 22));
+  });
+
+  it("month → ±1 mese", () => {
+    expect(shiftFocus(D(2026, 5, 15), "month", 1)).toEqual(D(2026, 6, 15));
+    expect(shiftFocus(D(2026, 5, 15), "month", -1)).toEqual(D(2026, 4, 15));
+  });
+
+  it("projects/todo → nessuno spostamento", () => {
+    expect(shiftFocus(D(2026, 5, 15), "projects", 1)).toEqual(D(2026, 5, 15));
+  });
+});
+
+describe("workWeekDays", () => {
+  it("lun–ven della settimana contenente la data", () => {
+    const w = workWeekDays(D(2026, 5, 10), [0, 1, 2, 3, 4]); // mer 10 giu
+    expect(w).toHaveLength(5);
+    expect(w[0]).toEqual(D(2026, 5, 8)); // lun
+    expect(w[4]).toEqual(D(2026, 5, 12)); // ven
+  });
+
+  it("rispetta un sottoinsieme di giorni lavorativi", () => {
+    const w = workWeekDays(D(2026, 5, 10), [0, 2, 4]); // lun/mer/ven
+    expect(w).toEqual([D(2026, 5, 8), D(2026, 5, 10), D(2026, 5, 12)]);
+  });
+});

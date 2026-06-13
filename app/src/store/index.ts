@@ -1,11 +1,12 @@
 import { create } from "zustand";
+import type { ViewMode } from "@/domain/view";
+
+export type { ViewMode };
 
 /**
  * Store globale (Zustand). Per ora solo lo slice UI minimo.
- * Slice futuri (Fase 3): calendar, settings, drag (reducer), history (undo/redo).
+ * Slice futuri: calendar, settings, drag (reducer), history (undo/redo).
  */
-export type ViewMode = "month" | "week" | "day" | "projects" | "todo";
-
 interface UiState {
   view: ViewMode;
   setView: (view: ViewMode) => void;
