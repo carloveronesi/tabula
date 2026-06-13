@@ -24,22 +24,22 @@ export function WeekGrid({ date, workingDays, workHours, slotMinutes }: WeekGrid
 
   return (
     <div>
-      <div role="row" className="flex border-b border-[var(--si-border)]">
+      <div role="row" className="flex border-b border-line">
         <span className="w-12 shrink-0" />
         {days.map((d) => (
           <span
             key={d.toISOString()}
             role="columnheader"
-            className="flex-1 px-2 py-1 text-xs font-semibold text-[var(--si-inkSoft)]"
+            className="flex-1 px-2 py-1 text-xs font-semibold text-muted"
           >
             {dayLabel(d)}
           </span>
         ))}
       </div>
-      <ul className="divide-y divide-[var(--si-border)]">
+      <ul className="divide-y divide-line">
         {slots.map((minutes) => (
           <li key={minutes} className="flex items-start py-1">
-            <span className="w-12 shrink-0 font-mono text-xs text-[var(--si-gray)]">
+            <span className="tnum w-12 shrink-0 font-mono text-xs text-muted">
               {minutesToLabel(minutes)}
             </span>
             {days.map((d) => (

@@ -6,6 +6,7 @@ import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
+import { useTheme } from "@/features/layout/useTheme";
 
 const VIEW_LABEL: Record<ViewMode, string> = {
   day: "Giorno",
@@ -20,6 +21,7 @@ const VIEW_LABEL: Record<ViewMode, string> = {
  * Le viste vere sostituiranno i placeholder man mano.
  */
 export function AppShell() {
+  useTheme();
   useCalendarData();
   const view = useUiStore((s) => s.view);
   const activeDate = useUiStore((s) => s.activeDate);
@@ -27,9 +29,9 @@ export function AppShell() {
   const entries = useCalendarStore((s) => s.entries);
 
   return (
-    <div className="min-h-screen bg-[var(--si-bg)] text-[var(--si-ink)]">
+    <div className="min-h-screen bg-bg text-ink">
       <TopBar />
-      <main data-testid={`view-${view}`} className="p-4">
+      <main data-testid={`view-${view}`} className="mx-auto max-w-5xl p-4 sm:p-6">
         {view === "day" && (
           <DayView
             date={activeDate}
@@ -48,7 +50,7 @@ export function AppShell() {
         )}
         {view === "month" && <MonthGrid date={activeDate} />}
         {(view === "projects" || view === "todo") && (
-          <p className="text-sm text-[var(--si-gray)]">{VIEW_LABEL[view]}</p>
+          <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>
         )}
       </main>
     </div>

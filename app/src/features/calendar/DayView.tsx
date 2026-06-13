@@ -43,7 +43,7 @@ export function DayView({ date, entries, workHours, slotMinutes }: DayViewProps)
             data-testid="entry-block"
             data-start-row={pos.startRow}
             data-span={pos.span}
-            className="pointer-events-auto rounded bg-[var(--si-accent)] px-2 py-0.5 text-xs text-white"
+            className="pointer-events-auto rounded bg-primary-wash px-2 py-0.5 text-xs font-medium text-ink shadow-sm"
           >
             {entry.title}
           </div>

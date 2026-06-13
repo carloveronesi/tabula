@@ -21,7 +21,7 @@ export function MonthGrid({ date }: MonthGridProps) {
           <span
             key={name}
             role="columnheader"
-            className="px-2 py-1 text-xs font-semibold text-[var(--si-inkSoft)]"
+            className="px-2 py-1 text-xs font-semibold text-muted"
           >
             {name}
           </span>
@@ -35,8 +35,8 @@ export function MonthGrid({ date }: MonthGridProps) {
               key={d.toISOString()}
               role="gridcell"
               data-outside={outside}
-              className={`min-h-16 border border-[var(--si-border)] p-1 text-xs ${
-                outside ? "text-[var(--si-grayLight)]" : "text-[var(--si-ink)]"
+              className={`tnum min-h-16 border border-line p-1.5 text-xs ${
+                outside ? "text-faint" : "text-ink"
               }`}
             >
               {d.getDate()}

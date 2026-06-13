@@ -1,5 +1,14 @@
 /**
- * Primitivi UI (Button, Modal, Combobox, Segmented…) — Fase 4.
- * Placeholder per mantenere il layer nello scheletro.
+ * Primitivi UI del design system di Tabula. Senza dipendenze esterne,
+ * accessibili da tastiera, su token semantici (vedi DESIGN.md).
  */
-export {};
+export { cn } from "@/ui/cn";
+export { Button, type ButtonProps } from "@/ui/Button";
+export { IconButton, type IconButtonProps } from "@/ui/IconButton";
+export {
+  Segmented,
+  type SegmentedOption,
+  type SegmentedProps,
+} from "@/ui/Segmented";
+export { Modal, type ModalProps } from "@/ui/Modal";
+export { Combobox, type ComboboxOption, type ComboboxProps } from "@/ui/Combobox";

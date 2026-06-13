@@ -12,10 +12,10 @@ interface DayGridProps {
 export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   return (
-    <ul className="divide-y divide-[var(--si-border)]">
+    <ul className="divide-y divide-line">
       {slots.map((minutes) => (
         <li key={minutes} className="flex items-start gap-3 py-1">
-          <span className="w-12 shrink-0 font-mono text-xs text-[var(--si-gray)]">
+          <span className="tnum w-12 shrink-0 font-mono text-xs text-muted">
             {minutesToLabel(minutes)}
           </span>
           <span className="flex-1" />

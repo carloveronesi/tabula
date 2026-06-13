@@ -2,21 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Token di design base; da rifinire nelle fasi UI. */
+/* =========================================================================
+   Tabula — design tokens
+   Calmo ed editoriale: carta bianca, inchiostro caldo, una voce di colore.
+   Colore in OKLCH. Vedi DESIGN.md per la mappa dei ruoli.
+   ========================================================================= */
 :root {
-  --si-bg: #f4f3fb;
-  --si-surface: #ffffff;
-  --si-ink: #1b1b2e;
-  --si-gray: #7676a0;
-  --si-border: #e7e6f2;
-  --si-accent: #6366f1;
+  /* color — light */
+  --bg: oklch(1 0 0);
+  --surface: oklch(0.985 0.004 60);
+  --raised: oklch(0.965 0.005 60);
+  --ink: oklch(0.24 0.012 45);
+  --muted: oklch(0.5 0.012 45);
+  --faint: oklch(0.66 0.01 45);
+  --line: oklch(0.92 0.004 60);
+  --line-strong: oklch(0.86 0.006 60);
+
+  --primary: oklch(0.585 0.158 33);
+  --primary-hover: oklch(0.545 0.16 33);
+  --primary-ink: oklch(0.985 0.004 60);
+  --primary-wash: oklch(0.95 0.03 33);
+
+  --accent: oklch(0.5 0.105 250);
+  --accent-hover: oklch(0.46 0.11 250);
+  --accent-ink: oklch(0.985 0.004 250);
+  --accent-wash: oklch(0.95 0.025 250);
+
+  --danger: oklch(0.55 0.17 25);
+  --focus: var(--primary);
+
+  /* typography */
+  --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas,
+    monospace;
+
+  /* radii */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 9999px;
+
+  /* elevation — bordi a filo di default; ombre solo per overlay */
+  --shadow-sm: 0 1px 2px oklch(0.24 0.012 45 / 0.06);
+  --shadow: 0 6px 20px -6px oklch(0.24 0.012 45 / 0.14);
+  --shadow-lg: 0 16px 40px -12px oklch(0.24 0.012 45 / 0.24);
+
+  /* z-index — scala semantica */
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-backdrop: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
+  --z-tooltip: 1500;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* ease-out-quart */
+  --dur-fast: 120ms;
+  --dur: 180ms;
 }
 
 .dark {
-  --si-bg: #0e0e1a;
-  --si-surface: #17172b;
-  --si-ink: #e9e7ff;
-  --si-gray: #9a9ac0;
-  --si-border: #2b2b44;
-  --si-accent: #6366f1;
+  --bg: oklch(0.17 0.008 50);
+  --surface: oklch(0.205 0.009 50);
+  --raised: oklch(0.245 0.01 50);
+  --ink: oklch(0.93 0.006 60);
+  --muted: oklch(0.7 0.01 60);
+  --faint: oklch(0.56 0.01 60);
+  --line: oklch(0.3 0.008 50);
+  --line-strong: oklch(0.38 0.01 50);
+
+  --primary: oklch(0.64 0.16 35);
+  --primary-hover: oklch(0.69 0.155 35);
+  --primary-ink: oklch(0.16 0.01 40);
+  --primary-wash: oklch(0.33 0.06 33);
+
+  --accent: oklch(0.66 0.11 250);
+  --accent-hover: oklch(0.7 0.11 250);
+  --accent-ink: oklch(0.16 0.01 250);
+  --accent-wash: oklch(0.32 0.05 250);
+
+  --danger: oklch(0.62 0.16 25);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow: 0 6px 20px -6px oklch(0 0 0 / 0.55);
+  --shadow-lg: 0 16px 40px -12px oklch(0 0 0 / 0.65);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background-color: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    font-size: 0.9375rem; /* 15px */
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  /* Cifre tabellari per orari e numeri allineati. */
+  .tnum {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus visibile e coerente su tutto ciò che è interattivo. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Backdrop della modale nativa (token, niente opacity-modifier su var). */
+  dialog::backdrop {
+    background: oklch(0.2 0.01 45 / 0.35);
+    backdrop-filter: blur(1px);
+  }
+}
+
+.dark dialog::backdrop {
+  background: oklch(0 0 0 / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AppShell } from "@/features/layout/AppShell";
 import { db } from "@/data/db";
@@ -9,6 +9,16 @@ import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
 
 beforeEach(async () => {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
   await db.entries.clear();
   await db.settings.clear();
   useUiStore.setState({ view: "month", activeDate: new Date(2026, 5, 15) });
