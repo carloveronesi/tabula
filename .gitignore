@@ -22,6 +22,11 @@ app/test/local/
 # backup storia git precedente (solo locale)
 /.history-backup.bundle
 
+# skill/tool di design installati (impeccable) — rigenerabili con `npx impeccable skills install`
+/.claude/skills/
+/.agents/
+/.gemini/
+
 # cache TS / Vite
 **/.tmp/
 *.tsbuildinfo
