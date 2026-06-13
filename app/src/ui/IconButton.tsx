@@ -13,7 +13,7 @@ const sizes = { sm: "h-7 w-7", md: "h-9 w-9" } as const;
 /** Bottone di sola icona. `label` diventa `aria-label`. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   function IconButton(
-    { label, size = "md", className, type = "button", children, ...rest },
+    { label, size = "md", className, type = "button", title, children, ...rest },
     ref,
   ) {
     return (
@@ -21,6 +21,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         ref={ref}
         type={type}
         aria-label={label}
+        title={title ?? label}
         className={cn(
           "inline-flex items-center justify-center rounded text-muted",
           "transition-colors duration-[var(--dur-fast)] ease-out",

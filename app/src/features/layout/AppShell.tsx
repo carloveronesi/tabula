@@ -16,6 +16,7 @@ import { ProjectsView } from "@/features/projects/ProjectsView";
 import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
+import { useKeyboardShortcuts } from "@/features/layout/useKeyboardShortcuts";
 
 const VIEW_LABEL: Record<ViewMode, string> = {
   day: "Giorno",
@@ -35,6 +36,7 @@ const VIEW_LABEL: Record<ViewMode, string> = {
 export function AppShell() {
   useTheme();
   useCalendarData();
+  useKeyboardShortcuts();
   const view = useUiStore((s) => s.view);
   const activeDate = useUiStore((s) => s.activeDate);
   const setView = useUiStore((s) => s.setView);

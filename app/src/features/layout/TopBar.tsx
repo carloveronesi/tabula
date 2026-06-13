@@ -1,7 +1,9 @@
 import { useUiStore, type ViewMode } from "@/store";
 import { useEditorStore } from "@/store/editor";
+import { useCalendarStore } from "@/store/calendar";
 import { formatPeriod } from "@/domain/format";
 import { isoDate } from "@/domain/calendarNav";
+import { canRedo, canUndo } from "@/domain/history";
 import { Button, IconButton, Segmented, type SegmentedOption } from "@/ui";
 
 const VIEWS: SegmentedOption<ViewMode>[] = [
@@ -25,6 +27,9 @@ export function TopBar() {
   const goToday = useUiStore((s) => s.goToday);
   const setView = useUiStore((s) => s.setView);
   const openCreate = useEditorStore((s) => s.openCreate);
+  const history = useCalendarStore((s) => s.history);
+  const undo = useCalendarStore((s) => s.undo);
+  const redo = useCalendarStore((s) => s.redo);
 
   const period = formatPeriod(activeDate, view);
 
@@ -50,12 +55,33 @@ export function TopBar() {
         </h1>
       </div>
       <div className="flex items-center gap-3">
+        <div className="flex items-center gap-0.5">
+          <IconButton
+            label="Annulla"
+            title="Annulla (Ctrl+Z)"
+            size="sm"
+            disabled={!canUndo(history)}
+            onClick={() => void undo()}
+          >
+            ↶
+          </IconButton>
+          <IconButton
+            label="Ripeti"
+            title="Ripeti (Ctrl+Shift+Z)"
+            size="sm"
+            disabled={!canRedo(history)}
+            onClick={() => void redo()}
+          >
+            ↷
+          </IconButton>
+        </div>
         <Segmented options={VIEWS} value={view} onChange={setView} label="Vista" />
-        <Button variant="primary" size="sm" onClick={newEntry}>
+        <Button variant="primary" size="sm" onClick={newEntry} title="Nuova attività (n)">
           + Nuova
         </Button>
         <IconButton
           label="Ricerca"
+          title="Ricerca (Ctrl+K)"
           size="sm"
           aria-pressed={view === "search"}
           onClick={() => setView("search")}

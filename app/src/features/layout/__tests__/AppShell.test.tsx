@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS } from "@/data/settings";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
+import { useEditorStore } from "@/store/editor";
 
 beforeEach(async () => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -24,6 +25,7 @@ beforeEach(async () => {
   useUiStore.setState({ view: "month", activeDate: new Date(2026, 5, 15) });
   useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
   useCalendarStore.setState({ entries: [] });
+  useEditorStore.setState({ open: false, base: null, detail: null });
 });
 
 describe("AppShell", () => {
@@ -55,5 +57,35 @@ describe("AppShell", () => {
     render(<AppShell />);
     fireEvent.click(screen.getByText("Settimana"));
     expect(screen.getAllByRole("columnheader")).toHaveLength(5); // lun–ven di default
+  });
+
+  it("la sequenza g→d cambia vista a Giorno da tastiera", () => {
+    render(<AppShell />);
+    fireEvent.keyDown(window, { key: "g" });
+    fireEvent.keyDown(window, { key: "d" });
+    expect(useUiStore.getState().view).toBe("day");
+  });
+
+  it("Ctrl+K apre la Ricerca da tastiera", () => {
+    render(<AppShell />);
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(useUiStore.getState().view).toBe("search");
+  });
+
+  it("'n' apre l'editor per una nuova attività", () => {
+    render(<AppShell />);
+    fireEvent.keyDown(window, { key: "n" });
+    expect(useEditorStore.getState().open).toBe(true);
+    expect(useEditorStore.getState().base).toBeNull();
+  });
+
+  it("le scorciatoie sono inerti mentre si digita in un campo", () => {
+    render(<AppShell />);
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    fireEvent.keyDown(input, { key: "n" });
+    expect(useEditorStore.getState().open).toBe(false);
+    input.remove();
   });
 });
