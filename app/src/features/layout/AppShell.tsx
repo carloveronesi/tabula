@@ -60,6 +60,8 @@ export function AppShell() {
             workingDays={settings.workingDays}
             workHours={settings.workHours}
             slotMinutes={settings.slotMinutes}
+            entries={entries}
+            onSelectEntry={showDetail}
           />
         )}
         {view === "month" && (

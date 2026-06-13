@@ -1,10 +1,6 @@
 import type { Entry } from "@/data/types";
-import {
-  buildSlots,
-  entryRowSpan,
-  minutesOfDay,
-  type WorkHours,
-} from "@/domain/slots";
+import { buildSlots, type WorkHours } from "@/domain/slots";
+import { entryBlocks } from "@/domain/dayBlocks";
 import { isoDate } from "@/domain/calendarNav";
 import { DayGrid, SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
 
@@ -28,17 +24,7 @@ export function DayView({
   onSelectEntry,
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
-  const dayKey = isoDate(date);
-
-  const blocks = entries
-    .filter((e) => e.startsAt.slice(0, 10) === dayKey)
-    .map((e) => ({
-      entry: e,
-      pos: entryRowSpan(minutesOfDay(e.startsAt), minutesOfDay(e.endsAt), slots),
-    }))
-    .filter((b): b is { entry: Entry; pos: { startRow: number; span: number } } =>
-      b.pos !== null,
-    );
+  const blocks = entryBlocks(entries, isoDate(date), slots);
 
   return (
     <div className="relative">
@@ -47,18 +33,18 @@ export function DayView({
         className="pointer-events-none absolute inset-y-0 right-0"
         style={{ left: TIME_GUTTER }}
       >
-        {blocks.map(({ entry, pos }) => (
+        {blocks.map(({ entry, startRow, span }) => (
           <button
             key={entry.id}
             type="button"
             data-testid="entry-block"
-            data-start-row={pos.startRow}
-            data-span={pos.span}
+            data-start-row={startRow}
+            data-span={span}
             onClick={() => onSelectEntry?.(entry)}
             style={{
               position: "absolute",
-              top: pos.startRow * SLOT_HEIGHT + 2,
-              height: pos.span * SLOT_HEIGHT - 4,
+              top: startRow * SLOT_HEIGHT + 2,
+              height: span * SLOT_HEIGHT - 4,
               left: 4,
               right: 4,
             }}
