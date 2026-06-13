@@ -20,10 +20,15 @@ interface DayViewProps {
   workHours: WorkHours;
   slotMinutes: number;
   onSelectEntry?: (entry: Entry) => void;
-  /** Drag su area vuota → nuova attività su questo intervallo (minuti). */
-  onCreateRange?: (startMin: number, endMin: number) => void;
-  /** Move/resize confermato → nuovo intervallo dell'entry (minuti). */
-  onUpdateEntry?: (entry: Entry, startMin: number, endMin: number) => void;
+  /** Drag su area vuota → nuova attività in quel giorno/intervallo (minuti). */
+  onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
+  /** Move/resize confermato → nuovo giorno/intervallo dell'entry (minuti). */
+  onUpdateEntry?: (
+    entry: Entry,
+    dateISO: string,
+    startMin: number,
+    endMin: number,
+  ) => void;
 }
 
 type Drag =
@@ -71,7 +76,8 @@ export function DayView({
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
-  const blocks = entryBlocks(entries, isoDate(date), slots);
+  const dayKey = isoDate(date);
+  const blocks = entryBlocks(entries, dayKey, slots);
 
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
@@ -109,7 +115,7 @@ export function DayView({
     if (drag.kind === "create") {
       const { startRow, span } = createRange(drag.anchorRow, drag.row);
       const { startMin, endMin } = rowsToRange(startRow, span, slots, slotMinutes);
-      onCreateRange?.(startMin, endMin);
+      onCreateRange?.(dayKey, startMin, endMin);
     } else {
       const entry = entries.find((x) => x.id === drag.id);
       if (entry) {
@@ -118,7 +124,7 @@ export function DayView({
         } else {
           const g = dragGeom(drag, slotCount);
           const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
-          onUpdateEntry?.(entry, startMin, endMin);
+          onUpdateEntry?.(entry, dayKey, startMin, endMin);
         }
       }
     }

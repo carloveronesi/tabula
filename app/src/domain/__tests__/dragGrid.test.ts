@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   rowAtOffset,
+  columnAtOffset,
   deltaRows,
   createRange,
   moveBlock,
@@ -24,6 +25,19 @@ describe("rowAtOffset", () => {
     expect(rowAtOffset(50, 44, 16)).toBe(1);
     expect(rowAtOffset(-10, 44, 16)).toBe(0); // sopra → 0
     expect(rowAtOffset(9999, 44, 16)).toBe(15); // sotto → ultima
+  });
+});
+
+describe("columnAtOffset", () => {
+  it("mappa l'offset X alla colonna, con clamp", () => {
+    expect(columnAtOffset(0, 100, 5)).toBe(0);
+    expect(columnAtOffset(150, 100, 5)).toBe(1);
+    expect(columnAtOffset(-5, 100, 5)).toBe(0);
+    expect(columnAtOffset(9999, 100, 5)).toBe(4);
+  });
+
+  it("larghezza non misurata (≤0) → colonna 0 (nessuno spostamento)", () => {
+    expect(columnAtOffset(123, 0, 5)).toBe(0);
   });
 });
 

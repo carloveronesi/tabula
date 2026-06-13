@@ -13,6 +13,7 @@ const WH: WorkHours = {
 
 // mercoledì 10 giu 2026 (settimana: lun 8 … dom 14)
 const DATE = new Date(2026, 5, 10);
+const SLOT_H = 44; // = DayGrid.SLOT_HEIGHT
 
 function entry(id: string, startsAt: ISODateTime, endsAt: ISODateTime): Entry {
   return {
@@ -76,7 +77,7 @@ describe("WeekGrid", () => {
     ]);
   });
 
-  it("clic su un blocco seleziona la entry", () => {
+  it("click (senza movimento) su un blocco seleziona la entry", () => {
     const onSelectEntry = vi.fn();
     const entries = [entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00")];
     render(
@@ -89,7 +90,70 @@ describe("WeekGrid", () => {
         onSelectEntry={onSelectEntry}
       />,
     );
-    fireEvent.click(screen.getByTestId("entry-block"));
+    const block = screen.getByTestId("entry-block");
+    fireEvent.pointerDown(block, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerUp(screen.getByTestId("week-cols"), { pointerId: 1 });
     expect(onSelectEntry).toHaveBeenCalledWith(entries[0]);
+  });
+
+  it("drag verticale di un blocco → nuovo orario, stesso giorno", () => {
+    const onUpdateEntry = vi.fn();
+    const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00");
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        entries={[e]}
+        onUpdateEntry={onUpdateEntry}
+      />,
+    );
+    const cols = screen.getByTestId("week-cols");
+    fireEvent.pointerDown(screen.getByTestId("entry-block"), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(cols, { clientY: SLOT_H, clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(cols, { pointerId: 1 });
+    // mer 10 giu invariato (larghezza colonne 0 in jsdom), +30'
+    expect(onUpdateEntry).toHaveBeenCalledWith(e, "2026-06-10", 570, 630);
+  });
+
+  it("drag su area vuota di una colonna → nuova attività in quel giorno", () => {
+    const onCreateRange = vi.fn();
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        onCreateRange={onCreateRange}
+      />,
+    );
+    const cols = screen.getByTestId("week-cols");
+    // colonna 2 = mer 10 giu (Lun8, Mar9, Mer10, …)
+    fireEvent.pointerDown(screen.getByTestId("week-col-2"), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(cols, { clientY: SLOT_H, clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(cols, { pointerId: 1 });
+    // righe 0..1 → 09:00 (540) … 10:00 (600)
+    expect(onCreateRange).toHaveBeenCalledWith("2026-06-10", 540, 600);
+  });
+
+  it("resize dal bordo inferiore → durata maggiore", () => {
+    const onUpdateEntry = vi.fn();
+    const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00");
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        entries={[e]}
+        onUpdateEntry={onUpdateEntry}
+      />,
+    );
+    const cols = screen.getByTestId("week-cols");
+    fireEvent.pointerDown(screen.getByTestId("resize-bottom"), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(cols, { clientY: SLOT_H, clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(cols, { pointerId: 1 });
+    expect(onUpdateEntry).toHaveBeenCalledWith(e, "2026-06-10", 540, 630);
   });
 });

@@ -87,7 +87,7 @@ describe("DayView", () => {
     fireEvent.pointerMove(area, { clientY: SLOT_H * 3, pointerId: 1 }); // riga 3
     fireEvent.pointerUp(area, { pointerId: 1 });
     // righe 0..3 → 09:00 (540) … fine riga 3 (630+30 = 660)
-    expect(onCreateRange).toHaveBeenCalledWith(540, 660);
+    expect(onCreateRange).toHaveBeenCalledWith("2026-06-10", 540, 660);
   });
 
   it("drag di un blocco → onUpdateEntry col nuovo orario", () => {
@@ -108,7 +108,7 @@ describe("DayView", () => {
     fireEvent.pointerMove(area, { clientY: SLOT_H, pointerId: 1 }); // +1 riga
     fireEvent.pointerUp(area, { pointerId: 1 });
     // 09:00–10:00 spostato di +30' → 09:30 (570) – 10:30 (630)
-    expect(onUpdateEntry).toHaveBeenCalledWith(e, 570, 630);
+    expect(onUpdateEntry).toHaveBeenCalledWith(e, "2026-06-10", 570, 630);
   });
 
   it("click su un blocco (senza movimento) → onSelectEntry", () => {
@@ -151,6 +151,6 @@ describe("DayView", () => {
     fireEvent.pointerMove(area, { clientY: SLOT_H, pointerId: 1 }); // +1 riga in fondo
     fireEvent.pointerUp(area, { pointerId: 1 });
     // 09:00 invariato, fine estesa di 30' → 540 … 630
-    expect(onUpdateEntry).toHaveBeenCalledWith(e, 540, 630);
+    expect(onUpdateEntry).toHaveBeenCalledWith(e, "2026-06-10", 540, 630);
   });
 });

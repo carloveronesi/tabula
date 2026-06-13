@@ -1,6 +1,5 @@
 import type { Entry } from "@/data/types";
 import { dateTimeAt } from "@/domain/time";
-import { isoDate } from "@/domain/calendarNav";
 import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -46,15 +45,19 @@ export function AppShell() {
     setView("day");
   };
 
-  const createRange = (startMin: number, endMin: number) =>
-    openCreate({ date: isoDate(activeDate), startMin, endMin });
+  const createRange = (dateISO: string, startMin: number, endMin: number) =>
+    openCreate({ date: dateISO, startMin, endMin });
 
-  const updateEntryRange = (entry: Entry, startMin: number, endMin: number) => {
-    const day = entry.startsAt.slice(0, 10);
+  const updateEntryRange = (
+    entry: Entry,
+    dateISO: string,
+    startMin: number,
+    endMin: number,
+  ) => {
     void saveEntry({
       ...entry,
-      startsAt: dateTimeAt(day, startMin),
-      endsAt: dateTimeAt(day, endMin),
+      startsAt: dateTimeAt(dateISO, startMin),
+      endsAt: dateTimeAt(dateISO, endMin),
       updatedAt: Date.now(),
     });
   };
@@ -82,6 +85,8 @@ export function AppShell() {
             slotMinutes={settings.slotMinutes}
             entries={entries}
             onSelectEntry={showDetail}
+            onCreateRange={createRange}
+            onUpdateEntry={updateEntryRange}
           />
         )}
         {view === "month" && (

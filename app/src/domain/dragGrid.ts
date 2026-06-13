@@ -15,6 +15,16 @@ export function rowAtOffset(
   return clamp(Math.floor(offsetY / slotHeight), 0, slotCount - 1);
 }
 
+/** Colonna (giorno) sotto il puntatore dato l'offset X nell'area colonne. */
+export function columnAtOffset(
+  offsetX: number,
+  columnWidth: number,
+  columnCount: number,
+): number {
+  if (columnWidth <= 0) return 0;
+  return clamp(Math.floor(offsetX / columnWidth), 0, columnCount - 1);
+}
+
 /** Spostamento in righe intere a partire da un delta in pixel (snap). */
 export function deltaRows(deltaY: number, slotHeight: number): number {
   return Math.round(deltaY / slotHeight);
