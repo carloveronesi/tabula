@@ -1,7 +1,8 @@
 import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
+import { useCalendarStore } from "@/store/calendar";
 import { TopBar } from "@/features/layout/TopBar";
-import { DayGrid } from "@/features/calendar/DayGrid";
+import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
 
@@ -21,13 +22,16 @@ export function AppShell() {
   const view = useUiStore((s) => s.view);
   const activeDate = useUiStore((s) => s.activeDate);
   const settings = useSettingsStore((s) => s.settings);
+  const entries = useCalendarStore((s) => s.entries);
 
   return (
     <div className="min-h-screen bg-[var(--si-bg)] text-[var(--si-ink)]">
       <TopBar />
       <main data-testid={`view-${view}`} className="p-4">
         {view === "day" && (
-          <DayGrid
+          <DayView
+            date={activeDate}
+            entries={entries}
             workHours={settings.workHours}
             slotMinutes={settings.slotMinutes}
           />
