@@ -35,3 +35,26 @@ function pad2(n: number): string {
 export function minutesToLabel(minutes: number): string {
   return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
 }
+
+/** Minuti dalla mezzanotte dall'orario di un datetime ISO ("…THH:MM:…"). */
+export function minutesOfDay(iso: string): number {
+  return Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+}
+
+/**
+ * Posizione di un'entry sulla griglia a slot: riga d'inizio (indice 0-based in
+ * `slots`) e numero di slot occupati. `null` se l'inizio non è in una fascia.
+ */
+export function entryRowSpan(
+  startMin: number,
+  endMin: number,
+  slots: number[],
+): { startRow: number; span: number } | null {
+  const startRow = slots.indexOf(startMin);
+  if (startRow === -1) return null;
+  const span = Math.max(
+    1,
+    slots.filter((s) => s >= startMin && s < endMin).length,
+  );
+  return { startRow, span };
+}

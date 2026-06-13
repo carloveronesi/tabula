@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
+import {
+  buildSlots,
+  entryRowSpan,
+  minutesOfDay,
+  minutesToLabel,
+  type WorkHours,
+} from "@/domain/slots";
 
 const WH: WorkHours = {
   morningStart: 540, // 09:00
@@ -37,5 +43,33 @@ describe("minutesToLabel", () => {
     expect(minutesToLabel(540)).toBe("09:00");
     expect(minutesToLabel(1050)).toBe("17:30");
     expect(minutesToLabel(0)).toBe("00:00");
+  });
+});
+
+describe("minutesOfDay", () => {
+  it("estrae i minuti dall'orario ISO", () => {
+    expect(minutesOfDay("2026-06-10T09:30:00")).toBe(570);
+    expect(minutesOfDay("2026-06-10T00:00:00")).toBe(0);
+    expect(minutesOfDay("2026-06-10T17:30:00")).toBe(1050);
+  });
+});
+
+describe("entryRowSpan", () => {
+  const slots = buildSlots(WH, 30).all; // 16 slot
+
+  it("blocco 09:00–10:00 → riga 0, span 2", () => {
+    expect(entryRowSpan(540, 600, slots)).toEqual({ startRow: 0, span: 2 });
+  });
+
+  it("giornata intera 09:00–18:00 → riga 0, span 16", () => {
+    expect(entryRowSpan(540, 1080, slots)).toEqual({ startRow: 0, span: 16 });
+  });
+
+  it("pomeriggio 14:00–15:00 → riga 8, span 2", () => {
+    expect(entryRowSpan(840, 900, slots)).toEqual({ startRow: 8, span: 2 });
+  });
+
+  it("inizio fuori dalle fasce lavorative → null", () => {
+    expect(entryRowSpan(420, 480, slots)).toBeNull(); // 07:00
   });
 });
