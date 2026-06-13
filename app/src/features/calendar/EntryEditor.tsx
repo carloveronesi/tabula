@@ -18,9 +18,9 @@ import {
   Combobox,
   Field,
   Input,
+  MarkdownEditor,
   Modal,
   Segmented,
-  Textarea,
   type SegmentedOption,
 } from "@/ui";
 
@@ -188,11 +188,11 @@ export function EntryEditor() {
         </div>
 
         <Field label="Note">
-          <Textarea
-            aria-label="Note"
+          <MarkdownEditor
+            label="Note"
             value={draft.notes}
-            onChange={(e) => patch({ notes: e.target.value })}
-            placeholder="Dettagli, contesto…"
+            onChange={(notes) => patch({ notes })}
+            placeholder="Dettagli, contesto… (Markdown supportato)"
           />
         </Field>
 

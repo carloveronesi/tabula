@@ -3,7 +3,7 @@ import type { Entry, EntryType } from "@/data/types";
 import { minutesOfDay, minutesToLabel } from "@/domain/slots";
 import { useEditorStore } from "@/store/editor";
 import { useInventoryStore } from "@/store/inventory";
-import { Button, Modal } from "@/ui";
+import { Button, Markdown, Modal } from "@/ui";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -33,7 +33,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
       <h3 className="font-sans text-xs font-semibold uppercase tracking-wide text-muted">
         {label}
       </h3>
-      <div className="mt-1 whitespace-pre-wrap text-sm text-ink">{children}</div>
+      <div className="mt-1 text-sm text-ink">{children}</div>
     </div>
   );
 }
@@ -75,9 +75,21 @@ export function EntryDetail() {
             )}
           </div>
 
-          {e.notes && <Section label="Note">{e.notes}</Section>}
-          {e.blockers && <Section label="Problemi">{e.blockers}</Section>}
-          {e.nextSteps && <Section label="Prossimi passi">{e.nextSteps}</Section>}
+          {e.notes && (
+            <Section label="Note">
+              <Markdown>{e.notes}</Markdown>
+            </Section>
+          )}
+          {e.blockers && (
+            <Section label="Problemi">
+              <Markdown>{e.blockers}</Markdown>
+            </Section>
+          )}
+          {e.nextSteps && (
+            <Section label="Prossimi passi">
+              <Markdown>{e.nextSteps}</Markdown>
+            </Section>
+          )}
           {e.links.length > 0 && (
             <Section label="Link">
               <ul className="space-y-1">
