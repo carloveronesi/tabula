@@ -5,9 +5,8 @@ import {
   minutesOfDay,
   type WorkHours,
 } from "@/domain/slots";
+import { isoDate } from "@/domain/calendarNav";
 import { DayGrid } from "@/features/calendar/DayGrid";
-
-const pad2 = (n: number) => String(n).padStart(2, "0");
 
 interface DayViewProps {
   date: Date;
@@ -22,7 +21,7 @@ interface DayViewProps {
  */
 export function DayView({ date, entries, workHours, slotMinutes }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
-  const dayKey = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  const dayKey = isoDate(date);
 
   const blocks = entries
     .filter((e) => e.startsAt.slice(0, 10) === dayKey)

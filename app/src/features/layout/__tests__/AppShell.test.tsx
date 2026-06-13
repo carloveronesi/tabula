@@ -1,10 +1,19 @@
+import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AppShell } from "@/features/layout/AppShell";
+import { db } from "@/data/db";
+import { DEFAULT_SETTINGS } from "@/data/settings";
 import { useUiStore } from "@/store";
+import { useSettingsStore } from "@/store/settings";
+import { useCalendarStore } from "@/store/calendar";
 
-beforeEach(() => {
+beforeEach(async () => {
+  await db.entries.clear();
+  await db.settings.clear();
   useUiStore.setState({ view: "month", activeDate: new Date(2026, 5, 15) });
+  useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
+  useCalendarStore.setState({ entries: [] });
 });
 
 describe("AppShell", () => {

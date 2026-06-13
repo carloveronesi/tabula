@@ -1,4 +1,12 @@
 import type { ViewMode } from "@/domain/view";
+import type { ISODate, ISODateTime } from "@/data/types";
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Data locale → "YYYY-MM-DD" (nessuna conversione di fuso). */
+export function isoDate(date: Date): ISODate {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
 
 export function addDays(date: Date, n: number): Date {
   const d = new Date(date);
@@ -51,4 +59,36 @@ export function monthGridDates(date: Date): Date[] {
   const first = new Date(date.getFullYear(), date.getMonth(), 1);
   const start = addDays(first, -dowMon0(first));
   return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+
+/** Estremo iniziale/finale di un giorno come ISODateTime locale. */
+function dayStart(date: Date): ISODateTime {
+  return `${isoDate(date)}T00:00:00`;
+}
+function dayEnd(date: Date): ISODateTime {
+  return `${isoDate(date)}T23:59:59`;
+}
+
+/**
+ * Intervallo temporale [from, to] (estremi inclusi) coperto da una vista per la
+ * data focale. È il range che la vista deve caricare dal DB: day = il giorno;
+ * week = lun–dom della settimana; month = l'intera griglia 6×7. projects/todo
+ * non hanno asse temporale: range inerte sul giorno corrente.
+ */
+export function viewRange(
+  date: Date,
+  view: ViewMode,
+): { from: ISODateTime; to: ISODateTime } {
+  switch (view) {
+    case "week": {
+      const monday = addDays(date, -dowMon0(date));
+      return { from: dayStart(monday), to: dayEnd(addDays(monday, 6)) };
+    }
+    case "month": {
+      const cells = monthGridDates(date);
+      return { from: dayStart(cells[0]), to: dayEnd(cells[cells.length - 1]) };
+    }
+    default:
+      return { from: dayStart(date), to: dayEnd(date) };
+  }
 }

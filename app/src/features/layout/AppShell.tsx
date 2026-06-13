@@ -5,6 +5,7 @@ import { TopBar } from "@/features/layout/TopBar";
 import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
+import { useCalendarData } from "@/features/calendar/useCalendarData";
 
 const VIEW_LABEL: Record<ViewMode, string> = {
   day: "Giorno",
@@ -19,6 +20,7 @@ const VIEW_LABEL: Record<ViewMode, string> = {
  * Le viste vere sostituiranno i placeholder man mano.
  */
 export function AppShell() {
+  useCalendarData();
   const view = useUiStore((s) => s.view);
   const activeDate = useUiStore((s) => s.activeDate);
   const settings = useSettingsStore((s) => s.settings);
