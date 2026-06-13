@@ -18,6 +18,7 @@ app/test/local/
 /03-strategia-riscrittura/
 /04-piano-sviluppo/
 /05-ui-spec/
+/06-onboarding/
 
 # backup storia git precedente (solo locale)
 /.history-backup.bundle
