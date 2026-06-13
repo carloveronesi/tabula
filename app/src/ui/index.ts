@@ -12,3 +12,6 @@ export {
 } from "@/ui/Segmented";
 export { Modal, type ModalProps } from "@/ui/Modal";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "@/ui/Combobox";
+export { Input } from "@/ui/Input";
+export { Textarea } from "@/ui/Textarea";
+export { Field, type FieldProps } from "@/ui/Field";

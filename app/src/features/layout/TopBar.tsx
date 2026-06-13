@@ -1,5 +1,7 @@
 import { useUiStore, type ViewMode } from "@/store";
+import { useEditorStore } from "@/store/editor";
 import { formatPeriod } from "@/domain/format";
+import { isoDate } from "@/domain/calendarNav";
 import { Button, IconButton, Segmented, type SegmentedOption } from "@/ui";
 
 const VIEWS: SegmentedOption<ViewMode>[] = [
@@ -21,8 +23,12 @@ export function TopBar() {
   const goNext = useUiStore((s) => s.goNext);
   const goToday = useUiStore((s) => s.goToday);
   const setView = useUiStore((s) => s.setView);
+  const openCreate = useEditorStore((s) => s.openCreate);
 
   const period = formatPeriod(activeDate, view);
+
+  const newEntry = () =>
+    openCreate({ date: isoDate(activeDate), startMin: 540, endMin: 600 });
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-bg px-4 py-2.5">
@@ -40,7 +46,12 @@ export function TopBar() {
         </div>
         <h1 className="font-serif text-xl text-ink tnum">{period || "Tabula"}</h1>
       </div>
-      <Segmented options={VIEWS} value={view} onChange={setView} label="Vista" />
+      <div className="flex items-center gap-3">
+        <Segmented options={VIEWS} value={view} onChange={setView} label="Vista" />
+        <Button variant="primary" size="sm" onClick={newEntry}>
+          + Nuova
+        </Button>
+      </div>
     </header>
   );
 }

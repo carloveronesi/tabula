@@ -13,13 +13,20 @@ interface DayViewProps {
   entries: Entry[];
   workHours: WorkHours;
   slotMinutes: number;
+  onSelectEntry?: (entry: Entry) => void;
 }
 
 /**
  * Vista Giorno: griglia oraria + blocchi-evento posizionati per range.
  * Presentazionale: riceve le entry, non legge dal DB.
  */
-export function DayView({ date, entries, workHours, slotMinutes }: DayViewProps) {
+export function DayView({
+  date,
+  entries,
+  workHours,
+  slotMinutes,
+  onSelectEntry,
+}: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const dayKey = isoDate(date);
 
@@ -38,15 +45,17 @@ export function DayView({ date, entries, workHours, slotMinutes }: DayViewProps)
       <DayGrid workHours={workHours} slotMinutes={slotMinutes} />
       <div className="pointer-events-none absolute inset-0">
         {blocks.map(({ entry, pos }) => (
-          <div
+          <button
             key={entry.id}
+            type="button"
             data-testid="entry-block"
             data-start-row={pos.startRow}
             data-span={pos.span}
-            className="pointer-events-auto rounded bg-primary-wash px-2 py-0.5 text-xs font-medium text-ink shadow-sm"
+            onClick={() => onSelectEntry?.(entry)}
+            className="pointer-events-auto block w-full truncate rounded bg-primary-wash px-2 py-0.5 text-left text-xs font-medium text-ink shadow-sm transition duration-[var(--dur-fast)] ease-out hover:brightness-95"
           >
             {entry.title}
-          </div>
+          </button>
         ))}
       </div>
     </div>
