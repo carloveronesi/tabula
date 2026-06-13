@@ -6,7 +6,7 @@ import {
   type WorkHours,
 } from "@/domain/slots";
 import { isoDate } from "@/domain/calendarNav";
-import { DayGrid } from "@/features/calendar/DayGrid";
+import { DayGrid, SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
 
 interface DayViewProps {
   date: Date;
@@ -43,7 +43,10 @@ export function DayView({
   return (
     <div className="relative">
       <DayGrid workHours={workHours} slotMinutes={slotMinutes} />
-      <div className="pointer-events-none absolute inset-0">
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0"
+        style={{ left: TIME_GUTTER }}
+      >
         {blocks.map(({ entry, pos }) => (
           <button
             key={entry.id}
@@ -52,9 +55,16 @@ export function DayView({
             data-start-row={pos.startRow}
             data-span={pos.span}
             onClick={() => onSelectEntry?.(entry)}
-            className="pointer-events-auto block w-full truncate rounded bg-primary-wash px-2 py-0.5 text-left text-xs font-medium text-ink shadow-sm transition duration-[var(--dur-fast)] ease-out hover:brightness-95"
+            style={{
+              position: "absolute",
+              top: pos.startRow * SLOT_HEIGHT + 2,
+              height: pos.span * SLOT_HEIGHT - 4,
+              left: 4,
+              right: 4,
+            }}
+            className="pointer-events-auto flex flex-col overflow-hidden rounded bg-primary-wash px-2 py-1 text-left text-xs font-medium text-ink shadow-sm transition duration-[var(--dur-fast)] ease-out hover:brightness-95"
           >
-            {entry.title}
+            <span className="truncate">{entry.title}</span>
           </button>
         ))}
       </div>

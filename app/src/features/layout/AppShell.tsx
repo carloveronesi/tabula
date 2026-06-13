@@ -30,9 +30,16 @@ export function AppShell() {
   useCalendarData();
   const view = useUiStore((s) => s.view);
   const activeDate = useUiStore((s) => s.activeDate);
+  const setView = useUiStore((s) => s.setView);
+  const setActiveDate = useUiStore((s) => s.setActiveDate);
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
   const showDetail = useEditorStore((s) => s.showDetail);
+
+  const openDay = (date: Date) => {
+    setActiveDate(date);
+    setView("day");
+  };
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -55,7 +62,9 @@ export function AppShell() {
             slotMinutes={settings.slotMinutes}
           />
         )}
-        {view === "month" && <MonthGrid date={activeDate} />}
+        {view === "month" && (
+          <MonthGrid date={activeDate} entries={entries} onOpenDay={openDay} />
+        )}
         {view === "settings" && <SettingsView />}
         {(view === "projects" || view === "todo") && (
           <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>
