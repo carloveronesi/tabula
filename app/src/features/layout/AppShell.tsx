@@ -8,6 +8,7 @@ import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
+import { SettingsView } from "@/features/settings/SettingsView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 
@@ -17,6 +18,7 @@ const VIEW_LABEL: Record<ViewMode, string> = {
   month: "Mese",
   projects: "Progetti",
   todo: "Todo",
+  settings: "Impostazioni",
 };
 
 /**
@@ -54,6 +56,7 @@ export function AppShell() {
           />
         )}
         {view === "month" && <MonthGrid date={activeDate} />}
+        {view === "settings" && <SettingsView />}
         {(view === "projects" || view === "todo") && (
           <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>
         )}

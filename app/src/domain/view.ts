@@ -1,2 +1,8 @@
 /** Le viste dell'app. */
-export type ViewMode = "month" | "week" | "day" | "projects" | "todo";
+export type ViewMode =
+  | "month"
+  | "week"
+  | "day"
+  | "projects"
+  | "todo"
+  | "settings";

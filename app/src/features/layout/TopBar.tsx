@@ -51,6 +51,14 @@ export function TopBar() {
         <Button variant="primary" size="sm" onClick={newEntry}>
           + Nuova
         </Button>
+        <IconButton
+          label="Impostazioni"
+          size="sm"
+          aria-pressed={view === "settings"}
+          onClick={() => setView("settings")}
+        >
+          ⚙
+        </IconButton>
       </div>
     </header>
   );
