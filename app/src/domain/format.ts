@@ -3,6 +3,15 @@ import { addDays, dowMon0 } from "@/domain/calendarNav";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Minuti → durata leggibile: "0h", "45m", "2h", "1h 30m". */
+export function formatHours(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0 && m === 0) return "0h";
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
 const fmt = (date: Date, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("it-IT", opts).format(date);
 
@@ -25,6 +34,9 @@ export function formatPeriod(date: Date, view: ViewMode): string {
 
     case "month":
       return cap(fmt(date, { month: "long", year: "numeric" }));
+
+    case "riepilogo":
+      return `Riepilogo · ${cap(fmt(date, { month: "long", year: "numeric" }))}`;
 
     case "week": {
       const monday = addDays(date, -dowMon0(date));

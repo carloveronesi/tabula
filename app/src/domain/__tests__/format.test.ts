@@ -1,7 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { formatPeriod } from "@/domain/format";
+import { formatPeriod, formatHours } from "@/domain/format";
 
 const D = (y: number, m0: number, d: number) => new Date(y, m0, d);
+
+describe("formatHours", () => {
+  it("formatta i minuti in ore/minuti", () => {
+    expect(formatHours(0)).toBe("0h");
+    expect(formatHours(45)).toBe("45m");
+    expect(formatHours(120)).toBe("2h");
+    expect(formatHours(90)).toBe("1h 30m");
+  });
+});
 
 describe("formatPeriod", () => {
   it("day → giorno per esteso, iniziale maiuscola", () => {
@@ -20,6 +29,12 @@ describe("formatPeriod", () => {
   it("week → intervallo a cavallo di due mesi", () => {
     // mer 1 lug 2026 → lun 29 giu … dom 5 lug
     expect(formatPeriod(D(2026, 6, 1), "week")).toBe("29 giu – 5 lug 2026");
+  });
+
+  it("riepilogo → etichetta con il mese", () => {
+    expect(formatPeriod(D(2026, 5, 13), "riepilogo")).toBe(
+      "Riepilogo · Giugno 2026",
+    );
   });
 
   it("projects/todo → stringa vuota (nessun periodo)", () => {

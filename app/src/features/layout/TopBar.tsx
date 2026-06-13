@@ -8,6 +8,7 @@ const VIEWS: SegmentedOption<ViewMode>[] = [
   { id: "day", label: "Giorno" },
   { id: "week", label: "Settimana" },
   { id: "month", label: "Mese" },
+  { id: "riepilogo", label: "Riepilogo" },
   { id: "projects", label: "Progetti" },
   { id: "todo", label: "Todo" },
 ];

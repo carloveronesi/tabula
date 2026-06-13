@@ -38,6 +38,7 @@ export function shiftFocus(date: Date, view: ViewMode, dir: -1 | 1): Date {
     case "week":
       return addDays(date, 7 * dir);
     case "month":
+    case "riepilogo":
       return addMonths(date, dir);
     default:
       return new Date(date);
@@ -87,6 +88,12 @@ export function viewRange(
     case "month": {
       const cells = monthGridDates(date);
       return { from: dayStart(cells[0]), to: dayEnd(cells[cells.length - 1]) };
+    }
+    case "riepilogo": {
+      // Confini esatti del mese di calendario (non la griglia 6×7).
+      const first = new Date(date.getFullYear(), date.getMonth(), 1);
+      const last = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      return { from: dayStart(first), to: dayEnd(last) };
     }
     default:
       return { from: dayStart(date), to: dayEnd(date) };

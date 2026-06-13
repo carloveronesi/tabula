@@ -95,6 +95,13 @@ describe("viewRange", () => {
     });
   });
 
+  it("riepilogo → confini esatti del mese di calendario", () => {
+    expect(viewRange(D(2026, 6, 15), "riepilogo")).toEqual({
+      from: "2026-07-01T00:00:00",
+      to: "2026-07-31T23:59:59",
+    });
+  });
+
   it("projects/todo → il giorno corrente (range inerte)", () => {
     expect(viewRange(D(2026, 5, 12), "projects")).toEqual({
       from: "2026-06-12T00:00:00",
