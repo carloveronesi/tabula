@@ -121,7 +121,9 @@ export function ProjectsView() {
         <section className="space-y-6">
           <header className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-serif text-2xl text-ink">{selected.name}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-ink">
+                {selected.name}
+              </h2>
               <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-muted">
                 {STATUS_LABEL[selected.status]}
               </span>

@@ -45,7 +45,9 @@ export function TopBar() {
             ›
           </IconButton>
         </div>
-        <h1 className="font-serif text-xl text-ink tnum">{period || "Tabula"}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-ink tnum">
+          {period || "Tabula"}
+        </h1>
       </div>
       <div className="flex items-center gap-3">
         <Segmented options={VIEWS} value={view} onChange={setView} label="Vista" />

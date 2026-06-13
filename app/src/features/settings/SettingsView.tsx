@@ -52,7 +52,7 @@ export function SettingsView() {
   return (
     <div className="mx-auto max-w-xl space-y-8">
       <header>
-        <h2 className="font-serif text-2xl">Impostazioni</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Impostazioni</h2>
         <p className="mt-1 text-sm text-muted">
           Tutto resta sul tuo dispositivo: nessun dato lascia il browser.
         </p>

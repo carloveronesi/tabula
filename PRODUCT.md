@@ -43,9 +43,9 @@ controllo senza ansia.
 
 1. **Il contenuto è il protagonista.** La UI è carta e inchiostro: superfici quiete,
    struttura a filo (hairline), colore speso solo dove informa.
-2. **Una sola voce di colore.** Il rosso terracotta marca ciò che è "attività";
-   l'indaco marca ciò che è "riferimento/oggi". Tutto il resto è inchiostro su bianco.
-   (Metafora: la matita rossa e blu del correttore di bozze.)
+2. **Una sola voce di colore.** Un unico accento **cobalto** marca azioni,
+   selezione, "oggi" e i blocchi-evento. Tutto il resto è inchiostro freddo su
+   bianco (o near-black freddo su scuro). Look nitido-tecnico, non editoriale.
 3. **Densità senza rumore.** Mostrare molto tempo a colpo d'occhio, ma con ritmo e
    respiro: la leggibilità della griglia viene prima della decorazione.
 4. **Frizione zero.** Ogni azione frequente (creare/spostare un blocco, cambiare

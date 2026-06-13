@@ -64,12 +64,12 @@ export function EntryDetail() {
               {TYPE_LABEL[e.type]}
             </span>
             {clientName && (
-              <span className="rounded-pill bg-accent-wash px-2 py-0.5 text-xs text-ink">
+              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
                 {clientName}
               </span>
             )}
             {projectName && (
-              <span className="rounded-pill bg-primary-wash px-2 py-0.5 text-xs text-ink">
+              <span className="rounded-pill bg-primary-wash px-2 py-0.5 text-xs text-accent">
                 {projectName}
               </span>
             )}

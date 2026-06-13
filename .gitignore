@@ -27,6 +27,8 @@ app/test/local/
 /.claude/skills/
 /.agents/
 /.gemini/
+# output locale di impeccable (critique snapshot, live config)
+/.impeccable/
 
 # cache TS / Vite
 **/.tmp/

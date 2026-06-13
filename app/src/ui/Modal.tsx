@@ -57,7 +57,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         <div className={cn("p-5", className)}>
           {title && (
             <div className="mb-3 flex items-center justify-between gap-4">
-              <h2 className="font-serif text-xl">{title}</h2>
+              <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
               <IconButton label="Chiudi" size="sm" onClick={onClose}>
                 ×
               </IconButton>

@@ -77,7 +77,7 @@ export function SummaryView() {
         <p className="text-xs font-medium uppercase tracking-wide text-muted">
           Totale registrato
         </p>
-        <p className="tnum font-serif text-4xl text-ink">
+        <p className="tnum text-4xl font-semibold tracking-tight text-ink">
           {formatHours(summary.totalMin)}
         </p>
       </header>
