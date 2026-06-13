@@ -2,6 +2,7 @@ import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import type { Entry } from "@/data/types";
 import { buildSlots, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
+import { conflictsOnDay } from "@/domain/conflict";
 import {
   rowAtOffset,
   deltaRows,
@@ -110,28 +111,40 @@ export function DayView({
     }
   }
 
+  const geomOf = (d: Exclude<Drag, null>) =>
+    d.kind === "create" ? createRange(d.anchorRow, d.row) : dragGeom(d, slotCount);
+
+  /** Conflitto del drag corrente (un click puro non è conflitto). */
+  function isConflict(d: Exclude<Drag, null>): boolean {
+    if (d.kind === "move" && d.dRows === 0) return false;
+    const g = geomOf(d);
+    const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
+    const ignoreId = d.kind === "create" ? null : d.id;
+    return conflictsOnDay(dayKey, startMin, endMin, entries, ignoreId);
+  }
+
   function onPointerUp() {
     if (!drag) return;
-    if (drag.kind === "create") {
-      const { startRow, span } = createRange(drag.anchorRow, drag.row);
-      const { startMin, endMin } = rowsToRange(startRow, span, slots, slotMinutes);
+    const d = drag;
+    setDrag(null);
+    if (d.kind === "move" && d.dRows === 0) {
+      const entry = entries.find((x) => x.id === d.id);
+      if (entry) onSelectEntry?.(entry); // niente movimento → è un click
+      return;
+    }
+    if (isConflict(d)) return; // sovrapposizione: azione annullata
+    const g = geomOf(d);
+    const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
+    if (d.kind === "create") {
       onCreateRange?.(dayKey, startMin, endMin);
     } else {
-      const entry = entries.find((x) => x.id === drag.id);
-      if (entry) {
-        if (drag.kind === "move" && drag.dRows === 0) {
-          onSelectEntry?.(entry); // niente movimento → è un click
-        } else {
-          const g = dragGeom(drag, slotCount);
-          const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
-          onUpdateEntry?.(entry, dayKey, startMin, endMin);
-        }
-      }
+      const entry = entries.find((x) => x.id === d.id);
+      if (entry) onUpdateEntry?.(entry, dayKey, startMin, endMin);
     }
-    setDrag(null);
   }
 
   const ghost = drag?.kind === "create" ? createRange(drag.anchorRow, drag.row) : null;
+  const dragConflict = drag ? isConflict(drag) : false;
 
   return (
     <div className="relative">
@@ -148,6 +161,7 @@ export function DayView({
         {ghost && (
           <div
             data-testid="create-ghost"
+            data-conflict={dragConflict}
             style={{
               position: "absolute",
               top: ghost.startRow * SLOT_HEIGHT + 2,
@@ -155,15 +169,17 @@ export function DayView({
               left: 4,
               right: 4,
             }}
-            className="pointer-events-none rounded border border-dashed border-primary bg-primary-wash"
+            className={`pointer-events-none rounded border bg-primary-wash ${
+              dragConflict ? "border-danger" : "border-dashed border-primary"
+            }`}
           />
         )}
 
         {blocks.map((b) => {
-          const live =
-            drag && drag.kind !== "create" && drag.id === b.entry.id
-              ? dragGeom(drag, slotCount)
-              : { startRow: b.startRow, span: b.span };
+          const active = drag && drag.kind !== "create" && drag.id === b.entry.id;
+          const live = active
+            ? dragGeom(drag, slotCount)
+            : { startRow: b.startRow, span: b.span };
           return (
             <button
               key={b.entry.id}
@@ -188,7 +204,9 @@ export function DayView({
                 left: 4,
                 right: 4,
               }}
-              className="group flex touch-none flex-col overflow-hidden rounded bg-primary-wash px-2 py-1 text-left text-xs font-medium text-ink shadow-sm transition-[filter] duration-[var(--dur-fast)] ease-out hover:brightness-95"
+              className={`group flex touch-none flex-col overflow-hidden rounded bg-primary-wash px-2 py-1 text-left text-xs font-medium text-ink shadow-sm transition-[filter] duration-[var(--dur-fast)] ease-out hover:brightness-95 ${
+                active && dragConflict ? "ring-2 ring-danger" : ""
+              }`}
             >
               <span className="truncate">{b.entry.title}</span>
               <span

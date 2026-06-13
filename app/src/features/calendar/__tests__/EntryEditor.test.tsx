@@ -103,6 +103,26 @@ describe("EntryEditor", () => {
     expect(useEditorStore.getState().open).toBe(false);
   });
 
+  it("blocca il salvataggio se l'orario si sovrappone a un'altra attività", () => {
+    const occupied = entry({
+      id: "x",
+      startsAt: "2026-06-12T09:00:00",
+      endsAt: "2026-06-12T10:00:00",
+      title: "Occupato",
+    });
+    useCalendarStore.setState({ entries: [occupied] });
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 }); // stesso slot
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Nuova" },
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/sovrappone/i);
+    expect(screen.getByRole("button", { name: "Salva" })).toBeDisabled();
+  });
+
   it("la cascata: scegliendo un progetto deriva il cliente", async () => {
     useEditorStore
       .getState()

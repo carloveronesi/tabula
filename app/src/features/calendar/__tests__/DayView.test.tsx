@@ -133,6 +133,27 @@ describe("DayView", () => {
     expect(onUpdateEntry).not.toHaveBeenCalled();
   });
 
+  it("blocca lo spostamento che sovrapporrebbe un'altra attività", () => {
+    const onUpdateEntry = vi.fn();
+    const a = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "A"); // righe 0–1
+    const b = entry("b", "2026-06-10T10:00:00", "2026-06-10T11:00:00", "B"); // righe 2–3
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[a, b]}
+        workHours={WH}
+        slotMinutes={30}
+        onUpdateEntry={onUpdateEntry}
+      />,
+    );
+    const area = screen.getByTestId("day-area");
+    const blockA = screen.getAllByTestId("entry-block")[0];
+    fireEvent.pointerDown(blockA, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(area, { clientY: SLOT_H * 2, pointerId: 1 }); // su B
+    fireEvent.pointerUp(area, { pointerId: 1 });
+    expect(onUpdateEntry).not.toHaveBeenCalled();
+  });
+
   it("resize dal bordo inferiore → onUpdateEntry con durata maggiore", () => {
     const onUpdateEntry = vi.fn();
     const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");

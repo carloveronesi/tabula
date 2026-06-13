@@ -137,6 +137,28 @@ describe("WeekGrid", () => {
     expect(onCreateRange).toHaveBeenCalledWith("2026-06-10", 540, 600);
   });
 
+  it("blocca lo spostamento che sovrapporrebbe un'altra attività dello stesso giorno", () => {
+    const onUpdateEntry = vi.fn();
+    const a = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00"); // mer, righe 0–1
+    const b = entry("b", "2026-06-10T10:00:00", "2026-06-10T11:00:00"); // mer, righe 2–3
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        entries={[a, b]}
+        onUpdateEntry={onUpdateEntry}
+      />,
+    );
+    const cols = screen.getByTestId("week-cols");
+    const blockA = screen.getAllByTestId("entry-block")[0];
+    fireEvent.pointerDown(blockA, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(cols, { clientY: SLOT_H * 2, clientX: 0, pointerId: 1 }); // su B
+    fireEvent.pointerUp(cols, { pointerId: 1 });
+    expect(onUpdateEntry).not.toHaveBeenCalled();
+  });
+
   it("resize dal bordo inferiore → durata maggiore", () => {
     const onUpdateEntry = vi.fn();
     const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00");

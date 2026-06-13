@@ -3,6 +3,7 @@ import type { Entry } from "@/data/types";
 import { workWeekDays, dowMon0, isoDate } from "@/domain/calendarNav";
 import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
+import { conflictsOnDay } from "@/domain/conflict";
 import {
   rowAtOffset,
   columnAtOffset,
@@ -133,31 +134,42 @@ export function WeekGrid({
     }
   }
 
+  const colOf = (d: Drag) => (d.kind === "move" ? d.targetCol : d.col);
+  const geomOf = (d: Drag) =>
+    d.kind === "create" ? createRange(d.anchorRow, d.row) : vGeom(d, slotCount);
+
+  /** Conflitto del drag corrente nel giorno di destinazione (click puro escluso). */
+  function isConflict(d: Drag): boolean {
+    if (d.kind === "move" && d.dRows === 0 && d.targetCol === d.col) return false;
+    const g = geomOf(d);
+    const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
+    const ignoreId = d.kind === "create" ? null : d.id;
+    return conflictsOnDay(isoDate(days[colOf(d)]), startMin, endMin, entries, ignoreId);
+  }
+
   function onPointerUp() {
     if (!drag) return;
-    if (drag.kind === "create") {
-      const { startRow, span } = createRange(drag.anchorRow, drag.row);
-      const { startMin, endMin } = rowsToRange(startRow, span, slots, slotMinutes);
-      onCreateRange?.(isoDate(days[drag.col]), startMin, endMin);
-    } else {
-      const entry = entries.find((x) => x.id === drag.id);
-      if (entry) {
-        const targetCol = drag.kind === "move" ? drag.targetCol : drag.col;
-        const noMove =
-          drag.kind === "move" && drag.dRows === 0 && targetCol === drag.col;
-        if (noMove) {
-          onSelectEntry?.(entry); // click puro
-        } else {
-          const g = vGeom(drag, slotCount);
-          const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
-          onUpdateEntry?.(entry, isoDate(days[targetCol]), startMin, endMin);
-        }
-      }
-    }
+    const d = drag;
     setDrag(null);
+    if (d.kind === "move" && d.dRows === 0 && d.targetCol === d.col) {
+      const entry = entries.find((x) => x.id === d.id);
+      if (entry) onSelectEntry?.(entry); // click puro
+      return;
+    }
+    if (isConflict(d)) return; // sovrapposizione: azione annullata
+    const g = geomOf(d);
+    const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
+    const dayKey = isoDate(days[colOf(d)]);
+    if (d.kind === "create") {
+      onCreateRange?.(dayKey, startMin, endMin);
+    } else {
+      const entry = entries.find((x) => x.id === d.id);
+      if (entry) onUpdateEntry?.(entry, dayKey, startMin, endMin);
+    }
   }
 
   // Anteprima del drag (ghost/creazione o blocco in movimento).
+  const dragConflict = drag ? isConflict(drag) : false;
   const preview =
     drag?.kind === "create"
       ? { col: drag.col, ...createRange(drag.anchorRow, drag.row), ghost: true }
@@ -291,11 +303,14 @@ export function WeekGrid({
           {preview && (
             <div
               data-testid={preview.ghost ? "create-ghost" : "drag-preview"}
-              className={
-                preview.ghost
-                  ? "pointer-events-none absolute rounded border border-dashed border-primary bg-primary-wash"
-                  : "pointer-events-none absolute rounded bg-primary-wash shadow"
-              }
+              data-conflict={dragConflict}
+              className={`pointer-events-none absolute rounded bg-primary-wash ${
+                dragConflict
+                  ? "border border-danger ring-1 ring-danger"
+                  : preview.ghost
+                    ? "border border-dashed border-primary"
+                    : "shadow"
+              }`}
               style={{
                 left: `calc(${(preview.col / colCount) * 100}% + 2px)`,
                 width: `calc(${100 / colCount}% - 4px)`,

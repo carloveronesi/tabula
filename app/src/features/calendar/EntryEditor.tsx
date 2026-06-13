@@ -9,6 +9,7 @@ import {
   type EntryDraft,
 } from "@/domain/entryDraft";
 import { minutesToLabel } from "@/domain/slots";
+import { conflictsOnDay } from "@/domain/conflict";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -47,6 +48,7 @@ export function EntryEditor() {
   const close = useEditorStore((s) => s.close);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
   const removeEntry = useCalendarStore((s) => s.removeEntry);
+  const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
 
@@ -77,10 +79,19 @@ export function EntryEditor() {
   );
 
   const valid = isDraftValid(draft);
+  const conflict =
+    valid &&
+    conflictsOnDay(
+      draft.date,
+      draft.startMin,
+      draft.endMin,
+      entries,
+      base?.id ?? null,
+    );
   const patch = (p: Partial<EntryDraft>) => setDraft((d) => ({ ...d, ...p }));
 
   function onSave() {
-    if (!valid) return;
+    if (!valid || conflict) return;
     const entry = applyDraft(draft, {
       id: nanoid(),
       now: Date.now(),
@@ -185,6 +196,12 @@ export function EntryEditor() {
           />
         </Field>
 
+        {conflict && (
+          <p role="alert" className="text-sm text-danger">
+            Si sovrappone a un'altra attività di quel giorno.
+          </p>
+        )}
+
         <div className="flex items-center justify-between gap-2 pt-1">
           <div>
             {base && (
@@ -197,7 +214,11 @@ export function EntryEditor() {
             <Button variant="ghost" onClick={close}>
               Annulla
             </Button>
-            <Button variant="primary" disabled={!valid} onClick={onSave}>
+            <Button
+              variant="primary"
+              disabled={!valid || conflict}
+              onClick={onSave}
+            >
               Salva
             </Button>
           </div>
