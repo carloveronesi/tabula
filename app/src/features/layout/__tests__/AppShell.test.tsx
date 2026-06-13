@@ -24,4 +24,11 @@ describe("AppShell", () => {
     expect(screen.getByTestId("view-week")).toBeInTheDocument();
     expect(screen.queryByTestId("view-month")).not.toBeInTheDocument();
   });
+
+  it("la vista Giorno mostra la griglia oraria", () => {
+    render(<AppShell />);
+    fireEvent.click(screen.getByText("Giorno"));
+    expect(screen.getByTestId("view-day")).toBeInTheDocument();
+    expect(screen.getByText("09:00")).toBeInTheDocument(); // primo slot di default
+  });
 });
