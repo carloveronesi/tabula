@@ -45,3 +45,10 @@ export function workWeekDays(date: Date, workingDays: number[]): Date[] {
   }
   return out;
 }
+
+/** 42 date (6×7, lun-based) per la griglia mensile contenente il mese di `date`. */
+export function monthGridDates(date: Date): Date[] {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1);
+  const start = addDays(first, -dowMon0(first));
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}

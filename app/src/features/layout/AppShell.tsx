@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/store/settings";
 import { TopBar } from "@/features/layout/TopBar";
 import { DayGrid } from "@/features/calendar/DayGrid";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
+import { MonthGrid } from "@/features/calendar/MonthGrid";
 
 const VIEW_LABEL: Record<ViewMode, string> = {
   day: "Giorno",
@@ -39,7 +40,8 @@ export function AppShell() {
             slotMinutes={settings.slotMinutes}
           />
         )}
-        {view !== "day" && view !== "week" && (
+        {view === "month" && <MonthGrid date={activeDate} />}
+        {(view === "projects" || view === "todo") && (
           <p className="text-sm text-[var(--si-gray)]">{VIEW_LABEL[view]}</p>
         )}
       </main>

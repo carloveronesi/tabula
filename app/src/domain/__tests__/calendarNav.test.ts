@@ -3,6 +3,7 @@ import {
   addDays,
   addMonths,
   dowMon0,
+  monthGridDates,
   shiftFocus,
   workWeekDays,
 } from "@/domain/calendarNav";
@@ -58,5 +59,20 @@ describe("workWeekDays", () => {
   it("rispetta un sottoinsieme di giorni lavorativi", () => {
     const w = workWeekDays(D(2026, 5, 10), [0, 2, 4]); // lun/mer/ven
     expect(w).toEqual([D(2026, 5, 8), D(2026, 5, 10), D(2026, 5, 12)]);
+  });
+});
+
+describe("monthGridDates", () => {
+  it("42 date, lun-based; giugno 2026 inizia di lunedì", () => {
+    const g = monthGridDates(D(2026, 5, 15));
+    expect(g).toHaveLength(42);
+    expect(g[0]).toEqual(D(2026, 5, 1)); // lun 1 giu
+  });
+
+  it("riempie i giorni del mese precedente quando il 1° non è lunedì", () => {
+    const g = monthGridDates(D(2026, 6, 15)); // luglio: 1 lug = mercoledì
+    expect(g[0]).toEqual(D(2026, 5, 29)); // lun 29 giu
+    expect(g[2]).toEqual(D(2026, 6, 1)); // mer 1 lug
+    expect(g).toHaveLength(42);
   });
 });
