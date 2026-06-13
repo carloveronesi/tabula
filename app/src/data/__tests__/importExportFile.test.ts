@@ -2,6 +2,8 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/data/db";
 import { importExportFile } from "@/data/importExportFile";
+import { collectExport } from "@/data/export/collectExport";
+import type { Client, Entry } from "@/data/types";
 
 function stringifyValues(obj: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
@@ -64,5 +66,40 @@ describe("importExportFile", () => {
 
   it("rifiuta un JSON che non è un oggetto", async () => {
     await expect(importExportFile("[1,2,3]")).rejects.toThrow(/formato/i);
+  });
+
+  it("round-trip: l'export nativo si re-importa identico", async () => {
+    const entry: Entry = {
+      id: "e1",
+      startsAt: "2026-06-12T09:00:00",
+      endsAt: "2026-06-12T10:00:00",
+      type: "client",
+      projectId: null,
+      clientId: "c1",
+      subtypeId: null,
+      title: "Riunione",
+      collaboratorIds: [],
+      contactIds: [],
+      notes: "# nota",
+      blockers: "",
+      nextSteps: "",
+      links: [{ label: "doc", url: "https://x" }],
+      milestone: null,
+      createdAt: 1,
+      updatedAt: 2,
+    };
+    const client: Client = { id: "c1", name: "ACME", color: "#abc", createdAt: 0 };
+    await db.entries.put(entry);
+    await db.clients.put(client);
+
+    const text = JSON.stringify(await collectExport(0));
+    await Promise.all(db.tables.map((t) => t.clear()));
+
+    const summary = await importExportFile(text);
+
+    expect(summary.entries).toBe(1);
+    expect(summary.clients).toBe(1);
+    expect(await db.entries.get("e1")).toEqual(entry);
+    expect(await db.clients.get("c1")).toEqual(client);
   });
 });

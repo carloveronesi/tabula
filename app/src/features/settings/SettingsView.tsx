@@ -81,8 +81,8 @@ export function SettingsView() {
         <div>
           <h3 className="font-medium text-ink">Importa dati</h3>
           <p className="mt-1 text-sm text-muted">
-            Carica il file di export (.json). Un re-import aggiorna i record
-            esistenti senza duplicarli.
+            Carica un backup di Tabula o un vecchio file di export (.json). Un
+            re-import aggiorna i record esistenti senza duplicarli.
           </p>
         </div>
 
