@@ -31,4 +31,10 @@ describe("AppShell", () => {
     expect(screen.getByTestId("view-day")).toBeInTheDocument();
     expect(screen.getByText("09:00")).toBeInTheDocument(); // primo slot di default
   });
+
+  it("la vista Settimana mostra una colonna per giorno lavorativo", () => {
+    render(<AppShell />);
+    fireEvent.click(screen.getByText("Settimana"));
+    expect(screen.getAllByRole("columnheader")).toHaveLength(5); // lun–ven di default
+  });
 });
