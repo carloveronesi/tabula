@@ -1,3 +1,6 @@
+import type { Entry } from "@/data/types";
+import { dateTimeAt } from "@/domain/time";
+import { isoDate } from "@/domain/calendarNav";
 import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -34,11 +37,26 @@ export function AppShell() {
   const setActiveDate = useUiStore((s) => s.setActiveDate);
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
+  const saveEntry = useCalendarStore((s) => s.saveEntry);
   const showDetail = useEditorStore((s) => s.showDetail);
+  const openCreate = useEditorStore((s) => s.openCreate);
 
   const openDay = (date: Date) => {
     setActiveDate(date);
     setView("day");
+  };
+
+  const createRange = (startMin: number, endMin: number) =>
+    openCreate({ date: isoDate(activeDate), startMin, endMin });
+
+  const updateEntryRange = (entry: Entry, startMin: number, endMin: number) => {
+    const day = entry.startsAt.slice(0, 10);
+    void saveEntry({
+      ...entry,
+      startsAt: dateTimeAt(day, startMin),
+      endsAt: dateTimeAt(day, endMin),
+      updatedAt: Date.now(),
+    });
   };
 
   return (
@@ -52,6 +70,8 @@ export function AppShell() {
             workHours={settings.workHours}
             slotMinutes={settings.slotMinutes}
             onSelectEntry={showDetail}
+            onCreateRange={createRange}
+            onUpdateEntry={updateEntryRange}
           />
         )}
         {view === "week" && (
