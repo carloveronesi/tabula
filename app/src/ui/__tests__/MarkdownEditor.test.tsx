@@ -30,10 +30,13 @@ describe("MarkdownEditor", () => {
     expect(onChange).toHaveBeenCalledWith("- riga");
   });
 
-  it("Anteprima mostra il markdown reso", () => {
+  it("Anteprima mostra il markdown reso", async () => {
     render(<MarkdownEditor value="**x**" onChange={() => {}} label="Note" />);
     fireEvent.click(screen.getByRole("button", { name: "Anteprima" }));
     expect(screen.queryByLabelText("Note")).not.toBeInTheDocument();
-    expect(screen.getByText("x").tagName).toBe("STRONG");
+    // renderer in lazy: attende il chunk e lo <strong>
+    expect(
+      (await screen.findByText("x", undefined, { timeout: 5000 })).tagName,
+    ).toBe("STRONG");
   });
 });
