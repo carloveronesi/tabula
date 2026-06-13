@@ -1,0 +1,27 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { AppShell } from "@/features/layout/AppShell";
+import { useUiStore } from "@/store";
+
+beforeEach(() => {
+  useUiStore.setState({ view: "month", activeDate: new Date(2026, 5, 15) });
+});
+
+describe("AppShell", () => {
+  it("monta la barra superiore", () => {
+    render(<AppShell />);
+    expect(screen.getByText("Oggi")).toBeInTheDocument();
+  });
+
+  it("mostra il contenuto della vista attiva (mese di default)", () => {
+    render(<AppShell />);
+    expect(screen.getByTestId("view-month")).toBeInTheDocument();
+  });
+
+  it("cambia il contenuto quando cambia la vista", () => {
+    render(<AppShell />);
+    fireEvent.click(screen.getByText("Settimana"));
+    expect(screen.getByTestId("view-week")).toBeInTheDocument();
+    expect(screen.queryByTestId("view-month")).not.toBeInTheDocument();
+  });
+});
