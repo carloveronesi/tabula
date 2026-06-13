@@ -20,3 +20,4 @@ export {
   MarkdownEditor,
   type MarkdownEditorProps,
 } from "@/ui/MarkdownEditor";
+export { Toaster } from "@/ui/Toaster";

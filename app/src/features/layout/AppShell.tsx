@@ -4,6 +4,8 @@ import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
 import { useEditorStore } from "@/store/editor";
+import { useToastStore } from "@/store/toast";
+import { Toaster } from "@/ui";
 import { TopBar } from "@/features/layout/TopBar";
 import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
@@ -44,6 +46,8 @@ export function AppShell() {
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
+  const undo = useCalendarStore((s) => s.undo);
+  const notify = useToastStore((s) => s.notify);
   const showDetail = useEditorStore((s) => s.showDetail);
   const openCreate = useEditorStore((s) => s.openCreate);
 
@@ -55,17 +59,20 @@ export function AppShell() {
   const createRange = (dateISO: string, startMin: number, endMin: number) =>
     openCreate({ date: dateISO, startMin, endMin });
 
-  const updateEntryRange = (
+  const updateEntryRange = async (
     entry: Entry,
     dateISO: string,
     startMin: number,
     endMin: number,
   ) => {
-    void saveEntry({
+    await saveEntry({
       ...entry,
       startsAt: dateTimeAt(dateISO, startMin),
       endsAt: dateTimeAt(dateISO, endMin),
       updatedAt: Date.now(),
+    });
+    notify("Attività spostata", {
+      action: { label: "Annulla", run: () => void undo() },
     });
   };
 
@@ -109,6 +116,7 @@ export function AppShell() {
       </main>
       <EntryEditor />
       <EntryDetail />
+      <Toaster />
     </div>
   );
 }

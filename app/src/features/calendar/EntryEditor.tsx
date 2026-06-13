@@ -13,6 +13,7 @@ import { conflictsOnDay } from "@/domain/conflict";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useToastStore } from "@/store/toast";
 import {
   Button,
   Combobox,
@@ -48,7 +49,9 @@ export function EntryEditor() {
   const close = useEditorStore((s) => s.close);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
   const removeEntry = useCalendarStore((s) => s.removeEntry);
+  const undo = useCalendarStore((s) => s.undo);
   const entries = useCalendarStore((s) => s.entries);
+  const notify = useToastStore((s) => s.notify);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
 
@@ -90,20 +93,29 @@ export function EntryEditor() {
     );
   const patch = (p: Partial<EntryDraft>) => setDraft((d) => ({ ...d, ...p }));
 
-  function onSave() {
+  async function onSave() {
     if (!valid || conflict) return;
+    const isNew = !base;
     const entry = applyDraft(draft, {
       id: nanoid(),
       now: Date.now(),
       base: base ?? undefined,
     });
-    void saveEntry(entry);
+    await saveEntry(entry);
     close();
+    notify(isNew ? "Attività creata" : "Attività salvata", {
+      action: { label: "Annulla", run: () => void undo() },
+    });
   }
 
-  function onDelete() {
-    if (base) void removeEntry(base.id);
+  async function onDelete() {
+    if (!base) return;
+    await removeEntry(base.id);
     close();
+    notify("Attività eliminata", {
+      variant: "danger",
+      action: { label: "Annulla", run: () => void undo() },
+    });
   }
 
   return (

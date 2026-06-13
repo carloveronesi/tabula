@@ -6,6 +6,8 @@ import type { Client, Entry, Project } from "@/data/types";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useToastStore } from "@/store/toast";
+import { emptyHistory } from "@/domain/history";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 
 beforeAll(() => {
@@ -64,7 +66,8 @@ function entry(over: Partial<Entry> = {}): Entry {
 
 beforeEach(async () => {
   await db.entries.clear();
-  useCalendarStore.setState({ entries: [] });
+  useCalendarStore.setState({ entries: [], history: emptyHistory<Entry>() });
+  useToastStore.setState({ toasts: [] });
   useEditorStore.setState({ open: false, base: null, detail: null });
   useInventoryStore.setState({
     clients: [client("c1", "Acme")],
@@ -178,5 +181,27 @@ describe("EntryEditor", () => {
       expect(useCalendarStore.getState().entries).toHaveLength(0),
     );
     expect(await db.entries.get("e1")).toBeUndefined();
+  });
+
+  it("eliminando si crea un toast la cui azione Annulla ripristina la entry", async () => {
+    const e = entry();
+    await db.entries.put(e);
+    useCalendarStore.setState({ entries: [e] });
+    useEditorStore.getState().openEdit(e);
+    render(<EntryEditor />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toHaveLength(1),
+    );
+    const toast = useToastStore.getState().toasts[0];
+    expect(toast.message).toBe("Attività eliminata");
+
+    toast.action!.run(); // "Annulla"
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(await db.entries.get("e1")).toBeDefined();
   });
 });
