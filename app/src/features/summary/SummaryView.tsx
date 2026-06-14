@@ -47,14 +47,21 @@ function Bars({ rows, max, tint }: { rows: Row[]; max: number; tint: string }) {
 export function SummaryView() {
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
+  const projects = useInventoryStore((s) => s.projects);
   const summary = useMemo(() => summarize(entries), [entries]);
 
   const clientName = (id: string) =>
     clients.find((c) => c.id === id)?.name ?? "Cliente sconosciuto";
+  const projectName = (id: string) =>
+    projects.find((p) => p.id === id)?.name ?? "Progetto sconosciuto";
 
   const clientRows: Row[] = summary.byClient.map((c) => ({
     label: clientName(c.clientId),
     minutes: c.minutes,
+  }));
+  const projectRows: Row[] = summary.byProject.map((p) => ({
+    label: projectName(p.projectId),
+    minutes: p.minutes,
   }));
   const typeRows: Row[] = summary.byType.map((t) => ({
     label: TYPE_LABEL[t.type],
@@ -96,6 +103,19 @@ export function SummaryView() {
           <p className="text-sm text-muted">Nessuna attività con cliente.</p>
         )}
       </section>
+
+      {projectRows.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Per progetto
+          </h3>
+          <Bars
+            rows={projectRows}
+            max={projectRows[0].minutes}
+            tint="bg-accent-wash"
+          />
+        </section>
+      )}
 
       <section className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">

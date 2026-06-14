@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import type { Client, Entry, EntryType, ISODateTime } from "@/data/types";
+import type {
+  Client,
+  Entry,
+  EntryType,
+  ISODateTime,
+  Project,
+} from "@/data/types";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { SummaryView } from "@/features/summary/SummaryView";
@@ -11,13 +17,14 @@ function entry(
   endsAt: ISODateTime,
   type: EntryType,
   clientId: string | null,
+  projectId: string | null = null,
 ): Entry {
   return {
     id,
     startsAt,
     endsAt,
     type,
-    projectId: null,
+    projectId,
     clientId,
     subtypeId: null,
     title: id,
@@ -39,7 +46,10 @@ beforeEach(() => {
       { id: "c1", name: "Acme" } as Client,
       { id: "c2", name: "Beta" } as Client,
     ],
-    projects: [],
+    projects: [
+      { id: "p1", name: "Sito web" } as Project,
+      { id: "p2", name: "App mobile" } as Project,
+    ],
   });
   useCalendarStore.setState({ entries: [] });
 });
@@ -65,5 +75,19 @@ describe("SummaryView", () => {
     expect(screen.getByText("Beta")).toBeInTheDocument();
     expect(screen.getByText("Cliente")).toBeInTheDocument();
     expect(screen.getByText("Interno")).toBeInTheDocument();
+  });
+
+  it("mostra la ripartizione per progetto con i nomi dall'anagrafica", () => {
+    useCalendarStore.setState({
+      entries: [
+        entry("a", "2026-06-01T09:00:00", "2026-06-01T11:00:00", "client", "c1", "p1"),
+        entry("b", "2026-06-01T11:00:00", "2026-06-01T12:00:00", "client", "c1", "p2"),
+      ],
+    });
+    render(<SummaryView />);
+
+    expect(screen.getByText("Per progetto")).toBeInTheDocument();
+    expect(screen.getByText("Sito web")).toBeInTheDocument();
+    expect(screen.getByText("App mobile")).toBeInTheDocument();
   });
 });

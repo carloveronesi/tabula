@@ -8,13 +8,14 @@ function entry(
   endsAt: ISODateTime,
   type: EntryType,
   clientId: string | null,
+  projectId: string | null = null,
 ): Entry {
   return {
     id,
     startsAt,
     endsAt,
     type,
-    projectId: null,
+    projectId,
     clientId,
     subtypeId: null,
     title: id,
@@ -32,7 +33,25 @@ function entry(
 
 describe("summarize", () => {
   it("vuoto → totali a zero", () => {
-    expect(summarize([])).toEqual({ totalMin: 0, byType: [], byClient: [] });
+    expect(summarize([])).toEqual({
+      totalMin: 0,
+      byType: [],
+      byClient: [],
+      byProject: [],
+    });
+  });
+
+  it("somma le durate per progetto (ignora le entry senza projectId), desc", () => {
+    const entries = [
+      entry("a", "2026-06-01T09:00:00", "2026-06-01T11:00:00", "client", "c1", "p1"), // 120
+      entry("b", "2026-06-01T11:00:00", "2026-06-01T12:00:00", "client", "c1", "p2"), // 60
+      entry("c", "2026-06-02T09:00:00", "2026-06-02T10:00:00", "client", "c1", "p1"), // 60
+      entry("d", "2026-06-02T10:00:00", "2026-06-02T11:00:00", "internal", null), // niente progetto
+    ];
+    expect(summarize(entries).byProject).toEqual([
+      { projectId: "p1", minutes: 180 },
+      { projectId: "p2", minutes: 60 },
+    ]);
   });
 
   it("somma le durate per tipo e per cliente, ordinate desc", () => {
