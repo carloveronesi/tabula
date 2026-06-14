@@ -27,7 +27,10 @@ export function MonthGrid({ date, entries = [], onOpenDay }: MonthGridProps) {
   const todayKey = isoDate(new Date());
 
   return (
-    <div role="grid" className="overflow-hidden rounded-lg border border-line">
+    <div
+      role="grid"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line"
+    >
       <div role="row" className="grid grid-cols-7 border-b border-line bg-surface">
         {DAY_NAMES.map((name, i) => (
           <span
@@ -41,7 +44,7 @@ export function MonthGrid({ date, entries = [], onOpenDay }: MonthGridProps) {
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-px bg-line">
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px bg-line">
         {cells.map((d) => {
           const outside = d.getMonth() !== month;
           const weekend = dowMon0(d) >= 5;
@@ -55,7 +58,7 @@ export function MonthGrid({ date, entries = [], onOpenDay }: MonthGridProps) {
               data-outside={outside}
               data-today={today}
               onClick={() => onOpenDay?.(d)}
-              className={`tnum group flex min-h-24 flex-col items-start gap-1 p-2 text-left text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised ${
+              className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised ${
                 weekend ? "bg-weekend" : "bg-surface"
               } ${outside ? "text-faint" : "text-ink"}`}
             >

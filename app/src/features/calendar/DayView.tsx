@@ -14,7 +14,8 @@ import {
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
 import { withAlpha } from "@/domain/colors";
-import { DayGrid, SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { DayGrid, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 
 interface DayViewProps {
   date: Date;
@@ -87,6 +88,7 @@ export function DayView({
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag>(null);
+  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
 
   const offsetY = (clientY: number) =>
     clientY - (areaRef.current?.getBoundingClientRect().top ?? 0);
@@ -100,17 +102,17 @@ export function DayView({
 
   function onAreaPointerDown(e: ReactPointerEvent) {
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
-    const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
     beginDrag(e, { kind: "create", anchorRow: row, row });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
     if (!drag) return;
     if (drag.kind === "create") {
-      const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
       if (row !== drag.row) setDrag({ ...drag, row });
     } else {
-      const d = deltaRows(e.clientY - startYRef.current, SLOT_HEIGHT);
+      const d = deltaRows(e.clientY - startYRef.current, slotHeight);
       if (d !== drag.dRows) setDrag({ ...drag, dRows: d });
     }
   }
@@ -151,7 +153,7 @@ export function DayView({
   const dragConflict = drag ? isConflict(drag) : false;
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative min-h-0 flex-1 overflow-hidden">
       <DayGrid workHours={workHours} slotMinutes={slotMinutes} />
       <div
         ref={areaRef}
@@ -168,8 +170,8 @@ export function DayView({
             data-conflict={dragConflict}
             style={{
               position: "absolute",
-              top: ghost.startRow * SLOT_HEIGHT + 2,
-              height: ghost.span * SLOT_HEIGHT - 4,
+              top: ghost.startRow * slotHeight + 2,
+              height: ghost.span * slotHeight - 4,
               left: 4,
               right: 4,
             }}
@@ -204,8 +206,8 @@ export function DayView({
               }}
               style={{
                 position: "absolute",
-                top: live.startRow * SLOT_HEIGHT + 2,
-                height: live.span * SLOT_HEIGHT - 4,
+                top: live.startRow * slotHeight + 2,
+                height: live.span * slotHeight - 4,
                 left: 4,
                 right: 4,
                 backgroundColor: color ? withAlpha(color, 0.16) : undefined,

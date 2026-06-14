@@ -92,6 +92,14 @@ titolo periodo, switch giorno/settimana/mese, annulla/ripeti, "Nuova"); per le
 viste non-calendario mostra solo il titolo di sezione. Il contenuto vive in un
 **pannello-superficie** arrotondato (`bg-surface` + `shadow-card`) sul fondo tinto.
 
+**Shell ad altezza fissa** (`h-screen`, niente scroll di pagina): le viste
+calendario (giorno/settimana/mese) **riempiono lo schermo** — la giornata 9–18
+sta tutta a video senza scroll. Le righe orarie sono `flex-1` (riempimento via
+CSS); l'altezza-slot reale per posizionare i blocchi è *misurata*
+(`useFitSlotHeight`, `ResizeObserver`). Le viste a lista scorrono dentro il
+pannello. Griglia oraria: **etichette e linee ogni 30 min** (leggibilità), con
+snapping dei blocchi ancora a `slotMinutes` (15/30).
+
 ## Spacing & Radii
 
 Spaziatura: scala Tailwind di default (base 4px). Raggi **generosi** (morbidi sui

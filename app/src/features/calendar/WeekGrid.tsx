@@ -15,7 +15,8 @@ import {
   resizeBottom,
   rowsToRange,
 } from "@/domain/dragGrid";
-import { SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -101,6 +102,7 @@ export function WeekGrid({
   const colsRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
 
   const colsRect = () => colsRef.current?.getBoundingClientRect();
   const offsetY = (clientY: number) => clientY - (colsRect()?.top ?? 0);
@@ -113,18 +115,18 @@ export function WeekGrid({
 
   function onColumnPointerDown(e: ReactPointerEvent, col: number) {
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
-    const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
     begin(e, { kind: "create", col, anchorRow: row, row });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
     if (!drag) return;
     if (drag.kind === "create") {
-      const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
       if (row !== drag.row) setDrag({ ...drag, row });
       return;
     }
-    const dRows = deltaRows(e.clientY - startYRef.current, SLOT_HEIGHT);
+    const dRows = deltaRows(e.clientY - startYRef.current, slotHeight);
     if (drag.kind === "move") {
       const rect = colsRect();
       const colW = rect ? rect.width / colCount : 0;
@@ -187,7 +189,7 @@ export function WeekGrid({
         : null;
 
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div role="row" className="flex border-b border-line">
         <span className="shrink-0" style={{ width: TIME_GUTTER }} />
         {days.map((d) => {
@@ -207,19 +209,25 @@ export function WeekGrid({
         })}
       </div>
 
-      <div className="flex">
-        <ul className="shrink-0" style={{ width: TIME_GUTTER }}>
-          {slots.map((minutes) => (
-            <li
-              key={minutes}
-              className="relative border-t border-line"
-              style={{ height: SLOT_HEIGHT }}
-            >
-              <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
-                {minutesToLabel(minutes)}
-              </span>
-            </li>
-          ))}
+      <div ref={wrapRef} className="flex min-h-0 flex-1 overflow-hidden">
+        <ul className="flex shrink-0 flex-col" style={{ width: TIME_GUTTER }}>
+          {slots.map((minutes) => {
+            const onHalf = minutes % 30 === 0;
+            return (
+              <li
+                key={minutes}
+                className={`relative min-h-[14px] flex-1 border-t ${
+                  onHalf ? "border-line" : "border-transparent"
+                }`}
+              >
+                {onHalf && (
+                  <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
+                    {minutesToLabel(minutes)}
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <div
@@ -227,14 +235,14 @@ export function WeekGrid({
           data-testid="week-cols"
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          className="relative flex flex-1 touch-none"
+          className="relative flex h-full flex-1 touch-none"
         >
           {days.map((d, col) => (
             <div
               key={d.toISOString()}
               data-testid={`week-col-${col}`}
               onPointerDown={(e) => onColumnPointerDown(e, col)}
-              className={`relative flex-1 border-l border-line ${
+              className={`relative flex flex-1 flex-col border-l border-line ${
                 isoDate(d) === todayKey
                   ? "bg-primary-wash"
                   : dowMon0(d) >= 5
@@ -245,8 +253,9 @@ export function WeekGrid({
               {slots.map((minutes) => (
                 <div
                   key={minutes}
-                  className="pointer-events-none border-t border-line"
-                  style={{ height: SLOT_HEIGHT }}
+                  className={`pointer-events-none min-h-[14px] flex-1 border-t ${
+                    minutes % 30 === 0 ? "border-line" : "border-transparent"
+                  }`}
                 />
               ))}
               {entryBlocks(entries, isoDate(d), slots).map((b) => {
@@ -274,8 +283,8 @@ export function WeekGrid({
                     }}
                     style={{
                       position: "absolute",
-                      top: b.startRow * SLOT_HEIGHT + 1,
-                      height: b.span * SLOT_HEIGHT - 2,
+                      top: b.startRow * slotHeight + 1,
+                      height: b.span * slotHeight - 2,
                       left: 2,
                       right: 2,
                       backgroundColor: color ? withAlpha(color, 0.16) : undefined,
@@ -338,8 +347,8 @@ export function WeekGrid({
               style={{
                 left: `calc(${(preview.col / colCount) * 100}% + 2px)`,
                 width: `calc(${100 / colCount}% - 4px)`,
-                top: preview.startRow * SLOT_HEIGHT + 1,
-                height: preview.span * SLOT_HEIGHT - 2,
+                top: preview.startRow * slotHeight + 1,
+                height: preview.span * slotHeight - 2,
               }}
             />
           )}

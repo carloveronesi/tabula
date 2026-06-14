@@ -89,16 +89,22 @@ export function AppShell() {
     });
   };
 
+  const isCalendar = view === "day" || view === "week" || view === "month";
+
   return (
-    <div className="flex min-h-screen bg-bg text-ink">
+    <div className="flex h-screen overflow-hidden bg-bg text-ink">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main
           data-testid={`view-${view}`}
-          className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-6 sm:py-6"
+          className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5"
         >
-          <div className="rounded-xl border border-line bg-surface p-3 shadow-card sm:p-5">
+          <div
+            className={`flex min-h-0 flex-1 flex-col rounded-xl border border-line bg-surface shadow-card ${
+              isCalendar ? "overflow-hidden p-3 sm:p-4" : "overflow-auto p-4 sm:p-5"
+            }`}
+          >
             {view === "day" && (
           <DayView
             date={activeDate}
