@@ -47,13 +47,25 @@ describe("MonthGrid", () => {
     expect(cells[2]).toHaveAttribute("data-outside", "false"); // 1 lug
   });
 
-  it("mostra il conteggio delle attività per giorno", () => {
+  it("mostra un puntino per attività e il conteggio via aria-label", () => {
     const entries = [
       entry("a", "2026-06-15T09:00:00"),
       entry("b", "2026-06-15T11:00:00"),
     ];
     render(<MonthGrid date={DATE} entries={entries} />);
-    expect(screen.getByText("2 voci")).toBeInTheDocument();
+    // un puntino per attività, col titolo nel tooltip
+    expect(screen.getByTitle("a")).toBeInTheDocument();
+    expect(screen.getByTitle("b")).toBeInTheDocument();
+    // conteggio accessibile (non solo colore)
+    expect(screen.getByLabelText("15: 2 attività")).toBeInTheDocument();
+  });
+
+  it("colora i puntini secondo colorOf", () => {
+    const entries = [entry("a", "2026-06-15T09:00:00")];
+    render(
+      <MonthGrid date={DATE} entries={entries} colorOf={() => "#ff0000"} />,
+    );
+    expect(screen.getByTitle("a")).toHaveStyle({ backgroundColor: "#ff0000" });
   });
 
   it("il click su un giorno chiama onOpenDay con quella data", () => {

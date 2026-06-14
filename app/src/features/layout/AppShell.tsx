@@ -131,7 +131,12 @@ export function AppShell() {
           />
         )}
         {view === "month" && (
-          <MonthGrid date={activeDate} entries={entries} onOpenDay={openDay} />
+          <MonthGrid
+            date={activeDate}
+            entries={entries}
+            onOpenDay={openDay}
+            colorOf={colorOf}
+          />
         )}
             {view === "riepilogo" && <SummaryView />}
             {view === "projects" && <ProjectsView />}
