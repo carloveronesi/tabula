@@ -118,4 +118,36 @@ describe("ProjectsView", () => {
       ).not.toContain("p1");
     });
   });
+
+  it("crea un nuovo progetto e lo seleziona per la modifica", async () => {
+    render(<ProjectsView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /nuovo progetto/i }));
+
+    await waitFor(() => {
+      expect(
+        useInventoryStore
+          .getState()
+          .projects.some((p) => p.name === "Nuovo progetto"),
+      ).toBe(true);
+    });
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe(
+      "Nuovo progetto",
+    );
+  });
+
+  it("assegna un cliente a un progetto interno", async () => {
+    render(<ProjectsView />);
+
+    fireEvent.click(screen.getByText("Manutenzione")); // interno (clientId null)
+    const clientSelect = screen.getByLabelText("Cliente") as HTMLSelectElement;
+    fireEvent.change(clientSelect, { target: { value: "c1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() => {
+      const p = useInventoryStore.getState().projects.find((x) => x.id === "p2");
+      expect(p?.clientId).toBe("c1");
+      expect(p?.kind).toBe("client");
+    });
+  });
 });

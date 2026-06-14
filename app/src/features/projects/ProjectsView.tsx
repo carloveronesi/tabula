@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { nanoid } from "nanoid";
 import type { Entry, Project, ProjectStatus } from "@/data/types";
 import { aggregateByProject } from "@/domain/projectStats";
+import { newProject } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
@@ -34,17 +36,20 @@ function ProjectEditor({
   project: Project;
   onDeleted: () => void;
 }) {
+  const clients = useInventoryStore((s) => s.clients);
   const saveProject = useInventoryStore((s) => s.saveProject);
   const removeProject = useInventoryStore((s) => s.removeProject);
   const notify = useToastStore((s) => s.notify);
 
   const [name, setName] = useState(project.name);
+  const [clientId, setClientId] = useState<string | null>(project.clientId);
   const [status, setStatus] = useState<ProjectStatus>(project.status);
   const [description, setDescription] = useState(project.description);
   const [objectives, setObjectives] = useState(project.objectives);
 
   const dirty =
     name !== project.name ||
+    clientId !== project.clientId ||
     status !== project.status ||
     description !== project.description ||
     objectives !== project.objectives;
@@ -52,7 +57,15 @@ function ProjectEditor({
   const save = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    await saveProject({ ...project, name: trimmed, status, description, objectives });
+    await saveProject({
+      ...project,
+      name: trimmed,
+      clientId,
+      kind: clientId ? "client" : "internal",
+      status,
+      description,
+      objectives,
+    });
     notify("Progetto salvato");
   };
 
@@ -93,6 +106,21 @@ function ProjectEditor({
           </select>
         </Field>
       </div>
+      <Field label="Cliente">
+        <select
+          aria-label="Cliente"
+          className={selectClasses}
+          value={clientId ?? ""}
+          onChange={(e) => setClientId(e.target.value || null)}
+        >
+          <option value="">Interno (nessun cliente)</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </Field>
       <Field label="Descrizione">
         <Textarea
           value={description}
@@ -174,15 +202,26 @@ export function ProjectsView() {
     if (!selectedId && firstId) setSelectedId(firstId);
   }, [selectedId, firstId]);
 
+  const saveProject = useInventoryStore((s) => s.saveProject);
+
   const selected = projects.find((p) => p.id === selectedId) ?? null;
   const sel = selected ? stats.get(selected.id) : undefined;
 
+  const createProject = async () => {
+    const p = newProject({ name: "Nuovo progetto", clientId: null }, nanoid());
+    await saveProject(p);
+    setSelectedId(p.id);
+  };
+
   if (projects.length === 0) {
     return (
-      <div className="mx-auto max-w-xl py-12 text-center">
+      <div className="mx-auto max-w-xl space-y-4 py-12 text-center">
         <p className="text-sm text-muted">
-          Nessun progetto. Importa i dati dalle Impostazioni.
+          Nessun progetto. Crea il primo o importa i dati dalle Impostazioni.
         </p>
+        <Button variant="primary" onClick={() => void createProject()}>
+          Nuovo progetto
+        </Button>
       </div>
     );
   }
@@ -190,6 +229,14 @@ export function ProjectsView() {
   return (
     <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
       <aside className="space-y-4">
+        <Button
+          variant="subtle"
+          size="sm"
+          className="w-full"
+          onClick={() => void createProject()}
+        >
+          + Nuovo progetto
+        </Button>
         {groups.map((g) => (
           <div key={g.label}>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
