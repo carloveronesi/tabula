@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import type { Id, Todo } from "@/data/types";
+import type { Id, ISODate, Todo } from "@/data/types";
 import { allTodos, deleteTodo, putTodo } from "@/data/repositories";
 import { newTodo } from "@/domain/todoDraft";
 
@@ -9,6 +9,7 @@ interface TodoState {
   loadTodos: () => Promise<void>;
   addTodo: (title: string, projectId?: Id | null) => Promise<void>;
   toggleTodo: (id: Id) => Promise<void>;
+  setDue: (id: Id, dueDate: ISODate | null) => Promise<void>;
   removeTodo: (id: Id) => Promise<void>;
 }
 
@@ -31,6 +32,13 @@ export const useTodoStore = create<TodoState>((set, get) => ({
     const cur = get().todos.find((t) => t.id === id);
     if (!cur) return;
     const updated = { ...cur, done: !cur.done };
+    await putTodo(updated);
+    set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
+  },
+  setDue: async (id, dueDate) => {
+    const cur = get().todos.find((t) => t.id === id);
+    if (!cur) return;
+    const updated = { ...cur, dueDate };
     await putTodo(updated);
     set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
   },

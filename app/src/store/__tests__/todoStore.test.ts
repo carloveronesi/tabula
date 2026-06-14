@@ -36,6 +36,18 @@ describe("useTodoStore", () => {
     expect(useTodoStore.getState().todos[0].done).toBe(false);
   });
 
+  it("setDue imposta e azzera la scadenza, persistendo", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    const id = useTodoStore.getState().todos[0].id;
+
+    await useTodoStore.getState().setDue(id, "2026-06-20");
+    expect(useTodoStore.getState().todos[0].dueDate).toBe("2026-06-20");
+    expect((await db.todos.get(id))?.dueDate).toBe("2026-06-20");
+
+    await useTodoStore.getState().setDue(id, null);
+    expect(useTodoStore.getState().todos[0].dueDate).toBeNull();
+  });
+
   it("removeTodo elimina (DB + store)", async () => {
     await useTodoStore.getState().addTodo("A");
     await useTodoStore.getState().addTodo("B");

@@ -1,4 +1,4 @@
-import type { Id, Todo } from "@/data/types";
+import type { Id, ISODate, Todo } from "@/data/types";
 
 /** Campi minimi per creare un todo; il resto prende default sani. */
 export interface NewTodoInput {
@@ -32,4 +32,13 @@ export function sortTodos(todos: Todo[]): Todo[] {
     if (a.done !== b.done) return a.done ? 1 : -1;
     return b.createdAt - a.createdAt;
   });
+}
+
+/**
+ * Un todo è "scaduto" se ha una scadenza precedente a oggi e non è completato.
+ * Confronto lessicografico tra date ISO (`YYYY-MM-DD`), equivalente a quello
+ * cronologico. `today` iniettato per restare puro.
+ */
+export function isOverdue(todo: Todo, today: ISODate): boolean {
+  return !todo.done && todo.dueDate !== null && todo.dueDate < today;
 }

@@ -30,6 +30,30 @@ describe("TodoView", () => {
     expect(input.value).toBe(""); // input ripulito
   });
 
+  it("imposta una scadenza dall'input data", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    render(<TodoView />);
+
+    const dueInput = (await screen.findByLabelText(
+      "Scadenza Task",
+    )) as HTMLInputElement;
+    fireEvent.change(dueInput, { target: { value: "2026-12-31" } });
+
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].dueDate).toBe("2026-12-31"),
+    );
+  });
+
+  it("evidenzia i todo scaduti", async () => {
+    await useTodoStore.getState().addTodo("Scaduto");
+    const id = useTodoStore.getState().todos[0].id;
+    await useTodoStore.getState().setDue(id, "2000-01-01"); // nel passato
+    render(<TodoView />);
+
+    const item = await screen.findByTestId(`todo-${id}`);
+    expect(item).toHaveAttribute("data-overdue", "true");
+  });
+
   it("completa e poi elimina un todo", async () => {
     await useTodoStore.getState().addTodo("Task");
     render(<TodoView />);

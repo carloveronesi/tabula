@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { newTodo, sortTodos } from "@/domain/todoDraft";
+import { newTodo, sortTodos, isOverdue } from "@/domain/todoDraft";
 import type { Todo } from "@/data/types";
 
 function todo(id: string, title: string, done: boolean, createdAt: number): Todo {
@@ -52,5 +52,26 @@ describe("sortTodos", () => {
     const copy = [...todos];
     sortTodos(todos);
     expect(todos).toEqual(copy);
+  });
+});
+
+describe("isOverdue", () => {
+  const withDue = (done: boolean, due: string | null): Todo => ({
+    ...todo("x", "X", done, 0),
+    dueDate: due,
+  });
+
+  it("scaduto se la scadenza è precedente a oggi e non è completato", () => {
+    expect(isOverdue(withDue(false, "2026-06-13"), "2026-06-14")).toBe(true);
+  });
+
+  it("non scaduto se completato", () => {
+    expect(isOverdue(withDue(true, "2026-06-13"), "2026-06-14")).toBe(false);
+  });
+
+  it("non scaduto se scade oggi o in futuro, o senza scadenza", () => {
+    expect(isOverdue(withDue(false, "2026-06-14"), "2026-06-14")).toBe(false);
+    expect(isOverdue(withDue(false, "2026-06-20"), "2026-06-14")).toBe(false);
+    expect(isOverdue(withDue(false, null), "2026-06-14")).toBe(false);
   });
 });

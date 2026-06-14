@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { sortTodos } from "@/domain/todoDraft";
+import { sortTodos, isOverdue } from "@/domain/todoDraft";
+import { isoDate } from "@/domain/calendarNav";
 import { useTodoStore } from "@/store/todo";
 import { useInventoryStore } from "@/store/inventory";
 import { Button } from "@/ui/Button";
@@ -15,6 +16,7 @@ export function TodoView() {
   const loadTodos = useTodoStore((s) => s.loadTodos);
   const addTodo = useTodoStore((s) => s.addTodo);
   const toggleTodo = useTodoStore((s) => s.toggleTodo);
+  const setDue = useTodoStore((s) => s.setDue);
   const removeTodo = useTodoStore((s) => s.removeTodo);
   const projects = useInventoryStore((s) => s.projects);
 
@@ -24,6 +26,7 @@ export function TodoView() {
     void loadTodos();
   }, [loadTodos]);
 
+  const today = isoDate(new Date());
   const sorted = useMemo(() => sortTodos(todos), [todos]);
   const remaining = todos.filter((t) => !t.done).length;
   const projectName = (id: string | null) =>
@@ -72,10 +75,15 @@ export function TodoView() {
         <ul className="space-y-1">
           {sorted.map((t) => {
             const proj = projectName(t.projectId);
+            const overdue = isOverdue(t, today);
             return (
               <li
                 key={t.id}
-                className="flex items-center gap-3 rounded border border-line px-3 py-2"
+                data-testid={`todo-${t.id}`}
+                data-overdue={overdue ? "true" : undefined}
+                className={`flex items-center gap-3 rounded border px-3 py-2 ${
+                  overdue ? "border-danger/40" : "border-line"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -94,6 +102,17 @@ export function TodoView() {
                     <span className="ml-2 text-xs text-muted">· {proj}</span>
                   )}
                 </span>
+                <input
+                  type="date"
+                  aria-label={`Scadenza ${t.title}`}
+                  value={t.dueDate ?? ""}
+                  onChange={(e) => void setDue(t.id, e.target.value || null)}
+                  className={`h-7 shrink-0 rounded border bg-bg px-2 text-xs focus:border-primary focus:outline-none ${
+                    overdue
+                      ? "border-danger/50 text-danger"
+                      : "border-line text-muted"
+                  }`}
+                />
                 <Button
                   variant="ghost"
                   size="sm"
