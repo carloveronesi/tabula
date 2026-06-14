@@ -2,12 +2,18 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
+import type { Project } from "@/data/types";
 import { useTodoStore } from "@/store/todo";
+import { useInventoryStore } from "@/store/inventory";
 import { TodoView } from "@/features/todo/TodoView";
 
 beforeEach(async () => {
   await db.todos.clear();
   useTodoStore.setState({ todos: [] });
+  useInventoryStore.setState({
+    clients: [],
+    projects: [{ id: "p1", name: "Sito web" } as Project],
+  });
 });
 
 describe("TodoView", () => {
@@ -41,6 +47,20 @@ describe("TodoView", () => {
 
     await waitFor(() =>
       expect(useTodoStore.getState().todos[0].dueDate).toBe("2026-12-31"),
+    );
+  });
+
+  it("collega un progetto dal selettore", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    render(<TodoView />);
+
+    const select = (await screen.findByLabelText(
+      "Progetto Task",
+    )) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "p1" } });
+
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].projectId).toBe("p1"),
     );
   });
 

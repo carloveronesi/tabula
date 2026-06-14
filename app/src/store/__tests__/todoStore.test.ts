@@ -48,6 +48,18 @@ describe("useTodoStore", () => {
     expect(useTodoStore.getState().todos[0].dueDate).toBeNull();
   });
 
+  it("setProject collega e scollega un progetto, persistendo", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    const id = useTodoStore.getState().todos[0].id;
+
+    await useTodoStore.getState().setProject(id, "p1");
+    expect(useTodoStore.getState().todos[0].projectId).toBe("p1");
+    expect((await db.todos.get(id))?.projectId).toBe("p1");
+
+    await useTodoStore.getState().setProject(id, null);
+    expect(useTodoStore.getState().todos[0].projectId).toBeNull();
+  });
+
   it("removeTodo elimina (DB + store)", async () => {
     await useTodoStore.getState().addTodo("A");
     await useTodoStore.getState().addTodo("B");

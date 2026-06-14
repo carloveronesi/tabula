@@ -17,6 +17,7 @@ export function TodoView() {
   const addTodo = useTodoStore((s) => s.addTodo);
   const toggleTodo = useTodoStore((s) => s.toggleTodo);
   const setDue = useTodoStore((s) => s.setDue);
+  const setProject = useTodoStore((s) => s.setProject);
   const removeTodo = useTodoStore((s) => s.removeTodo);
   const projects = useInventoryStore((s) => s.projects);
 
@@ -29,8 +30,10 @@ export function TodoView() {
   const today = isoDate(new Date());
   const sorted = useMemo(() => sortTodos(todos), [todos]);
   const remaining = todos.filter((t) => !t.done).length;
-  const projectName = (id: string | null) =>
-    id ? (projects.find((p) => p.id === id)?.name ?? null) : null;
+  const sortedProjects = useMemo(
+    () => [...projects].sort((a, b) => a.name.localeCompare(b.name, "it")),
+    [projects],
+  );
 
   const submit = async () => {
     if (title.trim() === "") return;
@@ -74,7 +77,6 @@ export function TodoView() {
       ) : (
         <ul className="space-y-1">
           {sorted.map((t) => {
-            const proj = projectName(t.projectId);
             const overdue = isOverdue(t, today);
             return (
               <li
@@ -98,10 +100,24 @@ export function TodoView() {
                   }`}
                 >
                   {t.title}
-                  {proj && (
-                    <span className="ml-2 text-xs text-muted">· {proj}</span>
-                  )}
                 </span>
+                {sortedProjects.length > 0 && (
+                  <select
+                    aria-label={`Progetto ${t.title}`}
+                    value={t.projectId ?? ""}
+                    onChange={(e) =>
+                      void setProject(t.id, e.target.value || null)
+                    }
+                    className="h-7 max-w-[9rem] shrink-0 rounded border border-line bg-bg px-2 text-xs text-muted focus:border-primary focus:outline-none"
+                  >
+                    <option value="">— progetto</option>
+                    {sortedProjects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="date"
                   aria-label={`Scadenza ${t.title}`}
