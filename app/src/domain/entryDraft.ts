@@ -16,6 +16,7 @@ export interface EntryDraft {
   blockers: string;
   nextSteps: string;
   links: { label: string; url: string }[];
+  milestone: string;
 }
 
 /** Bozza vuota per una nuova entry in un giorno/fascia. */
@@ -37,6 +38,7 @@ export function emptyDraft(
     blockers: "",
     nextSteps: "",
     links: [],
+    milestone: "",
   };
 }
 
@@ -55,6 +57,7 @@ export function draftFromEntry(e: Entry): EntryDraft {
     blockers: e.blockers,
     nextSteps: e.nextSteps,
     links: e.links.map((l) => ({ ...l })),
+    milestone: e.milestone ?? "",
   };
 }
 
@@ -88,7 +91,7 @@ export function applyDraft(
     blockers: d.blockers,
     nextSteps: d.nextSteps,
     links: d.links.map((l) => ({ ...l })),
-    milestone: base?.milestone ?? null,
+    milestone: d.milestone.trim() || null,
     createdAt: base?.createdAt ?? ctx.now,
     updatedAt: ctx.now,
   };

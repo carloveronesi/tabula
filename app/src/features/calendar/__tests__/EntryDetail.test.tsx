@@ -72,6 +72,22 @@ describe("EntryDetail", () => {
     expect(screen.getByText("Discussa la roadmap")).toBeInTheDocument();
   });
 
+  it("mostra il sottotipo risolto e la milestone", () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        subtypes: { client: [{ id: "s1", label: "Riunione" }], internal: [] },
+      },
+    });
+    useEditorStore
+      .getState()
+      .showDetail(entry({ subtypeId: "s1", milestone: "Fase 2" }));
+    render(<EntryDetail />);
+
+    expect(screen.getByText("Riunione")).toBeInTheDocument();
+    expect(screen.getByText(/Fase 2/)).toBeInTheDocument();
+  });
+
   it("omette le sezioni vuote", () => {
     useEditorStore.getState().showDetail(entry({ notes: "" }));
     render(<EntryDetail />);

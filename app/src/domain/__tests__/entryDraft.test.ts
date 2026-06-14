@@ -46,6 +46,7 @@ describe("emptyDraft", () => {
       blockers: "",
       nextSteps: "",
       links: [],
+      milestone: "",
     });
   });
 });
@@ -66,6 +67,7 @@ describe("draftFromEntry", () => {
       blockers: "blk",
       nextSteps: "next",
       links: [{ label: "doc", url: "http://x" }],
+      milestone: "M1",
     });
   });
 
@@ -74,6 +76,10 @@ describe("draftFromEntry", () => {
     const d = draftFromEntry(base);
     d.links.push({ label: "altro", url: "http://y" });
     expect(base.links).toHaveLength(1);
+  });
+
+  it("milestone null della entry diventa stringa vuota nella bozza", () => {
+    expect(draftFromEntry(entry({ milestone: null })).milestone).toBe("");
   });
 });
 
@@ -109,6 +115,25 @@ describe("applyDraft", () => {
     expect(e.collaboratorIds).toEqual([]);
     expect(e.links).toEqual([]);
     expect(e.blockers).toBe("");
+    expect(e.milestone).toBeNull();
+  });
+
+  it("milestone: stringa vuota o di soli spazi diventa null sulla entry", () => {
+    const d = emptyDraft("2026-06-12", 540, 600);
+    const e = applyDraft(
+      { ...d, title: "X", milestone: "   " },
+      { id: "n", now: 1 },
+    );
+    expect(e.milestone).toBeNull();
+  });
+
+  it("milestone: valore trimmato finisce sulla entry", () => {
+    const d = emptyDraft("2026-06-12", 540, 600);
+    const e = applyDraft(
+      { ...d, title: "X", milestone: "  Fase 2 " },
+      { id: "n", now: 1 },
+    );
+    expect(e.milestone).toBe("Fase 2");
   });
 
   it("modifica: conserva id/createdAt e i campi non editati, aggiorna updatedAt", () => {

@@ -62,6 +62,15 @@ export function EntryDetail() {
 
   const clientName = e && clients.find((c) => c.id === e.clientId)?.name;
   const projectName = e && projects.find((p) => p.id === e.projectId)?.name;
+  const subtypeName =
+    e &&
+    e.subtypeId &&
+    (e.type === "client"
+      ? settings.subtypes.client
+      : e.type === "internal"
+        ? settings.subtypes.internal
+        : []
+    ).find((s) => s.id === e.subtypeId)?.label;
 
   const duplicate = async () => {
     if (!e) return;
@@ -106,6 +115,16 @@ export function EntryDetail() {
             {projectName && (
               <span className="rounded-pill bg-primary-wash px-2 py-0.5 text-xs text-accent">
                 {projectName}
+              </span>
+            )}
+            {subtypeName && (
+              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
+                {subtypeName}
+              </span>
+            )}
+            {e.milestone && (
+              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-muted">
+                ◆ {e.milestone}
               </span>
             )}
           </div>

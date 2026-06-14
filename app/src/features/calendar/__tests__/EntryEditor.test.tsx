@@ -6,7 +6,9 @@ import type { Client, Entry, Project } from "@/data/types";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
+import { DEFAULT_SETTINGS } from "@/data/settings";
 import { emptyHistory } from "@/domain/history";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 
@@ -73,6 +75,7 @@ beforeEach(async () => {
     clients: [client("c1", "Acme")],
     projects: [project("p1", "c1", "Sito"), project("p2", null, "Interno")],
   });
+  useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
 });
 
 describe("EntryEditor", () => {
@@ -166,6 +169,55 @@ describe("EntryEditor", () => {
     );
     expect(useCalendarStore.getState().entries).toHaveLength(1);
     expect(useCalendarStore.getState().entries[0].id).toBe("e1");
+  });
+
+  it("mostra i sottotipi del tipo selezionato e li salva sulla entry", async () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        subtypes: {
+          client: [{ id: "s1", label: "Riunione" }],
+          internal: [],
+        },
+      },
+    });
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Call" },
+    });
+    const sub = screen.getByRole("combobox", { name: "Sottotipo" });
+    fireEvent.focus(sub);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Riunione" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].subtypeId).toBe("s1");
+  });
+
+  it("salva la milestone digitata", async () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Lavoro" },
+    });
+    fireEvent.change(screen.getByLabelText("Milestone"), {
+      target: { value: "Fase 2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].milestone).toBe("Fase 2");
   });
 
   it("modifica: precompila e salva 'cosa è andato storto' e 'prossimi passi'", async () => {

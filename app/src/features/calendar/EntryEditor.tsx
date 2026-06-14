@@ -68,6 +68,17 @@ export function EntryEditor() {
     );
   }, [open, base, seed]);
 
+  const subtypes = useSettingsStore((s) => s.settings.subtypes);
+  const subtypeOptions = useMemo(() => {
+    const list =
+      draft.type === "client"
+        ? subtypes.client
+        : draft.type === "internal"
+          ? subtypes.internal
+          : [];
+    return list.map((s) => ({ id: s.id, label: s.label }));
+  }, [subtypes, draft.type]);
+
   const clientOptions = useMemo(
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
@@ -176,7 +187,7 @@ export function EntryEditor() {
             label="Tipo"
             options={TYPES}
             value={draft.type}
-            onChange={(type) => patch({ type })}
+            onChange={(type) => patch({ type, subtypeId: null })}
           />
         </Field>
 
@@ -204,6 +215,28 @@ export function EntryEditor() {
                     draft.clientId,
                 })
               }
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {subtypeOptions.length > 0 && (
+            <Field label="Sottotipo">
+              <Combobox
+                label="Sottotipo"
+                placeholder="Nessuno"
+                options={subtypeOptions}
+                value={draft.subtypeId}
+                onChange={(subtypeId) => patch({ subtypeId })}
+              />
+            </Field>
+          )}
+          <Field label="Milestone">
+            <Input
+              aria-label="Milestone"
+              value={draft.milestone}
+              onChange={(e) => patch({ milestone: e.target.value })}
+              placeholder="Es. Fase 2, Rilascio…"
             />
           </Field>
         </div>
