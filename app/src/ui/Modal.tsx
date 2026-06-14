@@ -49,17 +49,17 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         if (e.target === ref.current) onClose(); // click sul backdrop
       }}
       className={cn(
-        "z-modal m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg border border-line",
+        "z-modal m-auto w-[min(34rem,calc(100vw-2rem))] rounded-xl border border-line",
         "bg-surface p-0 text-ink shadow-lg",
       )}
     >
       {open && (
-        <div className={cn("p-5", className)}>
+        <div className={cn("animate-modal-in p-6", className)}>
           {title && (
-            <div className="mb-3 flex items-center justify-between gap-4">
+            <div className="mb-4 flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
               <IconButton label="Chiudi" size="sm" onClick={onClose}>
-                ×
+                ✕
               </IconButton>
             </div>
           )}

@@ -8,25 +8,28 @@
    Colore in OKLCH. Vedi DESIGN.md per la mappa dei ruoli.
    ========================================================================= */
 :root {
-  /* color — light (neutri freddi, un solo accento cobalto) */
-  --bg: oklch(1 0 0);
-  --surface: oklch(0.985 0.003 256);
-  --raised: oklch(0.965 0.004 256);
+  /* color — light: carta blu-fredda, superfici bianche che galleggiano, un solo
+     accento cobalto. Il bg NON è bianco: le superfici (surface, bianco puro)
+     emergono sul fondo tinto → profondità figura/sfondo. */
+  --bg: oklch(0.974 0.006 256);
+  --surface: oklch(1 0 0);
+  --raised: oklch(0.962 0.006 256);
+  --weekend: oklch(0.955 0.008 256);
   --ink: oklch(0.21 0.012 256);
   --muted: oklch(0.5 0.018 256);
   --faint: oklch(0.64 0.015 256);
-  --line: oklch(0.918 0.005 256);
-  --line-strong: oklch(0.85 0.008 256);
+  --line: oklch(0.905 0.006 256);
+  --line-strong: oklch(0.83 0.01 256);
 
   --primary: oklch(0.55 0.17 258);
   --primary-hover: oklch(0.49 0.18 258);
   --primary-ink: oklch(0.99 0.004 256);
-  --primary-wash: oklch(0.955 0.03 258);
+  --primary-wash: oklch(0.95 0.035 258);
 
   --accent: oklch(0.55 0.17 258);
   --accent-hover: oklch(0.49 0.18 258);
   --accent-ink: oklch(0.99 0.004 256);
-  --accent-wash: oklch(0.955 0.03 258);
+  --accent-wash: oklch(0.95 0.035 258);
 
   --danger: oklch(0.55 0.2 25);
   --focus: var(--primary);
@@ -39,16 +42,20 @@
   --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas,
     monospace;
 
-  /* radii */
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-lg: 10px;
+  /* radii — più generosi: i contenitori sono morbidi, i controlli pill */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-pill: 9999px;
 
-  /* elevation — bordi a filo di default; ombre solo per overlay */
-  --shadow-sm: 0 1px 2px oklch(0.21 0.012 256 / 0.06);
-  --shadow: 0 6px 20px -6px oklch(0.21 0.012 256 / 0.13);
-  --shadow-lg: 0 16px 40px -12px oklch(0.21 0.012 256 / 0.22);
+  /* elevation — le superfici galleggiano sul fondo tinto. Ombre fredde, basse. */
+  --shadow-sm: 0 1px 2px oklch(0.3 0.03 256 / 0.06);
+  --shadow: 0 6px 20px -6px oklch(0.3 0.03 256 / 0.14);
+  --shadow-lg: 0 16px 40px -12px oklch(0.3 0.03 256 / 0.24);
+  /* card: posa una superficie sul fondo senza "alzarla" troppo */
+  --shadow-card: 0 1px 2px oklch(0.3 0.03 256 / 0.04),
+    0 8px 24px -12px oklch(0.3 0.03 256 / 0.12);
 
   /* z-index — scala semantica */
   --z-dropdown: 1000;
@@ -65,30 +72,33 @@
 }
 
 .dark {
-  --bg: oklch(0.165 0.006 256);
-  --surface: oklch(0.2 0.008 256);
-  --raised: oklch(0.24 0.009 256);
-  --ink: oklch(0.95 0.005 256);
-  --muted: oklch(0.7 0.012 256);
-  --faint: oklch(0.55 0.012 256);
-  --line: oklch(0.285 0.009 256);
-  --line-strong: oklch(0.37 0.011 256);
+  /* notte fredda: il fondo è il più scuro, le superfici si schiariscono sopra */
+  --bg: oklch(0.165 0.008 264);
+  --surface: oklch(0.212 0.011 264);
+  --raised: oklch(0.255 0.012 264);
+  --weekend: oklch(0.19 0.009 264);
+  --ink: oklch(0.95 0.006 264);
+  --muted: oklch(0.72 0.014 264);
+  --faint: oklch(0.56 0.013 264);
+  --line: oklch(0.3 0.012 264);
+  --line-strong: oklch(0.4 0.014 264);
 
-  --primary: oklch(0.62 0.17 258);
-  --primary-hover: oklch(0.68 0.16 258);
+  --primary: oklch(0.6 0.17 258);
+  --primary-hover: oklch(0.66 0.16 258);
   --primary-ink: oklch(0.99 0.004 256);
-  --primary-wash: oklch(0.32 0.07 258);
+  --primary-wash: oklch(0.33 0.08 258);
 
-  --accent: oklch(0.62 0.17 258);
-  --accent-hover: oklch(0.68 0.16 258);
+  --accent: oklch(0.6 0.17 258);
+  --accent-hover: oklch(0.66 0.16 258);
   --accent-ink: oklch(0.99 0.004 256);
-  --accent-wash: oklch(0.32 0.07 258);
+  --accent-wash: oklch(0.33 0.08 258);
 
   --danger: oklch(0.64 0.18 25);
 
   --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
-  --shadow: 0 6px 20px -6px oklch(0 0 0 / 0.55);
-  --shadow-lg: 0 16px 40px -12px oklch(0 0 0 / 0.65);
+  --shadow: 0 8px 24px -6px oklch(0 0 0 / 0.6);
+  --shadow-lg: 0 16px 40px -12px oklch(0 0 0 / 0.7);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
 }
 
 @layer base {
@@ -130,8 +140,33 @@
 
   /* Backdrop della modale nativa (token, niente opacity-modifier su var). */
   dialog::backdrop {
-    background: oklch(0.2 0.01 256 / 0.35);
-    backdrop-filter: blur(1px);
+    background: oklch(0.2 0.01 256 / 0.4);
+    backdrop-filter: blur(3px);
+  }
+
+  ::selection {
+    background: var(--primary-wash);
+    color: var(--ink);
+  }
+
+  /* Scrollbar discreta, intonata al fondo freddo. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--faint);
+    background-clip: padding-box;
   }
 }
 
@@ -233,6 +268,35 @@
   border: 1px solid var(--line);
   padding: 0.25rem 0.5rem;
   text-align: left;
+}
+
+/* Animazioni — brevi, ease-out. Alternativa ridotta nel blocco sottostante. */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-modal-in {
+  animation: modal-in var(--dur) var(--ease-out);
+}
+
+@keyframes block-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-block-in {
+  animation: block-in var(--dur-fast) var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {

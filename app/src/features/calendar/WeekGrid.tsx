@@ -89,6 +89,7 @@ export function WeekGrid({
   onUpdateEntry,
 }: WeekGridProps) {
   const days = workWeekDays(date, workingDays);
+  const todayKey = isoDate(new Date());
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
   const colCount = days.length;
@@ -185,15 +186,21 @@ export function WeekGrid({
     <div>
       <div role="row" className="flex border-b border-line">
         <span className="shrink-0" style={{ width: TIME_GUTTER }} />
-        {days.map((d) => (
-          <span
-            key={d.toISOString()}
-            role="columnheader"
-            className="flex-1 px-2 py-1 text-xs font-semibold text-muted"
-          >
-            {dayLabel(d)}
-          </span>
-        ))}
+        {days.map((d) => {
+          const today = isoDate(d) === todayKey;
+          const weekend = dowMon0(d) >= 5;
+          return (
+            <span
+              key={d.toISOString()}
+              role="columnheader"
+              className={`flex-1 px-2 py-2.5 text-xs font-semibold ${
+                today ? "text-accent" : weekend ? "text-faint" : "text-muted"
+              }`}
+            >
+              {dayLabel(d)}
+            </span>
+          );
+        })}
       </div>
 
       <div className="flex">
@@ -223,7 +230,13 @@ export function WeekGrid({
               key={d.toISOString()}
               data-testid={`week-col-${col}`}
               onPointerDown={(e) => onColumnPointerDown(e, col)}
-              className="relative flex-1 border-l border-line"
+              className={`relative flex-1 border-l border-line ${
+                isoDate(d) === todayKey
+                  ? "bg-primary-wash"
+                  : dowMon0(d) >= 5
+                    ? "bg-weekend"
+                    : ""
+              }`}
             >
               {slots.map((minutes) => (
                 <div
@@ -261,8 +274,12 @@ export function WeekGrid({
                       left: 2,
                       right: 2,
                     }}
-                    className="flex touch-none overflow-hidden rounded bg-primary-wash px-1.5 py-0.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[filter] duration-[var(--dur-fast)] ease-out hover:brightness-95"
+                    className="relative flex touch-none overflow-hidden rounded-lg bg-primary-wash py-0.5 pl-2.5 pr-1.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[box-shadow] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow"
                   >
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-1 left-1 w-0.5 rounded-pill bg-accent"
+                    />
                     <span className="line-clamp-2">{b.entry.title}</span>
                     <span
                       data-testid="resize-top"
@@ -304,7 +321,7 @@ export function WeekGrid({
             <div
               data-testid={preview.ghost ? "create-ghost" : "drag-preview"}
               data-conflict={dragConflict}
-              className={`pointer-events-none absolute rounded bg-primary-wash ${
+              className={`pointer-events-none absolute rounded-lg bg-primary-wash ${
                 dragConflict
                   ? "border border-danger ring-1 ring-danger"
                   : preview.ghost

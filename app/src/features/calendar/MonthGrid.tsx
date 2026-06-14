@@ -1,5 +1,5 @@
 import type { Entry } from "@/data/types";
-import { isoDate, monthGridDates } from "@/domain/calendarNav";
+import { isoDate, monthGridDates, dowMon0 } from "@/domain/calendarNav";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -24,22 +24,28 @@ export function MonthGrid({ date, entries = [], onOpenDay }: MonthGridProps) {
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
   }
 
+  const todayKey = isoDate(new Date());
+
   return (
-    <div role="grid">
-      <div role="row" className="grid grid-cols-7">
-        {DAY_NAMES.map((name) => (
+    <div role="grid" className="overflow-hidden rounded-lg border border-line">
+      <div role="row" className="grid grid-cols-7 border-b border-line bg-surface">
+        {DAY_NAMES.map((name, i) => (
           <span
             key={name}
             role="columnheader"
-            className="px-2 py-1 text-xs font-semibold text-muted"
+            className={`px-2.5 py-2.5 text-[11px] font-semibold uppercase tracking-wide ${
+              i >= 5 ? "text-faint" : "text-muted"
+            }`}
           >
             {name}
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 gap-px bg-line">
         {cells.map((d) => {
           const outside = d.getMonth() !== month;
+          const weekend = dowMon0(d) >= 5;
+          const today = isoDate(d) === todayKey;
           const count = countByDay.get(isoDate(d)) ?? 0;
           return (
             <button
@@ -47,14 +53,23 @@ export function MonthGrid({ date, entries = [], onOpenDay }: MonthGridProps) {
               type="button"
               role="gridcell"
               data-outside={outside}
+              data-today={today}
               onClick={() => onOpenDay?.(d)}
-              className={`tnum flex min-h-20 flex-col items-start border border-line p-1.5 text-left text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised ${
-                outside ? "text-faint" : "text-ink"
-              }`}
+              className={`tnum group flex min-h-24 flex-col items-start gap-1 p-2 text-left text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised ${
+                weekend ? "bg-weekend" : "bg-surface"
+              } ${outside ? "text-faint" : "text-ink"}`}
             >
-              <span>{d.getDate()}</span>
+              <span
+                className={
+                  today
+                    ? "grid h-6 w-6 place-items-center rounded-pill bg-primary font-semibold text-primary-ink shadow-sm"
+                    : "grid h-6 w-6 place-items-center font-medium"
+                }
+              >
+                {d.getDate()}
+              </span>
               {count > 0 && (
-                <span className="mt-auto inline-flex items-center gap-1 rounded-pill bg-primary-wash px-1.5 py-0.5 text-[10px] font-medium text-ink">
+                <span className="mt-auto inline-flex items-center gap-1 rounded-pill bg-primary-wash px-2 py-0.5 text-[10px] font-semibold text-accent">
                   {count} {count === 1 ? "voce" : "voci"}
                 </span>
               )}

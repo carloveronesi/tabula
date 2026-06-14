@@ -169,7 +169,7 @@ export function DayView({
               left: 4,
               right: 4,
             }}
-            className={`pointer-events-none rounded border bg-primary-wash ${
+            className={`pointer-events-none rounded-lg border bg-primary-wash ${
               dragConflict ? "border-danger" : "border-dashed border-primary"
             }`}
           />
@@ -204,11 +204,18 @@ export function DayView({
                 left: 4,
                 right: 4,
               }}
-              className={`group flex touch-none flex-col overflow-hidden rounded bg-primary-wash px-2 py-1 text-left text-xs font-medium text-ink shadow-sm transition-[filter] duration-[var(--dur-fast)] ease-out hover:brightness-95 ${
+              className={`group relative flex touch-none flex-col gap-0.5 overflow-hidden rounded-lg bg-primary-wash py-1.5 pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 active && dragConflict ? "ring-2 ring-danger" : ""
               }`}
             >
-              <span className="truncate">{b.entry.title}</span>
+              <span
+                aria-hidden
+                className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-accent"
+              />
+              <span className="truncate leading-tight">{b.entry.title}</span>
+              <span className="tnum truncate font-mono text-[10px] font-normal text-muted">
+                {b.entry.startsAt.slice(11, 16)}–{b.entry.endsAt.slice(11, 16)}
+              </span>
               <span
                 data-testid="resize-top"
                 onPointerDown={(e) => {

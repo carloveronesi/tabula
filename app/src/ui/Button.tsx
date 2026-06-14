@@ -5,20 +5,23 @@ export type ButtonVariant = "primary" | "subtle" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md";
 
 const base =
-  "inline-flex items-center justify-center gap-1.5 rounded font-medium " +
-  "transition-colors duration-[var(--dur-fast)] ease-out select-none " +
+  "inline-flex items-center justify-center gap-1.5 rounded-pill font-medium " +
+  "transition-[background-color,box-shadow,border-color,transform,color] " +
+  "duration-[var(--dur-fast)] ease-out select-none active:translate-y-px " +
   "disabled:opacity-50 disabled:pointer-events-none";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-primary-ink hover:bg-primary-hover",
-  subtle: "border border-line bg-surface text-ink hover:bg-raised",
-  ghost: "text-ink hover:bg-raised",
-  danger: "bg-danger text-primary-ink hover:opacity-90",
+  primary:
+    "bg-primary text-primary-ink shadow-sm hover:bg-primary-hover hover:shadow",
+  subtle:
+    "border border-line bg-surface text-ink shadow-sm hover:bg-raised hover:border-line-strong",
+  ghost: "text-muted hover:bg-raised hover:text-ink",
+  danger: "bg-danger text-primary-ink shadow-sm hover:opacity-90",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-7 px-2.5 text-xs",
-  md: "h-9 px-3.5 text-sm",
+  sm: "h-8 px-3.5 text-xs",
+  md: "h-10 px-5 text-sm",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

@@ -11,8 +11,10 @@ export const Textarea = forwardRef<
       ref={ref}
       rows={rows}
       className={cn(
-        "w-full rounded border border-line bg-bg px-3 py-2 text-sm text-ink",
+        "w-full rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink",
+        "transition-[border-color,box-shadow] duration-[var(--dur-fast)] ease-out",
         "placeholder:text-faint focus:border-primary focus:outline-none",
+        "focus:shadow-[0_0_0_3px_var(--accent-wash)]",
         className,
       )}
       {...rest}

@@ -8,7 +8,7 @@ export interface IconButtonProps
   size?: "sm" | "md";
 }
 
-const sizes = { sm: "h-7 w-7", md: "h-9 w-9" } as const;
+const sizes = { sm: "h-8 w-8", md: "h-10 w-10" } as const;
 
 /** Bottone di sola icona. `label` diventa `aria-label`. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -23,9 +23,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         aria-label={label}
         title={title ?? label}
         className={cn(
-          "inline-flex items-center justify-center rounded text-muted",
-          "transition-colors duration-[var(--dur-fast)] ease-out",
-          "hover:bg-raised hover:text-ink",
+          "inline-flex items-center justify-center rounded-lg text-muted",
+          "transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-out",
+          "hover:bg-raised hover:text-ink active:translate-y-px",
+          "aria-pressed:bg-primary-wash aria-pressed:text-accent",
           "disabled:opacity-50 disabled:pointer-events-none",
           sizes[size],
           className,

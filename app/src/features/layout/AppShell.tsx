@@ -7,6 +7,7 @@ import { useEditorStore } from "@/store/editor";
 import { useToastStore } from "@/store/toast";
 import { Toaster } from "@/ui";
 import { TopBar } from "@/features/layout/TopBar";
+import { Sidebar } from "@/features/layout/Sidebar";
 import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
@@ -78,10 +79,16 @@ export function AppShell() {
   };
 
   return (
-    <div className="min-h-screen bg-bg text-ink">
-      <TopBar />
-      <main data-testid={`view-${view}`} className="mx-auto max-w-5xl p-4 sm:p-6">
-        {view === "day" && (
+    <div className="flex min-h-screen bg-bg text-ink">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main
+          data-testid={`view-${view}`}
+          className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-6 sm:py-6"
+        >
+          <div className="rounded-xl border border-line bg-surface p-3 shadow-card sm:p-5">
+            {view === "day" && (
           <DayView
             date={activeDate}
             entries={entries}
@@ -107,12 +114,14 @@ export function AppShell() {
         {view === "month" && (
           <MonthGrid date={activeDate} entries={entries} onOpenDay={openDay} />
         )}
-        {view === "riepilogo" && <SummaryView />}
-        {view === "projects" && <ProjectsView />}
-        {view === "search" && <SearchView />}
-        {view === "settings" && <SettingsView />}
-        {view === "todo" && <TodoView />}
-      </main>
+            {view === "riepilogo" && <SummaryView />}
+            {view === "projects" && <ProjectsView />}
+            {view === "search" && <SearchView />}
+            {view === "settings" && <SettingsView />}
+            {view === "todo" && <TodoView />}
+          </div>
+        </main>
+      </div>
       <EntryEditor />
       <EntryDetail />
       <Toaster />

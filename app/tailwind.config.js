@@ -14,6 +14,7 @@ export default {
         faint: "var(--faint)",
         line: "var(--line)",
         "line-strong": "var(--line-strong)",
+        weekend: "var(--weekend)",
         primary: {
           DEFAULT: "var(--primary)",
           hover: "var(--primary-hover)",
@@ -37,12 +38,14 @@ export default {
         sm: "var(--radius-sm)",
         DEFAULT: "var(--radius)",
         lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
         pill: "var(--radius-pill)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         DEFAULT: "var(--shadow)",
         lg: "var(--shadow-lg)",
+        card: "var(--shadow-card)",
       },
       zIndex: {
         dropdown: "1000",

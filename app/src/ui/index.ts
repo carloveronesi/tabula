@@ -15,9 +15,11 @@ export { Combobox, type ComboboxOption, type ComboboxProps } from "@/ui/Combobox
 export { Input } from "@/ui/Input";
 export { Textarea } from "@/ui/Textarea";
 export { Field, type FieldProps } from "@/ui/Field";
+export { TimeField, type TimeFieldProps } from "@/ui/TimeField";
 export { Markdown, type MarkdownProps } from "@/ui/Markdown";
 export {
   MarkdownEditor,
   type MarkdownEditorProps,
 } from "@/ui/MarkdownEditor";
 export { Toaster } from "@/ui/Toaster";
+export * as Icons from "@/ui/icons";

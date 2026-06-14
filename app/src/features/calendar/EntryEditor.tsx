@@ -8,7 +8,6 @@ import {
   isDraftValid,
   type EntryDraft,
 } from "@/domain/entryDraft";
-import { minutesToLabel } from "@/domain/slots";
 import { conflictsOnDay } from "@/domain/conflict";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
@@ -23,6 +22,7 @@ import {
   MarkdownEditor,
   Modal,
   Segmented,
+  TimeField,
   type SegmentedOption,
 } from "@/ui";
 
@@ -32,12 +32,6 @@ const TYPES: SegmentedOption<EntryType>[] = [
   { id: "event", label: "Evento" },
   { id: "vacation", label: "Ferie" },
 ];
-
-/** "HH:MM" → minuti dalla mezzanotte. */
-function timeToMinutes(value: string): number {
-  const [h, m] = value.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
 
 /**
  * Editor rapido di una attività (Modal). Crea o modifica una Entry; il selettore
@@ -147,21 +141,19 @@ export function EntryEditor() {
             />
           </Field>
           <Field label="Inizio">
-            <Input
-              type="time"
-              aria-label="Inizio"
-              step={slotMinutes * 60}
-              value={minutesToLabel(draft.startMin)}
-              onChange={(e) => patch({ startMin: timeToMinutes(e.target.value) })}
+            <TimeField
+              label="Inizio"
+              step={slotMinutes}
+              value={draft.startMin}
+              onChange={(startMin) => patch({ startMin })}
             />
           </Field>
           <Field label="Fine">
-            <Input
-              type="time"
-              aria-label="Fine"
-              step={slotMinutes * 60}
-              value={minutesToLabel(draft.endMin)}
-              onChange={(e) => patch({ endMin: timeToMinutes(e.target.value) })}
+            <TimeField
+              label="Fine"
+              step={slotMinutes}
+              value={draft.endMin}
+              onChange={(endMin) => patch({ endMin })}
             />
           </Field>
         </div>
