@@ -5,19 +5,36 @@ import { formatPeriod } from "@/domain/format";
 import { isoDate } from "@/domain/calendarNav";
 import { canRedo, canUndo } from "@/domain/history";
 import { Button, IconButton, Segmented, type SegmentedOption } from "@/ui";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconUndo,
+  IconRedo,
+  IconPlus,
+} from "@/ui/icons";
 
-const VIEWS: SegmentedOption<ViewMode>[] = [
+const CALENDAR_VIEWS: SegmentedOption<ViewMode>[] = [
   { id: "day", label: "Giorno" },
   { id: "week", label: "Settimana" },
   { id: "month", label: "Mese" },
-  { id: "riepilogo", label: "Riepilogo" },
-  { id: "projects", label: "Progetti" },
-  { id: "todo", label: "Todo" },
 ];
 
+const SECTION_LABEL: Partial<Record<ViewMode, string>> = {
+  riepilogo: "Riepilogo",
+  projects: "Progetti",
+  todo: "Todo",
+  search: "Ricerca",
+  settings: "Impostazioni",
+};
+
+const isCalendar = (v: ViewMode): boolean =>
+  v === "day" || v === "week" || v === "month";
+
 /**
- * Barra superiore: navigazione periodo (prec/oggi/succ) + intestazione serif del
- * periodo + switch vista. Costruita sui primitivi del design system.
+ * Toolbar del calendario: navigazione del periodo (prec/oggi/succ), titolo del
+ * periodo, switch giorno/settimana/mese, storia (annulla/ripeti) e nuova
+ * attività. Per le viste non-calendario mostra solo il titolo della sezione.
+ * La navigazione tra sezioni vive nella Sidebar.
  */
 export function TopBar() {
   const view = useUiStore((s) => s.view);
@@ -31,30 +48,34 @@ export function TopBar() {
   const undo = useCalendarStore((s) => s.undo);
   const redo = useCalendarStore((s) => s.redo);
 
+  const calendar = isCalendar(view);
   const period = formatPeriod(activeDate, view);
 
   const newEntry = () =>
     openCreate({ date: isoDate(activeDate), startMin: 540, endMin: 600 });
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-bg px-4 py-2.5">
+    <header className="sticky top-0 z-sticky flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-0.5">
-          <IconButton label="Precedente" size="sm" onClick={goPrev}>
-            ‹
-          </IconButton>
-          <Button variant="ghost" size="sm" onClick={goToday}>
-            Oggi
-          </Button>
-          <IconButton label="Successivo" size="sm" onClick={goNext}>
-            ›
-          </IconButton>
-        </div>
-        <h1 className="text-xl font-semibold tracking-tight text-ink tnum">
-          {period || "Tabula"}
+        {calendar && (
+          <div className="flex items-center gap-1 rounded-pill border border-line bg-surface p-1 shadow-sm">
+            <IconButton label="Precedente" size="sm" onClick={goPrev}>
+              <IconChevronLeft size={18} />
+            </IconButton>
+            <Button variant="ghost" size="sm" className="px-3" onClick={goToday}>
+              Oggi
+            </Button>
+            <IconButton label="Successivo" size="sm" onClick={goNext}>
+              <IconChevronRight size={18} />
+            </IconButton>
+          </div>
+        )}
+        <h1 className="text-xl font-semibold tracking-tight text-ink tnum sm:text-2xl">
+          {calendar ? period || "Tabula" : (SECTION_LABEL[view] ?? "Tabula")}
         </h1>
       </div>
-      <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-2.5">
         <div className="flex items-center gap-0.5">
           <IconButton
             label="Annulla"
@@ -63,7 +84,7 @@ export function TopBar() {
             disabled={!canUndo(history)}
             onClick={() => void undo()}
           >
-            ↶
+            <IconUndo size={18} />
           </IconButton>
           <IconButton
             label="Ripeti"
@@ -72,30 +93,26 @@ export function TopBar() {
             disabled={!canRedo(history)}
             onClick={() => void redo()}
           >
-            ↷
+            <IconRedo size={18} />
           </IconButton>
         </div>
-        <Segmented options={VIEWS} value={view} onChange={setView} label="Vista" />
-        <Button variant="primary" size="sm" onClick={newEntry} title="Nuova attività (n)">
-          + Nuova
+        {calendar && (
+          <Segmented
+            options={CALENDAR_VIEWS}
+            value={view}
+            onChange={setView}
+            label="Vista"
+          />
+        )}
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={newEntry}
+          title="Nuova attività (n)"
+        >
+          <IconPlus size={16} />
+          Nuova
         </Button>
-        <IconButton
-          label="Ricerca"
-          title="Ricerca (Ctrl+K)"
-          size="sm"
-          aria-pressed={view === "search"}
-          onClick={() => setView("search")}
-        >
-          ⌕
-        </IconButton>
-        <IconButton
-          label="Impostazioni"
-          size="sm"
-          aria-pressed={view === "settings"}
-          onClick={() => setView("settings")}
-        >
-          ⚙
-        </IconButton>
       </div>
     </header>
   );

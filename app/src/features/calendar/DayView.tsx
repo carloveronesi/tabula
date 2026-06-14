@@ -13,7 +13,10 @@ import {
   rowsToRange,
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
-import { DayGrid, SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { withAlpha } from "@/domain/colors";
+import { DayGrid, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
+import { NowLine } from "@/features/calendar/NowLine";
 
 interface DayViewProps {
   date: Date;
@@ -21,6 +24,8 @@ interface DayViewProps {
   workHours: WorkHours;
   slotMinutes: number;
   onSelectEntry?: (entry: Entry) => void;
+  /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
+  colorOf?: (entry: Entry) => string | null;
   /** Drag su area vuota → nuova attività in quel giorno/intervallo (minuti). */
   onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
   /** Move/resize confermato → nuovo giorno/intervallo dell'entry (minuti). */
@@ -72,6 +77,7 @@ export function DayView({
   workHours,
   slotMinutes,
   onSelectEntry,
+  colorOf,
   onCreateRange,
   onUpdateEntry,
 }: DayViewProps) {
@@ -83,6 +89,7 @@ export function DayView({
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag>(null);
+  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
 
   const offsetY = (clientY: number) =>
     clientY - (areaRef.current?.getBoundingClientRect().top ?? 0);
@@ -96,17 +103,17 @@ export function DayView({
 
   function onAreaPointerDown(e: ReactPointerEvent) {
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
-    const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
     beginDrag(e, { kind: "create", anchorRow: row, row });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
     if (!drag) return;
     if (drag.kind === "create") {
-      const row = rowAtOffset(offsetY(e.clientY), SLOT_HEIGHT, slotCount);
+      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
       if (row !== drag.row) setDrag({ ...drag, row });
     } else {
-      const d = deltaRows(e.clientY - startYRef.current, SLOT_HEIGHT);
+      const d = deltaRows(e.clientY - startYRef.current, slotHeight);
       if (d !== drag.dRows) setDrag({ ...drag, dRows: d });
     }
   }
@@ -147,7 +154,7 @@ export function DayView({
   const dragConflict = drag ? isConflict(drag) : false;
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative min-h-0 flex-1 overflow-hidden">
       <DayGrid workHours={workHours} slotMinutes={slotMinutes} />
       <div
         ref={areaRef}
@@ -158,18 +165,26 @@ export function DayView({
         className="absolute inset-y-0 right-0 touch-none"
         style={{ left: TIME_GUTTER }}
       >
+        {dayKey === isoDate(new Date()) && (
+          <NowLine
+            slots={slots}
+            slotMinutes={slotMinutes}
+            slotHeight={slotHeight}
+            withDot
+          />
+        )}
         {ghost && (
           <div
             data-testid="create-ghost"
             data-conflict={dragConflict}
             style={{
               position: "absolute",
-              top: ghost.startRow * SLOT_HEIGHT + 2,
-              height: ghost.span * SLOT_HEIGHT - 4,
+              top: ghost.startRow * slotHeight + 2,
+              height: ghost.span * slotHeight - 4,
               left: 4,
               right: 4,
             }}
-            className={`pointer-events-none rounded border bg-primary-wash ${
+            className={`pointer-events-none rounded-lg border bg-primary-wash ${
               dragConflict ? "border-danger" : "border-dashed border-primary"
             }`}
           />
@@ -180,6 +195,7 @@ export function DayView({
           const live = active
             ? dragGeom(drag, slotCount)
             : { startRow: b.startRow, span: b.span };
+          const color = colorOf?.(b.entry) ?? null;
           return (
             <button
               key={b.entry.id}
@@ -199,16 +215,25 @@ export function DayView({
               }}
               style={{
                 position: "absolute",
-                top: live.startRow * SLOT_HEIGHT + 2,
-                height: live.span * SLOT_HEIGHT - 4,
+                top: live.startRow * slotHeight + 2,
+                height: live.span * slotHeight - 4,
                 left: 4,
                 right: 4,
+                backgroundColor: color ? withAlpha(color, 0.16) : undefined,
               }}
-              className={`group flex touch-none flex-col overflow-hidden rounded bg-primary-wash px-2 py-1 text-left text-xs font-medium text-ink shadow-sm transition-[filter] duration-[var(--dur-fast)] ease-out hover:brightness-95 ${
+              className={`group relative flex touch-none flex-col gap-0.5 overflow-hidden rounded-lg bg-primary-wash py-1.5 pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 active && dragConflict ? "ring-2 ring-danger" : ""
               }`}
             >
-              <span className="truncate">{b.entry.title}</span>
+              <span
+                aria-hidden
+                style={{ backgroundColor: color ?? undefined }}
+                className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-accent"
+              />
+              <span className="truncate leading-tight">{b.entry.title}</span>
+              <span className="tnum truncate font-mono text-[10px] font-normal text-muted">
+                {b.entry.startsAt.slice(11, 16)}–{b.entry.endsAt.slice(11, 16)}
+              </span>
               <span
                 data-testid="resize-top"
                 onPointerDown={(e) => {

@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import type { Entry } from "@/data/types";
 import { dateTimeAt } from "@/domain/time";
+import { entryColor } from "@/domain/colors";
 import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -7,6 +9,7 @@ import { useEditorStore } from "@/store/editor";
 import { useToastStore } from "@/store/toast";
 import { Toaster } from "@/ui";
 import { TopBar } from "@/features/layout/TopBar";
+import { Sidebar } from "@/features/layout/Sidebar";
 import { DayView } from "@/features/calendar/DayView";
 import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
@@ -60,6 +63,15 @@ export function AppShell() {
   const createRange = (dateISO: string, startMin: number, endMin: number) =>
     openCreate({ date: dateISO, startMin, endMin });
 
+  // Colore del blocco per cliente/sottotipo (memoizzato sulle mappe colore).
+  const colorOf = useMemo(() => {
+    const maps = {
+      clientColors: settings.clientColors,
+      internalColors: settings.internalColors,
+    };
+    return (entry: Entry) => entryColor(entry, maps);
+  }, [settings.clientColors, settings.internalColors]);
+
   const updateEntryRange = async (
     entry: Entry,
     dateISO: string,
@@ -77,17 +89,30 @@ export function AppShell() {
     });
   };
 
+  const isCalendar = view === "day" || view === "week" || view === "month";
+
   return (
-    <div className="min-h-screen bg-bg text-ink">
-      <TopBar />
-      <main data-testid={`view-${view}`} className="mx-auto max-w-5xl p-4 sm:p-6">
-        {view === "day" && (
+    <div className="flex h-screen overflow-hidden bg-bg text-ink">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main
+          data-testid={`view-${view}`}
+          className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5"
+        >
+          <div
+            className={`flex min-h-0 flex-1 flex-col rounded-xl border border-line bg-surface shadow-card ${
+              isCalendar ? "overflow-hidden p-3 sm:p-4" : "overflow-auto p-4 sm:p-5"
+            }`}
+          >
+            {view === "day" && (
           <DayView
             date={activeDate}
             entries={entries}
             workHours={settings.workHours}
             slotMinutes={settings.slotMinutes}
             onSelectEntry={showDetail}
+            colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
           />
@@ -100,19 +125,27 @@ export function AppShell() {
             slotMinutes={settings.slotMinutes}
             entries={entries}
             onSelectEntry={showDetail}
+            colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
           />
         )}
         {view === "month" && (
-          <MonthGrid date={activeDate} entries={entries} onOpenDay={openDay} />
+          <MonthGrid
+            date={activeDate}
+            entries={entries}
+            onOpenDay={openDay}
+            colorOf={colorOf}
+          />
         )}
-        {view === "riepilogo" && <SummaryView />}
-        {view === "projects" && <ProjectsView />}
-        {view === "search" && <SearchView />}
-        {view === "settings" && <SettingsView />}
-        {view === "todo" && <TodoView />}
-      </main>
+            {view === "riepilogo" && <SummaryView />}
+            {view === "projects" && <ProjectsView />}
+            {view === "search" && <SearchView />}
+            {view === "settings" && <SettingsView />}
+            {view === "todo" && <TodoView />}
+          </div>
+        </main>
+      </div>
       <EntryEditor />
       <EntryDetail />
       <Toaster />

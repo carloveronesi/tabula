@@ -56,11 +56,10 @@ describe("TopBar", () => {
     expect(screen.getByLabelText("Annulla")).not.toBeDisabled();
   });
 
-  it("la Ricerca espone l'hint della scorciatoia nel tooltip", () => {
+  it("nelle viste non-calendario mostra il titolo di sezione e nasconde lo switch", () => {
+    useUiStore.setState({ view: "todo" });
     render(<TopBar />);
-    expect(screen.getByLabelText("Ricerca")).toHaveAttribute(
-      "title",
-      "Ricerca (Ctrl+K)",
-    );
+    expect(screen.getByRole("heading", { name: "Todo" })).toBeInTheDocument();
+    expect(screen.queryByText("Settimana")).not.toBeInTheDocument();
   });
 });
