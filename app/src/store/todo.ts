@@ -2,7 +2,12 @@ import { create } from "zustand";
 import { nanoid } from "nanoid";
 import type { Id, ISODate, Todo } from "@/data/types";
 import { allTodos, deleteTodo, putTodo } from "@/data/repositories";
-import { newTodo } from "@/domain/todoDraft";
+import {
+  newTodo,
+  addSubtask,
+  toggleSubtask,
+  removeSubtask,
+} from "@/domain/todoDraft";
 
 interface TodoState {
   todos: Todo[];
@@ -11,6 +16,9 @@ interface TodoState {
   toggleTodo: (id: Id) => Promise<void>;
   setDue: (id: Id, dueDate: ISODate | null) => Promise<void>;
   setProject: (id: Id, projectId: Id | null) => Promise<void>;
+  addSubtask: (id: Id, title: string) => Promise<void>;
+  toggleSubtask: (id: Id, subId: Id) => Promise<void>;
+  removeSubtask: (id: Id, subId: Id) => Promise<void>;
   removeTodo: (id: Id) => Promise<void>;
 }
 
@@ -19,14 +27,16 @@ interface TodoState {
  * memoria; la vista ordina/filtra (dominio `sortTodos`).
  */
 export const useTodoStore = create<TodoState>((set, get) => {
-  /** Applica una modifica parziale a un todo: persiste e aggiorna la lista. */
-  const patch = async (id: Id, fields: Partial<Todo>) => {
+  /** Applica una trasformazione a un todo: persiste e aggiorna la lista. */
+  const transform = async (id: Id, fn: (t: Todo) => Todo) => {
     const cur = get().todos.find((t) => t.id === id);
     if (!cur) return;
-    const updated = { ...cur, ...fields };
+    const updated = fn(cur);
     await putTodo(updated);
     set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
   };
+  const patch = (id: Id, fields: Partial<Todo>) =>
+    transform(id, (t) => ({ ...t, ...fields }));
 
   return {
     todos: [],
@@ -42,6 +52,9 @@ export const useTodoStore = create<TodoState>((set, get) => {
     toggleTodo: (id) => patch(id, { done: !get().todos.find((t) => t.id === id)?.done }),
     setDue: (id, dueDate) => patch(id, { dueDate }),
     setProject: (id, projectId) => patch(id, { projectId }),
+    addSubtask: (id, title) => transform(id, (t) => addSubtask(t, title, nanoid())),
+    toggleSubtask: (id, subId) => transform(id, (t) => toggleSubtask(t, subId)),
+    removeSubtask: (id, subId) => transform(id, (t) => removeSubtask(t, subId)),
     removeTodo: async (id) => {
       await deleteTodo(id);
       set({ todos: get().todos.filter((t) => t.id !== id) });

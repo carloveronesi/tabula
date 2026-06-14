@@ -74,6 +74,27 @@ describe("TodoView", () => {
     expect(item).toHaveAttribute("data-overdue", "true");
   });
 
+  it("espande, aggiunge e completa un sottotask", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    render(<TodoView />);
+
+    fireEvent.click(await screen.findByLabelText("Sottotask Task"));
+
+    const subInput = screen.getByLabelText("Nuovo sottotask Task");
+    fireEvent.change(subInput, { target: { value: "Bozza" } });
+    fireEvent.submit(subInput);
+
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].subtasks).toHaveLength(1),
+    );
+    expect(screen.getByText("Bozza")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Completa sottotask Bozza"));
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].subtasks[0].done).toBe(true),
+    );
+  });
+
   it("completa e poi elimina un todo", async () => {
     await useTodoStore.getState().addTodo("Task");
     render(<TodoView />);

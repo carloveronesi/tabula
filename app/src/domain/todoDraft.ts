@@ -42,3 +42,36 @@ export function sortTodos(todos: Todo[]): Todo[] {
 export function isOverdue(todo: Todo, today: ISODate): boolean {
   return !todo.done && todo.dueDate !== null && todo.dueDate < today;
 }
+
+/** Aggiunge un sottotask (titolo trimmato, non fatto). `id` iniettato. Puro. */
+export function addSubtask(todo: Todo, title: string, id: Id): Todo {
+  const trimmed = title.trim();
+  if (trimmed === "") return todo;
+  return {
+    ...todo,
+    subtasks: [...todo.subtasks, { id, title: trimmed, done: false }],
+  };
+}
+
+/** Inverte lo stato `done` del sottotask indicato. Puro. */
+export function toggleSubtask(todo: Todo, subId: Id): Todo {
+  return {
+    ...todo,
+    subtasks: todo.subtasks.map((s) =>
+      s.id === subId ? { ...s, done: !s.done } : s,
+    ),
+  };
+}
+
+/** Rimuove il sottotask indicato. Puro. */
+export function removeSubtask(todo: Todo, subId: Id): Todo {
+  return { ...todo, subtasks: todo.subtasks.filter((s) => s.id !== subId) };
+}
+
+/** Avanzamento dei sottotask: completati su totale. */
+export function subtaskProgress(todo: Todo): { done: number; total: number } {
+  return {
+    done: todo.subtasks.filter((s) => s.done).length,
+    total: todo.subtasks.length,
+  };
+}

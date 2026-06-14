@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { newTodo, sortTodos, isOverdue } from "@/domain/todoDraft";
+import {
+  newTodo,
+  sortTodos,
+  isOverdue,
+  addSubtask,
+  toggleSubtask,
+  removeSubtask,
+  subtaskProgress,
+} from "@/domain/todoDraft";
 import type { Todo } from "@/data/types";
 
 function todo(id: string, title: string, done: boolean, createdAt: number): Todo {
@@ -73,5 +81,40 @@ describe("isOverdue", () => {
     expect(isOverdue(withDue(false, "2026-06-14"), "2026-06-14")).toBe(false);
     expect(isOverdue(withDue(false, "2026-06-20"), "2026-06-14")).toBe(false);
     expect(isOverdue(withDue(false, null), "2026-06-14")).toBe(false);
+  });
+});
+
+describe("sottotask", () => {
+  const base = todo("t", "T", false, 0);
+
+  it("addSubtask aggiunge un sottotask trimmato e ignora i vuoti", () => {
+    const a = addSubtask(base, "  Bozza  ", "s1");
+    expect(a.subtasks).toEqual([{ id: "s1", title: "Bozza", done: false }]);
+    expect(addSubtask(base, "   ", "s2").subtasks).toEqual([]);
+  });
+
+  it("addSubtask non muta il todo originale", () => {
+    addSubtask(base, "X", "s1");
+    expect(base.subtasks).toEqual([]);
+  });
+
+  it("toggleSubtask inverte solo il sottotask indicato", () => {
+    const a = addSubtask(addSubtask(base, "A", "s1"), "B", "s2");
+    const t = toggleSubtask(a, "s1");
+    expect(t.subtasks.map((s) => s.done)).toEqual([true, false]);
+  });
+
+  it("removeSubtask elimina il sottotask indicato", () => {
+    const a = addSubtask(addSubtask(base, "A", "s1"), "B", "s2");
+    expect(removeSubtask(a, "s1").subtasks.map((s) => s.id)).toEqual(["s2"]);
+  });
+
+  it("subtaskProgress conta completati su totale", () => {
+    const a = toggleSubtask(
+      addSubtask(addSubtask(base, "A", "s1"), "B", "s2"),
+      "s1",
+    );
+    expect(subtaskProgress(a)).toEqual({ done: 1, total: 2 });
+    expect(subtaskProgress(base)).toEqual({ done: 0, total: 0 });
   });
 });

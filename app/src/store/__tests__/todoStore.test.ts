@@ -60,6 +60,24 @@ describe("useTodoStore", () => {
     expect(useTodoStore.getState().todos[0].projectId).toBeNull();
   });
 
+  it("gestisce i sottotask (aggiungi/completa/rimuovi) persistendo", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    const id = useTodoStore.getState().todos[0].id;
+
+    await useTodoStore.getState().addSubtask(id, "Bozza");
+    await useTodoStore.getState().addSubtask(id, "Revisione");
+    let subs = useTodoStore.getState().todos[0].subtasks;
+    expect(subs.map((s) => s.title)).toEqual(["Bozza", "Revisione"]);
+    expect((await db.todos.get(id))?.subtasks).toHaveLength(2);
+
+    await useTodoStore.getState().toggleSubtask(id, subs[0].id);
+    expect(useTodoStore.getState().todos[0].subtasks[0].done).toBe(true);
+
+    await useTodoStore.getState().removeSubtask(id, subs[0].id);
+    subs = useTodoStore.getState().todos[0].subtasks;
+    expect(subs.map((s) => s.title)).toEqual(["Revisione"]);
+  });
+
   it("removeTodo elimina (DB + store)", async () => {
     await useTodoStore.getState().addTodo("A");
     await useTodoStore.getState().addTodo("B");
