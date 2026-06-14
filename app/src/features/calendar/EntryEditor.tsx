@@ -16,6 +16,7 @@ import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import {
   Button,
+  cn,
   Combobox,
   Field,
   IconButton,
@@ -36,6 +37,33 @@ const TYPES: SegmentedOption<EntryType>[] = [
   { id: "vacation", label: "Ferie" },
 ];
 
+/** Chip selezionabile (toggle) per le multi-selezioni dell'editor. */
+function Chip({
+  label,
+  on,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={cn(
+        "rounded-pill border px-2.5 py-1 text-xs transition-colors duration-[var(--dur-fast)]",
+        on
+          ? "border-primary bg-primary-wash text-accent"
+          : "border-line text-muted hover:bg-raised hover:text-ink",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 /**
  * Editor rapido di una attività (Modal). Crea o modifica una Entry; il selettore
  * Progetto deriva il Cliente (cascata). Persistenza via calendar store.
@@ -52,6 +80,8 @@ export function EntryEditor() {
   const notify = useToastStore((s) => s.notify);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const people = useInventoryStore((s) => s.people);
+  const contacts = useInventoryStore((s) => s.contacts);
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
 
   const [draft, setDraft] = useState<EntryDraft>(() =>
@@ -112,6 +142,18 @@ export function EntryEditor() {
     }));
   const removeLink = (i: number) =>
     setDraft((d) => ({ ...d, links: d.links.filter((_, j) => j !== i) }));
+
+  const contactOptions = useMemo(
+    () => contacts.filter((k) => k.clientId === draft.clientId),
+    [contacts, draft.clientId],
+  );
+  const toggleId = (key: "collaboratorIds" | "contactIds", id: string) =>
+    setDraft((d) => ({
+      ...d,
+      [key]: d[key].includes(id)
+        ? d[key].filter((x) => x !== id)
+        : [...d[key], id],
+    }));
 
   async function onSave() {
     if (!valid || conflict) return;
@@ -303,6 +345,36 @@ export function EntryEditor() {
             </Button>
           </div>
         </Field>
+
+        {people.length > 0 && (
+          <Field label="Collaboratori">
+            <div className="flex flex-wrap gap-2">
+              {people.map((p) => (
+                <Chip
+                  key={p.id}
+                  label={p.name}
+                  on={draft.collaboratorIds.includes(p.id)}
+                  onClick={() => toggleId("collaboratorIds", p.id)}
+                />
+              ))}
+            </div>
+          </Field>
+        )}
+
+        {contactOptions.length > 0 && (
+          <Field label="Referenti">
+            <div className="flex flex-wrap gap-2">
+              {contactOptions.map((k) => (
+                <Chip
+                  key={k.id}
+                  label={k.name}
+                  on={draft.contactIds.includes(k.id)}
+                  onClick={() => toggleId("contactIds", k.id)}
+                />
+              ))}
+            </div>
+          </Field>
+        )}
 
         {conflict && (
           <p role="alert" className="text-sm text-danger">

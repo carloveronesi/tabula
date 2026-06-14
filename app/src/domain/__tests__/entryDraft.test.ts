@@ -47,6 +47,8 @@ describe("emptyDraft", () => {
       nextSteps: "",
       links: [],
       milestone: "",
+      collaboratorIds: [],
+      contactIds: [],
     });
   });
 });
@@ -68,7 +70,18 @@ describe("draftFromEntry", () => {
       nextSteps: "next",
       links: [{ label: "doc", url: "http://x" }],
       milestone: "M1",
+      collaboratorIds: ["u1"],
+      contactIds: ["k1"],
     });
+  });
+
+  it("copia gli array di collaboratori/referenti (no aliasing)", () => {
+    const base = entry();
+    const d = draftFromEntry(base);
+    d.collaboratorIds.push("u2");
+    d.contactIds.push("k2");
+    expect(base.collaboratorIds).toEqual(["u1"]);
+    expect(base.contactIds).toEqual(["k1"]);
   });
 
   it("copia l'array dei link (no aliasing con la entry di origine)", () => {
@@ -170,8 +183,18 @@ describe("applyDraft", () => {
     expect(e.blockers).toBe("nuovo blocco");
     expect(e.nextSteps).toBe("nuovo passo");
     expect(e.links).toEqual([{ label: "spec", url: "http://z" }]);
-    // campi anagrafici non gestiti dall'editor restano dalla base
     expect(e.collaboratorIds).toEqual(["u1"]);
     expect(e.milestone).toBe("M1");
+  });
+
+  it("modifica: applica collaboratori/referenti editati nella bozza", () => {
+    const base = entry();
+    const d = draftFromEntry(base);
+    const e = applyDraft(
+      { ...d, collaboratorIds: ["u1", "u2"], contactIds: [] },
+      { id: "ignored", now: 555, base },
+    );
+    expect(e.collaboratorIds).toEqual(["u1", "u2"]);
+    expect(e.contactIds).toEqual([]);
   });
 });

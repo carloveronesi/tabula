@@ -5,9 +5,11 @@
 import { db } from "@/data/db";
 import type {
   Client,
+  Contact,
   Entry,
   ISODate,
   ISODateTime,
+  Person,
   Project,
   Todo,
 } from "@/data/types";
@@ -57,6 +59,16 @@ export function putProject(project: Project): Promise<string> {
 
 export function deleteProject(id: string): Promise<void> {
   return db.projects.delete(id);
+}
+
+/** Tutte le persone (collaboratori), ordinate per nome. */
+export function allPeople(): Promise<Person[]> {
+  return db.people.orderBy("name").toArray();
+}
+
+/** Tutti i contatti (referenti); la UI filtra per cliente in memoria. */
+export function allContacts(): Promise<Contact[]> {
+  return db.contacts.toArray();
 }
 
 /** Tutti i todo (la vista ordina/filtra in memoria). */

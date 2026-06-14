@@ -74,6 +74,8 @@ beforeEach(async () => {
   useInventoryStore.setState({
     clients: [client("c1", "Acme")],
     projects: [project("p1", "c1", "Sito"), project("p2", null, "Interno")],
+    people: [],
+    contacts: [],
   });
   useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
 });
@@ -218,6 +220,65 @@ describe("EntryEditor", () => {
       expect(useCalendarStore.getState().entries).toHaveLength(1),
     );
     expect(useCalendarStore.getState().entries[0].milestone).toBe("Fase 2");
+  });
+
+  it("seleziona i collaboratori e li salva sulla entry", async () => {
+    useInventoryStore.setState({
+      people: [
+        { id: "u1", name: "Mario" },
+        { id: "u2", name: "Lucia" },
+      ],
+    });
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Call" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Mario" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].collaboratorIds).toEqual([
+      "u1",
+    ]);
+  });
+
+  it("mostra i referenti del cliente selezionato e li salva", async () => {
+    useInventoryStore.setState({
+      contacts: [
+        { id: "k1", clientId: "c1", name: "Anna", role: "PM" },
+        { id: "k2", clientId: "c9", name: "Altro", role: "Dev" },
+      ],
+    });
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Call" },
+    });
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+
+    // solo i referenti del cliente scelto (c1)
+    expect(
+      screen.queryByRole("button", { name: "Altro" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Anna" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].contactIds).toEqual(["k1"]);
+    expect(useCalendarStore.getState().entries[0].clientId).toBe("c1");
   });
 
   it("modifica: precompila e salva 'cosa è andato storto' e 'prossimi passi'", async () => {

@@ -1,7 +1,9 @@
 import { create } from "zustand";
-import type { Client, Project } from "@/data/types";
+import type { Client, Contact, Person, Project } from "@/data/types";
 import {
   allClients,
+  allContacts,
+  allPeople,
   allProjects,
   deleteProject,
   putProject,
@@ -10,24 +12,31 @@ import {
 interface InventoryState {
   clients: Client[];
   projects: Project[];
+  people: Person[];
+  contacts: Contact[];
   loadInventory: () => Promise<void>;
   saveProject: (project: Project) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
 }
 
 /**
- * Anagrafiche (clienti, progetti) per i selettori dell'editor.
- * Caricate una volta; la cascata cliente→progetto filtra in memoria.
+ * Anagrafiche (clienti, progetti, persone, contatti) per i selettori
+ * dell'editor. Caricate una volta; la cascata cliente→progetto e il filtro
+ * referenti per cliente avvengono in memoria.
  */
 export const useInventoryStore = create<InventoryState>((set, get) => ({
   clients: [],
   projects: [],
+  people: [],
+  contacts: [],
   loadInventory: async () => {
-    const [clients, projects] = await Promise.all([
+    const [clients, projects, people, contacts] = await Promise.all([
       allClients(),
       allProjects(),
+      allPeople(),
+      allContacts(),
     ]);
-    set({ clients, projects });
+    set({ clients, projects, people, contacts });
   },
   saveProject: async (project) => {
     await putProject(project);

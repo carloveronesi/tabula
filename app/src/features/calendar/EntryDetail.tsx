@@ -54,6 +54,8 @@ export function EntryDetail() {
   const openEdit = useEditorStore((s) => s.openEdit);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const people = useInventoryStore((s) => s.people);
+  const contacts = useInventoryStore((s) => s.contacts);
   const entries = useCalendarStore((s) => s.entries);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
   const undo = useCalendarStore((s) => s.undo);
@@ -71,6 +73,16 @@ export function EntryDetail() {
         ? settings.subtypes.internal
         : []
     ).find((s) => s.id === e.subtypeId)?.label;
+  const collaboratorNames = e
+    ? e.collaboratorIds
+        .map((id) => people.find((p) => p.id === id)?.name)
+        .filter((n): n is string => !!n)
+    : [];
+  const contactNames = e
+    ? e.contactIds
+        .map((id) => contacts.find((k) => k.id === id)?.name)
+        .filter((n): n is string => !!n)
+    : [];
 
   const duplicate = async () => {
     if (!e) return;
@@ -143,6 +155,12 @@ export function EntryDetail() {
             <Section label="Prossimi passi">
               <Markdown>{e.nextSteps}</Markdown>
             </Section>
+          )}
+          {collaboratorNames.length > 0 && (
+            <Section label="Collaboratori">{collaboratorNames.join(", ")}</Section>
+          )}
+          {contactNames.length > 0 && (
+            <Section label="Referenti">{contactNames.join(", ")}</Section>
           )}
           {e.links.length > 0 && (
             <Section label="Link">

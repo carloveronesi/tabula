@@ -17,6 +17,8 @@ export interface EntryDraft {
   nextSteps: string;
   links: { label: string; url: string }[];
   milestone: string;
+  collaboratorIds: Id[];
+  contactIds: Id[];
 }
 
 /** Bozza vuota per una nuova entry in un giorno/fascia. */
@@ -39,6 +41,8 @@ export function emptyDraft(
     nextSteps: "",
     links: [],
     milestone: "",
+    collaboratorIds: [],
+    contactIds: [],
   };
 }
 
@@ -58,6 +62,8 @@ export function draftFromEntry(e: Entry): EntryDraft {
     nextSteps: e.nextSteps,
     links: e.links.map((l) => ({ ...l })),
     milestone: e.milestone ?? "",
+    collaboratorIds: [...e.collaboratorIds],
+    contactIds: [...e.contactIds],
   };
 }
 
@@ -85,8 +91,8 @@ export function applyDraft(
     clientId: d.clientId,
     subtypeId: d.subtypeId,
     title: d.title.trim(),
-    collaboratorIds: base?.collaboratorIds ?? [],
-    contactIds: base?.contactIds ?? [],
+    collaboratorIds: [...d.collaboratorIds],
+    contactIds: [...d.contactIds],
     notes: d.notes,
     blockers: d.blockers,
     nextSteps: d.nextSteps,

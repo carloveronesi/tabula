@@ -50,6 +50,8 @@ beforeEach(async () => {
   useInventoryStore.setState({
     clients: [{ id: "c1", name: "Acme" } as Client],
     projects: [{ id: "p1", clientId: "c1", name: "Sito" } as Project],
+    people: [],
+    contacts: [],
   });
   useCalendarStore.setState({ entries: [] });
   useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
@@ -86,6 +88,22 @@ describe("EntryDetail", () => {
 
     expect(screen.getByText("Riunione")).toBeInTheDocument();
     expect(screen.getByText(/Fase 2/)).toBeInTheDocument();
+  });
+
+  it("mostra collaboratori e referenti risolti a nome", () => {
+    useInventoryStore.setState({
+      people: [{ id: "u1", name: "Mario" }],
+      contacts: [{ id: "k1", clientId: "c1", name: "Anna", role: "PM" }],
+    });
+    useEditorStore
+      .getState()
+      .showDetail(entry({ collaboratorIds: ["u1"], contactIds: ["k1"] }));
+    render(<EntryDetail />);
+
+    expect(screen.getByText("Collaboratori")).toBeInTheDocument();
+    expect(screen.getByText("Mario")).toBeInTheDocument();
+    expect(screen.getByText("Referenti")).toBeInTheDocument();
+    expect(screen.getByText("Anna")).toBeInTheDocument();
   });
 
   it("omette le sezioni vuote", () => {
