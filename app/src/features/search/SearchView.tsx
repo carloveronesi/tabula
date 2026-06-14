@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Entry, EntryType } from "@/data/types";
+import type { Entry, EntryType, Id } from "@/data/types";
 import { searchEntries } from "@/domain/search";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useEditorStore } from "@/store/editor";
-import { Input, Segmented, type SegmentedOption } from "@/ui";
+import { Button, Combobox, Field, Input, Segmented, type SegmentedOption } from "@/ui";
 
 type TypeFilter = EntryType | "all";
 
@@ -36,14 +36,38 @@ export function SearchView() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<TypeFilter>("all");
+  const [clientId, setClientId] = useState<Id | null>(null);
+  const [projectId, setProjectId] = useState<Id | null>(null);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   useEffect(() => {
     void allEntries().then(setEntries);
   }, []);
 
+  const clientOptions = useMemo(
+    () => clients.map((c) => ({ id: c.id, label: c.name })),
+    [clients],
+  );
+  const projectOptions = useMemo(
+    () =>
+      projects
+        .filter((p) => (clientId ? p.clientId === clientId : true))
+        .map((p) => ({ id: p.id, label: p.name })),
+    [projects, clientId],
+  );
+
   const results = useMemo(
-    () => searchEntries(entries, { query, type: type === "all" ? null : type }),
-    [entries, query, type],
+    () =>
+      searchEntries(entries, {
+        query,
+        type: type === "all" ? null : type,
+        clientId,
+        projectId,
+        from: from || null,
+        to: to || null,
+      }),
+    [entries, query, type, clientId, projectId, from, to],
   );
 
   const meta = (e: Entry) => {
@@ -52,7 +76,22 @@ export function SearchView() {
     return [client, project].filter(Boolean).join(" · ");
   };
 
-  const active = query.trim() !== "" || type !== "all";
+  const active =
+    query.trim() !== "" ||
+    type !== "all" ||
+    clientId !== null ||
+    projectId !== null ||
+    from !== "" ||
+    to !== "";
+
+  const clearFilters = () => {
+    setQuery("");
+    setType("all");
+    setClientId(null);
+    setProjectId(null);
+    setFrom("");
+    setTo("");
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -71,9 +110,61 @@ export function SearchView() {
         onChange={setType}
       />
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Cliente">
+          <Combobox
+            label="Cliente"
+            placeholder="Tutti"
+            options={clientOptions}
+            value={clientId}
+            onChange={(id) => {
+              setClientId(id);
+              setProjectId(null); // il progetto dipende dal cliente
+            }}
+          />
+        </Field>
+        <Field label="Progetto">
+          <Combobox
+            label="Progetto"
+            placeholder="Tutti"
+            options={projectOptions}
+            value={projectId}
+            onChange={setProjectId}
+          />
+        </Field>
+        <Field label="Dal">
+          <Input
+            type="date"
+            aria-label="Dal"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </Field>
+        <Field label="Al">
+          <Input
+            type="date"
+            aria-label="Al"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </Field>
+      </div>
+
+      {active && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted">
+            {results.length}{" "}
+            {results.length === 1 ? "risultato" : "risultati"}
+          </span>
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            Pulisci filtri
+          </Button>
+        </div>
+      )}
+
       {!active && (
         <p className="py-8 text-center text-sm text-muted">
-          Scrivi qualcosa o scegli un tipo per cercare.
+          Scrivi qualcosa o imposta un filtro per cercare.
         </p>
       )}
       {active && results.length === 0 && (

@@ -58,4 +58,49 @@ describe("searchEntries", () => {
   it("combina query e tipo", () => {
     expect(searchEntries(E, { query: "alfa", type: "vacation" })).toEqual([]);
   });
+
+  const F = [
+    entry("a", "2026-01-10T09:00:00", { clientId: "c1", projectId: "p1" }),
+    entry("b", "2026-02-10T09:00:00", { clientId: "c1", projectId: "p2" }),
+    entry("c", "2026-03-10T09:00:00", { clientId: "c2", projectId: "p3" }),
+  ];
+
+  it("filtra per cliente (da solo attiva la ricerca)", () => {
+    const r = searchEntries(F, { clientId: "c1" });
+    expect(r.map((e) => e.id).sort()).toEqual(["a", "b"]);
+  });
+
+  it("filtra per progetto", () => {
+    expect(searchEntries(F, { projectId: "p3" }).map((e) => e.id)).toEqual(["c"]);
+  });
+
+  it("filtra per intervallo di date (estremi inclusi, sul giorno di inizio)", () => {
+    const r = searchEntries(F, { from: "2026-02-01", to: "2026-03-31" });
+    expect(r.map((e) => e.id)).toEqual(["c", "b"]); // ordine decrescente
+  });
+
+  it("from senza to: dal giorno in poi", () => {
+    expect(searchEntries(F, { from: "2026-02-10" }).map((e) => e.id)).toEqual([
+      "c",
+      "b",
+    ]);
+  });
+
+  it("to senza from: fino al giorno incluso", () => {
+    expect(searchEntries(F, { to: "2026-02-10" }).map((e) => e.id)).toEqual([
+      "b",
+      "a",
+    ]);
+  });
+
+  it("combina cliente e query", () => {
+    const r = searchEntries(
+      [
+        entry("x", "2026-01-01T09:00:00", { clientId: "c1", title: "deploy" }),
+        entry("y", "2026-01-02T09:00:00", { clientId: "c2", title: "deploy" }),
+      ],
+      { clientId: "c1", query: "deploy" },
+    );
+    expect(r.map((e) => e.id)).toEqual(["x"]);
+  });
 });
