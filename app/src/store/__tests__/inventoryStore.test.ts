@@ -53,4 +53,37 @@ describe("useInventoryStore", () => {
     ]);
     expect(useInventoryStore.getState().projects).toHaveLength(2);
   });
+
+  it("saveProject crea un nuovo progetto (DB + store)", async () => {
+    await useInventoryStore.getState().saveProject(project("p1", "c1", "Sito"));
+
+    expect(useInventoryStore.getState().projects).toHaveLength(1);
+    expect(useInventoryStore.getState().projects[0].name).toBe("Sito");
+    expect(await db.projects.get("p1")).toMatchObject({ name: "Sito" });
+  });
+
+  it("saveProject aggiorna un progetto esistente senza duplicarlo", async () => {
+    await useInventoryStore.getState().saveProject(project("p1", "c1", "Sito"));
+    await useInventoryStore
+      .getState()
+      .saveProject({ ...project("p1", "c1", "Sito web"), status: "paused" });
+
+    const projects = useInventoryStore.getState().projects;
+    expect(projects).toHaveLength(1);
+    expect(projects[0].name).toBe("Sito web");
+    expect(projects[0].status).toBe("paused");
+    expect(await db.projects.get("p1")).toMatchObject({ name: "Sito web" });
+  });
+
+  it("removeProject elimina il progetto (DB + store)", async () => {
+    await useInventoryStore.getState().saveProject(project("p1", "c1", "Sito"));
+    await useInventoryStore.getState().saveProject(project("p2", "c1", "App"));
+
+    await useInventoryStore.getState().removeProject("p1");
+
+    expect(useInventoryStore.getState().projects.map((p) => p.id)).toEqual([
+      "p2",
+    ]);
+    expect(await db.projects.get("p1")).toBeUndefined();
+  });
 });

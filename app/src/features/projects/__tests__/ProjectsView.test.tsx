@@ -85,4 +85,37 @@ describe("ProjectsView", () => {
       screen.getByRole("heading", { name: "Manutenzione" }),
     ).toBeInTheDocument();
   });
+
+  it("modifica il progetto selezionato e lo persiste nello store", async () => {
+    render(<ProjectsView />);
+
+    const nameInput = screen.getByLabelText("Nome") as HTMLInputElement;
+    expect(nameInput.value).toBe("Sito"); // primo progetto auto-selezionato
+    fireEvent.change(nameInput, { target: { value: "Sito web" } });
+
+    const statusSelect = screen.getByLabelText("Stato") as HTMLSelectElement;
+    fireEvent.change(statusSelect, { target: { value: "paused" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() => {
+      const p = useInventoryStore
+        .getState()
+        .projects.find((x) => x.id === "p1");
+      expect(p?.name).toBe("Sito web");
+      expect(p?.status).toBe("paused");
+    });
+  });
+
+  it("elimina il progetto selezionato dallo store", async () => {
+    render(<ProjectsView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /elimina/i }));
+
+    await waitFor(() => {
+      expect(
+        useInventoryStore.getState().projects.map((p) => p.id),
+      ).not.toContain("p1");
+    });
+  });
 });

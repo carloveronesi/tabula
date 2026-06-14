@@ -43,3 +43,11 @@ export function allClients(): Promise<Client[]> {
 export function allProjects(): Promise<Project[]> {
   return db.projects.toArray();
 }
+
+export function putProject(project: Project): Promise<string> {
+  return db.projects.put(project);
+}
+
+export function deleteProject(id: string): Promise<void> {
+  return db.projects.delete(id);
+}

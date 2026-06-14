@@ -4,6 +4,11 @@ import { aggregateByProject } from "@/domain/projectStats";
 import { formatHours } from "@/domain/format";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
+import { useToastStore } from "@/store/toast";
+import { Button } from "@/ui/Button";
+import { Input } from "@/ui/Input";
+import { Textarea } from "@/ui/Textarea";
+import { Field } from "@/ui/Field";
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {
   active: "Attivo",
@@ -11,6 +16,106 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   paused: "In pausa",
   archived: "Archiviato",
 };
+const STATUSES = Object.keys(STATUS_LABEL) as ProjectStatus[];
+
+const selectClasses =
+  "h-9 w-full rounded border border-line bg-bg px-3 text-sm text-ink " +
+  "focus:border-primary focus:outline-none";
+
+/**
+ * Editor inline del progetto selezionato (CRUD): nome, stato, descrizione,
+ * obiettivi. Lo stato locale è inizializzato dal progetto ed è riavviato dal
+ * `key={project.id}` di chi lo monta quando cambia la selezione.
+ */
+function ProjectEditor({
+  project,
+  onDeleted,
+}: {
+  project: Project;
+  onDeleted: () => void;
+}) {
+  const saveProject = useInventoryStore((s) => s.saveProject);
+  const removeProject = useInventoryStore((s) => s.removeProject);
+  const notify = useToastStore((s) => s.notify);
+
+  const [name, setName] = useState(project.name);
+  const [status, setStatus] = useState<ProjectStatus>(project.status);
+  const [description, setDescription] = useState(project.description);
+  const [objectives, setObjectives] = useState(project.objectives);
+
+  const dirty =
+    name !== project.name ||
+    status !== project.status ||
+    description !== project.description ||
+    objectives !== project.objectives;
+
+  const save = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await saveProject({ ...project, name: trimmed, status, description, objectives });
+    notify("Progetto salvato");
+  };
+
+  const remove = async () => {
+    await removeProject(project.id);
+    notify("Progetto eliminato");
+    onDeleted();
+  };
+
+  return (
+    <form
+      className="space-y-4 rounded-lg border border-line bg-surface p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
+        <Field label="Nome">
+          <Input
+            aria-label="Nome"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </Field>
+        <Field label="Stato">
+          <select
+            aria-label="Stato"
+            className={selectClasses}
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <Field label="Descrizione">
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </Field>
+      <Field label="Obiettivi">
+        <Textarea
+          value={objectives}
+          onChange={(e) => setObjectives(e.target.value)}
+        />
+      </Field>
+      <div className="flex items-center justify-between">
+        <Button type="submit" variant="primary" disabled={!dirty || !name.trim()}>
+          Salva
+        </Button>
+        <Button variant="danger" onClick={() => void remove()}>
+          Elimina
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 const fmtDay = (iso: string) =>
   new Intl.DateTimeFormat("it-IT", {
@@ -149,26 +254,11 @@ export function ProjectsView() {
             />
           </dl>
 
-          {selected.description && (
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Descrizione
-              </h3>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
-                {selected.description}
-              </p>
-            </div>
-          )}
-          {selected.objectives && (
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Obiettivi
-              </h3>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
-                {selected.objectives}
-              </p>
-            </div>
-          )}
+          <ProjectEditor
+            key={selected.id}
+            project={selected}
+            onDeleted={() => setSelectedId(null)}
+          />
         </section>
       )}
     </div>
