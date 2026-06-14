@@ -28,6 +28,7 @@ export default {
           wash: "var(--accent-wash)",
         },
         danger: "var(--danger)",
+        now: "var(--now)",
       },
       fontFamily: {
         sans: "var(--font-sans)",

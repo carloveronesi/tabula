@@ -16,6 +16,7 @@ import { isoDate } from "@/domain/calendarNav";
 import { withAlpha } from "@/domain/colors";
 import { DayGrid, TIME_GUTTER } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
+import { NowLine } from "@/features/calendar/NowLine";
 
 interface DayViewProps {
   date: Date;
@@ -164,6 +165,14 @@ export function DayView({
         className="absolute inset-y-0 right-0 touch-none"
         style={{ left: TIME_GUTTER }}
       >
+        {dayKey === isoDate(new Date()) && (
+          <NowLine
+            slots={slots}
+            slotMinutes={slotMinutes}
+            slotHeight={slotHeight}
+            withDot
+          />
+        )}
         {ghost && (
           <div
             data-testid="create-ghost"

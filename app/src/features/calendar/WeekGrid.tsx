@@ -17,6 +17,7 @@ import {
 } from "@/domain/dragGrid";
 import { TIME_GUTTER } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
+import { NowLine } from "@/features/calendar/NowLine";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -258,6 +259,13 @@ export function WeekGrid({
                   }`}
                 />
               ))}
+              {isoDate(d) === todayKey && (
+                <NowLine
+                  slots={slots}
+                  slotMinutes={slotMinutes}
+                  slotHeight={slotHeight}
+                />
+              )}
               {entryBlocks(entries, isoDate(d), slots).map((b) => {
                 if (drag && drag.kind !== "create" && drag.id === b.entry.id)
                   return null; // mostrato nell'anteprima

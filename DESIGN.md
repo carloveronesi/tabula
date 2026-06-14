@@ -41,6 +41,7 @@ OKLCH ovunque. Token definiti in `app/src/styles/index.css` (`:root` = chiaro,
 | Testo su accento | `--primary-ink`/`--accent-ink` | `oklch(0.99 0.004 256)` | testo bianco su fill cobalto |
 | Wash accento     | `--primary-wash`/`--accent-wash` | `oklch(0.955 0.03 258)` | sfondo tenue (blocchi-evento, oggi, selezione) |
 | Pericolo         | `--danger`         | `oklch(0.55 0.20 25)`      | elimina/errore |
+| Ora corrente     | `--now`            | `oklch(0.62 0.22 18)`      | linea "adesso" nel calendario (stile Teams) |
 
 `--primary` e `--accent` sono **lo stesso cobalto** (un solo accento). I due nomi
 restano per non toccare i componenti; i ruoli secondari (es. chip cliente) usano
@@ -99,6 +100,12 @@ CSS); l'altezza-slot reale per posizionare i blocchi è *misurata*
 (`useFitSlotHeight`, `ResizeObserver`). Le viste a lista scorrono dentro il
 pannello. Griglia oraria: **etichette e linee ogni 30 min** (leggibilità), con
 snapping dei blocchi ancora a `slotMinutes` (15/30).
+
+**Linea "ora corrente"** (`NowLine`, stile Teams): riga orizzontale in `--now`
+(rosso, distinto dall'accento) con pallino, posizionata via `nowRowOffset` (puro,
+gestisce i buchi della pausa) e aggiornata ogni minuto (`useNowMinute`). Compare
+solo sul giorno odierno (vista Giorno; colonna di oggi in Settimana) e solo se
+l'ora è nell'orario mostrato.
 
 ## Spacing & Radii
 
