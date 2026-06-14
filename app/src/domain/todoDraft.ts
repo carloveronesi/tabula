@@ -75,3 +75,25 @@ export function subtaskProgress(todo: Todo): { done: number; total: number } {
     total: todo.subtasks.length,
   };
 }
+
+/**
+ * Aggiunge un tag (trimmato). Ignora i vuoti e i duplicati (confronto
+ * case-insensitive). Puro.
+ */
+export function addTag(todo: Todo, tag: string): Todo {
+  const trimmed = tag.trim();
+  if (trimmed === "") return todo;
+  const exists = todo.tags.some(
+    (t) => t.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (exists) return todo;
+  return { ...todo, tags: [...todo.tags, trimmed] };
+}
+
+/** Rimuove il tag indicato (confronto case-insensitive). Puro. */
+export function removeTag(todo: Todo, tag: string): Todo {
+  return {
+    ...todo,
+    tags: todo.tags.filter((t) => t.toLowerCase() !== tag.toLowerCase()),
+  };
+}

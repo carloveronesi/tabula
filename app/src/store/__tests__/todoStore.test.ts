@@ -78,6 +78,19 @@ describe("useTodoStore", () => {
     expect(subs.map((s) => s.title)).toEqual(["Revisione"]);
   });
 
+  it("gestisce i tag (aggiungi/rimuovi) persistendo", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    const id = useTodoStore.getState().todos[0].id;
+
+    await useTodoStore.getState().addTag(id, "Urgente");
+    await useTodoStore.getState().addTag(id, "urgente"); // duplicato ignorato
+    expect(useTodoStore.getState().todos[0].tags).toEqual(["Urgente"]);
+    expect((await db.todos.get(id))?.tags).toEqual(["Urgente"]);
+
+    await useTodoStore.getState().removeTag(id, "URGENTE");
+    expect(useTodoStore.getState().todos[0].tags).toEqual([]);
+  });
+
   it("removeTodo elimina (DB + store)", async () => {
     await useTodoStore.getState().addTodo("A");
     await useTodoStore.getState().addTodo("B");

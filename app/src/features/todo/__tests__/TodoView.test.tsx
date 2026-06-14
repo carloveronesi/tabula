@@ -95,6 +95,27 @@ describe("TodoView", () => {
     );
   });
 
+  it("aggiunge e rimuove un tag", async () => {
+    await useTodoStore.getState().addTodo("Task");
+    render(<TodoView />);
+
+    fireEvent.click(await screen.findByLabelText("Sottotask Task"));
+
+    const tagInput = screen.getByLabelText("Nuovo tag Task");
+    fireEvent.change(tagInput, { target: { value: "Urgente" } });
+    fireEvent.keyDown(tagInput, { key: "Enter" });
+
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].tags).toEqual(["Urgente"]),
+    );
+    expect(screen.getByText("Urgente")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Rimuovi tag Urgente"));
+    await waitFor(() =>
+      expect(useTodoStore.getState().todos[0].tags).toEqual([]),
+    );
+  });
+
   it("completa e poi elimina un todo", async () => {
     await useTodoStore.getState().addTodo("Task");
     render(<TodoView />);

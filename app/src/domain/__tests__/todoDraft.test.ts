@@ -7,6 +7,8 @@ import {
   toggleSubtask,
   removeSubtask,
   subtaskProgress,
+  addTag,
+  removeTag,
 } from "@/domain/todoDraft";
 import type { Todo } from "@/data/types";
 
@@ -116,5 +118,26 @@ describe("sottotask", () => {
     );
     expect(subtaskProgress(a)).toEqual({ done: 1, total: 2 });
     expect(subtaskProgress(base)).toEqual({ done: 0, total: 0 });
+  });
+});
+
+describe("tag", () => {
+  const base = todo("t", "T", false, 0);
+
+  it("addTag aggiunge un tag trimmato e ignora vuoti e duplicati (case-insensitive)", () => {
+    const a = addTag(base, "  Urgente  ");
+    expect(a.tags).toEqual(["Urgente"]);
+    expect(addTag(a, "urgente").tags).toEqual(["Urgente"]); // duplicato
+    expect(addTag(base, "   ").tags).toEqual([]); // vuoto
+  });
+
+  it("addTag non muta il todo originale", () => {
+    addTag(base, "X");
+    expect(base.tags).toEqual([]);
+  });
+
+  it("removeTag rimuove il tag indicato (case-insensitive)", () => {
+    const a = addTag(addTag(base, "Urgente"), "Lavoro");
+    expect(removeTag(a, "urgente").tags).toEqual(["Lavoro"]);
   });
 });

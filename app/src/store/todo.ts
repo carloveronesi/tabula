@@ -7,6 +7,8 @@ import {
   addSubtask,
   toggleSubtask,
   removeSubtask,
+  addTag,
+  removeTag,
 } from "@/domain/todoDraft";
 
 interface TodoState {
@@ -19,6 +21,8 @@ interface TodoState {
   addSubtask: (id: Id, title: string) => Promise<void>;
   toggleSubtask: (id: Id, subId: Id) => Promise<void>;
   removeSubtask: (id: Id, subId: Id) => Promise<void>;
+  addTag: (id: Id, tag: string) => Promise<void>;
+  removeTag: (id: Id, tag: string) => Promise<void>;
   removeTodo: (id: Id) => Promise<void>;
 }
 
@@ -55,6 +59,8 @@ export const useTodoStore = create<TodoState>((set, get) => {
     addSubtask: (id, title) => transform(id, (t) => addSubtask(t, title, nanoid())),
     toggleSubtask: (id, subId) => transform(id, (t) => toggleSubtask(t, subId)),
     removeSubtask: (id, subId) => transform(id, (t) => removeSubtask(t, subId)),
+    addTag: (id, tag) => transform(id, (t) => addTag(t, tag)),
+    removeTag: (id, tag) => transform(id, (t) => removeTag(t, tag)),
     removeTodo: async (id) => {
       await deleteTodo(id);
       set({ todos: get().todos.filter((t) => t.id !== id) });

@@ -26,9 +26,12 @@ function TodoRow({
   const addSubtask = useTodoStore((s) => s.addSubtask);
   const toggleSubtask = useTodoStore((s) => s.toggleSubtask);
   const removeSubtask = useTodoStore((s) => s.removeSubtask);
+  const addTag = useTodoStore((s) => s.addTag);
+  const removeTag = useTodoStore((s) => s.removeTag);
 
   const [expanded, setExpanded] = useState(false);
   const [subTitle, setSubTitle] = useState("");
+  const [tagInput, setTagInput] = useState("");
 
   const overdue = isOverdue(t, today);
   const { done, total } = subtaskProgress(t);
@@ -37,6 +40,12 @@ function TodoRow({
     if (subTitle.trim() === "") return;
     await addSubtask(t.id, subTitle);
     setSubTitle("");
+  };
+
+  const addNewTag = async () => {
+    if (tagInput.trim() === "") return;
+    await addTag(t.id, tagInput);
+    setTagInput("");
   };
 
   return (
@@ -109,6 +118,37 @@ function TodoRow({
 
       {expanded && (
         <div className="mt-2 space-y-1.5 pl-7">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {t.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-pill bg-raised px-2 py-0.5 text-xs text-muted"
+              >
+                {tag}
+                <button
+                  type="button"
+                  aria-label={`Rimuovi tag ${tag}`}
+                  onClick={() => void removeTag(t.id, tag)}
+                  className="text-faint hover:text-ink"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            <input
+              aria-label={`Nuovo tag ${t.title}`}
+              placeholder="+ tag"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void addNewTag();
+                }
+              }}
+              className="h-6 w-20 rounded border border-line bg-bg px-2 text-xs focus:border-primary focus:outline-none"
+            />
+          </div>
           {t.subtasks.map((s) => (
             <div key={s.id} className="flex items-center gap-2">
               <input
