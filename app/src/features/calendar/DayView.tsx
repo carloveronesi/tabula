@@ -13,6 +13,7 @@ import {
   rowsToRange,
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
+import { withAlpha } from "@/domain/colors";
 import { DayGrid, SLOT_HEIGHT, TIME_GUTTER } from "@/features/calendar/DayGrid";
 
 interface DayViewProps {
@@ -21,6 +22,8 @@ interface DayViewProps {
   workHours: WorkHours;
   slotMinutes: number;
   onSelectEntry?: (entry: Entry) => void;
+  /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
+  colorOf?: (entry: Entry) => string | null;
   /** Drag su area vuota → nuova attività in quel giorno/intervallo (minuti). */
   onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
   /** Move/resize confermato → nuovo giorno/intervallo dell'entry (minuti). */
@@ -72,6 +75,7 @@ export function DayView({
   workHours,
   slotMinutes,
   onSelectEntry,
+  colorOf,
   onCreateRange,
   onUpdateEntry,
 }: DayViewProps) {
@@ -180,6 +184,7 @@ export function DayView({
           const live = active
             ? dragGeom(drag, slotCount)
             : { startRow: b.startRow, span: b.span };
+          const color = colorOf?.(b.entry) ?? null;
           return (
             <button
               key={b.entry.id}
@@ -203,6 +208,7 @@ export function DayView({
                 height: live.span * SLOT_HEIGHT - 4,
                 left: 4,
                 right: 4,
+                backgroundColor: color ? withAlpha(color, 0.16) : undefined,
               }}
               className={`group relative flex touch-none flex-col gap-0.5 overflow-hidden rounded-lg bg-primary-wash py-1.5 pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 active && dragConflict ? "ring-2 ring-danger" : ""
@@ -210,6 +216,7 @@ export function DayView({
             >
               <span
                 aria-hidden
+                style={{ backgroundColor: color ?? undefined }}
                 className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-accent"
               />
               <span className="truncate leading-tight">{b.entry.title}</span>

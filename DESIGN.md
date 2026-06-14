@@ -54,10 +54,16 @@ Vedi `index.css`.
 
 ### Regole
 
-- Testo su fill cobalto (bottoni, badge): **bianco** (`*-ink`). I blocchi-evento
-  usano il **wash** (cobalto tenue) con testo `--ink`/`--accent`, non il fill pieno.
-- Il colore non è mai l'unico veicolo di significato: i blocchi portano
-  etichetta/tipo accanto al colore.
+- Testo su fill cobalto (bottoni, badge): **bianco** (`*-ink`).
+- **Blocchi-evento — colore per cliente/sottotipo.** Eccezione mirata alla regola
+  della voce unica: ogni blocco porta una **barra colore** + un **wash** dello
+  stesso colore (`withAlpha(color, 0.16)`), risolto da `entryColor()`
+  (`clientColors`/`internalColors` con fallback deterministico `colorFromKey`).
+  Ferie/evento senza cliente → accento cobalto di default. Tutto il *cromo* dell'UI
+  (azioni, nav, oggi) resta a voce unica cobalto: il colore categoriale vive solo
+  dentro i blocchi del calendario.
+- Il colore non è mai l'unico veicolo di significato: i blocchi portano sempre
+  **titolo** accanto al colore (leggibili anche in daltonismo).
 
 ## Typography
 

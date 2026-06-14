@@ -53,3 +53,28 @@ export function withAlpha(hex: string, alpha: number): string {
   const { r, g, b } = parseHex(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/** Mappe colore persistite (per cliente e per sottotipo interno). */
+export interface ColorMaps {
+  clientColors: Record<string, string>;
+  internalColors: Record<string, string>;
+}
+
+/**
+ * Colore di un'attività per i blocchi-calendario: per cliente (`type=client`)
+ * o per sottotipo interno (`type=internal`), con fallback deterministico se non
+ * c'è un colore assegnato. `null` quando non c'è un riferimento colorabile
+ * (ferie/evento senza cliente) → il chiamante usa l'accento di default.
+ */
+export function entryColor(
+  entry: { type: string; clientId: string | null; subtypeId: string | null },
+  maps: ColorMaps,
+): string | null {
+  if (entry.type === "client" && entry.clientId) {
+    return maps.clientColors[entry.clientId] ?? colorFromKey(entry.clientId);
+  }
+  if (entry.type === "internal" && entry.subtypeId) {
+    return maps.internalColors[entry.subtypeId] ?? colorFromKey(entry.subtypeId);
+  }
+  return null;
+}

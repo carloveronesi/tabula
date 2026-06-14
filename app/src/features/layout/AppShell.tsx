@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import type { Entry } from "@/data/types";
 import { dateTimeAt } from "@/domain/time";
+import { entryColor } from "@/domain/colors";
 import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -61,6 +63,15 @@ export function AppShell() {
   const createRange = (dateISO: string, startMin: number, endMin: number) =>
     openCreate({ date: dateISO, startMin, endMin });
 
+  // Colore del blocco per cliente/sottotipo (memoizzato sulle mappe colore).
+  const colorOf = useMemo(() => {
+    const maps = {
+      clientColors: settings.clientColors,
+      internalColors: settings.internalColors,
+    };
+    return (entry: Entry) => entryColor(entry, maps);
+  }, [settings.clientColors, settings.internalColors]);
+
   const updateEntryRange = async (
     entry: Entry,
     dateISO: string,
@@ -95,6 +106,7 @@ export function AppShell() {
             workHours={settings.workHours}
             slotMinutes={settings.slotMinutes}
             onSelectEntry={showDetail}
+            colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
           />
@@ -107,6 +119,7 @@ export function AppShell() {
             slotMinutes={settings.slotMinutes}
             entries={entries}
             onSelectEntry={showDetail}
+            colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
           />

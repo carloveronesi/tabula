@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   PALETTE,
   colorFromKey,
+  entryColor,
   textColorOn,
   withAlpha,
 } from "@/domain/colors";
@@ -35,5 +36,41 @@ describe("textColorOn", () => {
 describe("withAlpha", () => {
   it("converte hex in rgba", () => {
     expect(withAlpha("#6366f1", 0.5)).toBe("rgba(99, 102, 241, 0.5)");
+  });
+});
+
+describe("entryColor", () => {
+  const maps = {
+    clientColors: { acme: "#ff0000" },
+    internalColors: { dev: "#00ff00" },
+  };
+
+  it("usa il colore cliente assegnato", () => {
+    expect(
+      entryColor({ type: "client", clientId: "acme", subtypeId: null }, maps),
+    ).toBe("#ff0000");
+  });
+
+  it("ricade su un colore deterministico se il cliente non ha colore", () => {
+    const c = entryColor(
+      { type: "client", clientId: "globex", subtypeId: null },
+      maps,
+    );
+    expect(c).toBe(colorFromKey("globex"));
+  });
+
+  it("usa il colore del sottotipo per le attività interne", () => {
+    expect(
+      entryColor({ type: "internal", clientId: null, subtypeId: "dev" }, maps),
+    ).toBe("#00ff00");
+  });
+
+  it("ritorna null per ferie/evento o senza riferimento", () => {
+    expect(
+      entryColor({ type: "vacation", clientId: null, subtypeId: null }, maps),
+    ).toBeNull();
+    expect(
+      entryColor({ type: "client", clientId: null, subtypeId: null }, maps),
+    ).toBeNull();
   });
 });

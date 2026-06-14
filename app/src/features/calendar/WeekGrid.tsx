@@ -4,6 +4,7 @@ import { workWeekDays, dowMon0, isoDate } from "@/domain/calendarNav";
 import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
+import { withAlpha } from "@/domain/colors";
 import {
   rowAtOffset,
   columnAtOffset,
@@ -29,6 +30,8 @@ interface WeekGridProps {
   slotMinutes: number;
   entries?: Entry[];
   onSelectEntry?: (entry: Entry) => void;
+  /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
+  colorOf?: (entry: Entry) => string | null;
   onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
   onUpdateEntry?: (
     entry: Entry,
@@ -85,6 +88,7 @@ export function WeekGrid({
   slotMinutes,
   entries = [],
   onSelectEntry,
+  colorOf,
   onCreateRange,
   onUpdateEntry,
 }: WeekGridProps) {
@@ -248,6 +252,7 @@ export function WeekGrid({
               {entryBlocks(entries, isoDate(d), slots).map((b) => {
                 if (drag && drag.kind !== "create" && drag.id === b.entry.id)
                   return null; // mostrato nell'anteprima
+                const color = colorOf?.(b.entry) ?? null;
                 return (
                   <button
                     key={b.entry.id}
@@ -273,11 +278,13 @@ export function WeekGrid({
                       height: b.span * SLOT_HEIGHT - 2,
                       left: 2,
                       right: 2,
+                      backgroundColor: color ? withAlpha(color, 0.16) : undefined,
                     }}
                     className="relative flex touch-none overflow-hidden rounded-lg bg-primary-wash py-0.5 pl-2.5 pr-1.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[box-shadow] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow"
                   >
                     <span
                       aria-hidden
+                      style={{ backgroundColor: color ?? undefined }}
                       className="absolute inset-y-1 left-1 w-0.5 rounded-pill bg-accent"
                     />
                     <span className="line-clamp-2">{b.entry.title}</span>
