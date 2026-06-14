@@ -6,6 +6,9 @@ import {
   allPeople,
   allProjects,
   deleteProject,
+  putClient,
+  putContact,
+  putPerson,
   putProject,
 } from "@/data/repositories";
 
@@ -17,6 +20,9 @@ interface InventoryState {
   loadInventory: () => Promise<void>;
   saveProject: (project: Project) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
+  saveClient: (client: Client) => Promise<void>;
+  savePerson: (person: Person) => Promise<void>;
+  saveContact: (contact: Contact) => Promise<void>;
 }
 
 /**
@@ -46,5 +52,24 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   removeProject: async (id) => {
     await deleteProject(id);
     set({ projects: get().projects.filter((p) => p.id !== id) });
+  },
+  saveClient: async (client) => {
+    await putClient(client);
+    const rest = get().clients.filter((c) => c.id !== client.id);
+    set({
+      clients: [...rest, client].sort((a, b) => a.name.localeCompare(b.name)),
+    });
+  },
+  savePerson: async (person) => {
+    await putPerson(person);
+    const rest = get().people.filter((p) => p.id !== person.id);
+    set({
+      people: [...rest, person].sort((a, b) => a.name.localeCompare(b.name)),
+    });
+  },
+  saveContact: async (contact) => {
+    await putContact(contact);
+    const rest = get().contacts.filter((k) => k.id !== contact.id);
+    set({ contacts: [...rest, contact] });
   },
 }));

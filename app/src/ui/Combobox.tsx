@@ -10,6 +10,8 @@ export interface ComboboxProps {
   options: ComboboxOption[];
   value: string | null;
   onChange: (id: string) => void;
+  /** Se presente, un testo non in elenco può essere creato (riga "Crea …"). */
+  onCreate?: (label: string) => void;
   label?: string;
   placeholder?: string;
   emptyText?: string;
@@ -23,6 +25,7 @@ export function Combobox({
   options,
   value,
   onChange,
+  onCreate,
   label,
   placeholder,
   emptyText = "Nessun risultato",
@@ -46,6 +49,14 @@ export function Combobox({
     return options.filter((o) => o.label.toLowerCase().includes(q));
   }, [options, query]);
 
+  const trimmed = query.trim();
+  const showCreate =
+    !!onCreate &&
+    trimmed !== "" &&
+    !options.some((o) => o.label.toLowerCase() === trimmed.toLowerCase());
+  // Indice della riga "Crea …" nella navigazione da tastiera (dopo i filtrati).
+  const createIndex = showCreate ? filtered.length : -1;
+
   // Chiude la lista al click fuori.
   useEffect(() => {
     if (!open) return;
@@ -62,16 +73,25 @@ export function Combobox({
     setOpen(false);
   }
 
+  function create() {
+    onCreate?.(trimmed);
+    setOpen(false);
+  }
+
   function onKeyDown(e: React.KeyboardEvent) {
+    const max = filtered.length - 1 + (showCreate ? 1 : 0);
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setOpen(true);
-      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+      setHighlight((h) => Math.min(h + 1, max));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
-      if (open && filtered[highlight]) {
+      if (open && highlight === createIndex) {
+        e.preventDefault();
+        create();
+      } else if (open && filtered[highlight]) {
         e.preventDefault();
         select(filtered[highlight]);
       }
@@ -114,7 +134,7 @@ export function Combobox({
             "border border-line bg-surface p-1 shadow",
           )}
         >
-          {filtered.length === 0 && (
+          {filtered.length === 0 && !showCreate && (
             <li className="px-2 py-1.5 text-sm text-muted">{emptyText}</li>
           )}
           {filtered.map((opt, i) => {
@@ -140,6 +160,24 @@ export function Combobox({
               </li>
             );
           })}
+          {showCreate && (
+            <li
+              role="option"
+              aria-selected={false}
+              onMouseEnter={() => setHighlight(createIndex)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                create();
+              }}
+              className={cn(
+                "cursor-pointer rounded px-2 py-1.5 text-sm",
+                highlight === createIndex ? "bg-raised" : "",
+                "text-accent",
+              )}
+            >
+              Crea «{trimmed}»
+            </li>
+          )}
         </ul>
       )}
     </div>

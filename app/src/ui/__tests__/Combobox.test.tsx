@@ -60,4 +60,58 @@ describe("Combobox", () => {
     render(<Combobox options={OPTS} value="c1" onChange={() => {}} label="Cliente" />);
     expect(screen.getByRole("combobox")).toHaveValue("Acme Spa");
   });
+
+  it("con onCreate offre di creare il testo non in elenco", () => {
+    const onCreate = vi.fn();
+    render(
+      <Combobox
+        options={OPTS}
+        value={null}
+        onChange={() => {}}
+        onCreate={onCreate}
+        label="Cliente"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "Delta" } });
+    const create = screen.getByRole("option", { name: /Crea .*Delta/ });
+    fireEvent.mouseDown(create);
+    expect(onCreate).toHaveBeenCalledWith("Delta");
+  });
+
+  it("non offre la creazione se il testo coincide con un'opzione esistente", () => {
+    const onCreate = vi.fn();
+    render(
+      <Combobox
+        options={OPTS}
+        value={null}
+        onChange={() => {}}
+        onCreate={onCreate}
+        label="Cliente"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "acme spa" } });
+    expect(screen.queryByRole("option", { name: /Crea/ })).not.toBeInTheDocument();
+  });
+
+  it("crea col tasto Invio quando non ci sono risultati", () => {
+    const onCreate = vi.fn();
+    render(
+      <Combobox
+        options={OPTS}
+        value={null}
+        onChange={() => {}}
+        onCreate={onCreate}
+        label="Cliente"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "Zeta" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onCreate).toHaveBeenCalledWith("Zeta");
+  });
 });

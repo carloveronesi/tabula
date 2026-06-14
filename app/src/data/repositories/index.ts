@@ -48,6 +48,18 @@ export function allClients(): Promise<Client[]> {
   return db.clients.orderBy("name").toArray();
 }
 
+export function putClient(client: Client): Promise<string> {
+  return db.clients.put(client);
+}
+
+export function putPerson(person: Person): Promise<string> {
+  return db.people.put(person);
+}
+
+export function putContact(contact: Contact): Promise<string> {
+  return db.contacts.put(contact);
+}
+
 /** Tutti i progetti (la cascata filtra per cliente in memoria). */
 export function allProjects(): Promise<Project[]> {
   return db.projects.toArray();

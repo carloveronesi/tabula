@@ -222,11 +222,15 @@ describe("EntryEditor", () => {
     expect(useCalendarStore.getState().entries[0].milestone).toBe("Fase 2");
   });
 
-  it("seleziona i collaboratori e li salva sulla entry", async () => {
+  it("propone i collaboratori dal team del progetto e li salva", async () => {
     useInventoryStore.setState({
       people: [
         { id: "u1", name: "Mario" },
         { id: "u2", name: "Lucia" },
+      ],
+      projects: [
+        { ...project("p1", "c1", "Sito"), teamIds: ["u1"] },
+        project("p2", null, "Interno"),
       ],
     });
     useEditorStore
@@ -237,7 +241,23 @@ describe("EntryEditor", () => {
     fireEvent.change(screen.getByLabelText("Titolo"), {
       target: { value: "Call" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Mario" }));
+    // scegli cliente (il progetto è filtrato per cliente), poi il progetto
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+    const projectBox = screen.getByRole("combobox", { name: "Progetto" });
+    fireEvent.focus(projectBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Sito" }));
+
+    const collabBox = screen.getByRole("combobox", {
+      name: "Aggiungi collaboratore",
+    });
+    fireEvent.focus(collabBox);
+    // solo il team del progetto (Mario), non Lucia
+    expect(
+      screen.queryByRole("option", { name: "Lucia" }),
+    ).not.toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Mario" }));
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
 
     await waitFor(() =>
@@ -246,6 +266,53 @@ describe("EntryEditor", () => {
     expect(useCalendarStore.getState().entries[0].collaboratorIds).toEqual([
       "u1",
     ]);
+  });
+
+  it("crea un collaboratore al volo e lo lega al team del progetto", async () => {
+    useInventoryStore.setState({
+      people: [],
+      projects: [project("p1", "c1", "Sito")],
+    });
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Call" },
+    });
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+    const projectBox = screen.getByRole("combobox", { name: "Progetto" });
+    fireEvent.focus(projectBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Sito" }));
+
+    const collabBox = screen.getByRole("combobox", {
+      name: "Aggiungi collaboratore",
+    });
+    fireEvent.focus(collabBox);
+    fireEvent.change(collabBox, { target: { value: "Nuovo Tizio" } });
+    fireEvent.mouseDown(
+      screen.getByRole("option", { name: /Crea .*Nuovo Tizio/ }),
+    );
+
+    await waitFor(() =>
+      expect(
+        useInventoryStore.getState().people.some((p) => p.name === "Nuovo Tizio"),
+      ).toBe(true),
+    );
+    // legato al team del progetto
+    const proj = useInventoryStore.getState().projects.find((p) => p.id === "p1");
+    expect(proj?.teamIds).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].collaboratorIds).toHaveLength(
+      1,
+    );
   });
 
   it("mostra i referenti del cliente selezionato e li salva", async () => {
@@ -267,11 +334,15 @@ describe("EntryEditor", () => {
     fireEvent.focus(clientBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
 
+    const contactBox = screen.getByRole("combobox", {
+      name: "Aggiungi referente",
+    });
+    fireEvent.focus(contactBox);
     // solo i referenti del cliente scelto (c1)
     expect(
-      screen.queryByRole("button", { name: "Altro" }),
+      screen.queryByRole("option", { name: "Altro" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Anna" }));
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Anna" }));
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
 
     await waitFor(() =>
@@ -279,6 +350,35 @@ describe("EntryEditor", () => {
     );
     expect(useCalendarStore.getState().entries[0].contactIds).toEqual(["k1"]);
     expect(useCalendarStore.getState().entries[0].clientId).toBe("c1");
+  });
+
+  it("crea un cliente al volo dal combobox", async () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Call" },
+    });
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.change(clientBox, { target: { value: "Globex" } });
+    fireEvent.mouseDown(screen.getByRole("option", { name: /Crea .*Globex/ }));
+
+    await waitFor(() =>
+      expect(
+        useInventoryStore.getState().clients.some((c) => c.name === "Globex"),
+      ).toBe(true),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const newClient = useInventoryStore
+      .getState()
+      .clients.find((c) => c.name === "Globex");
+    expect(useCalendarStore.getState().entries[0].clientId).toBe(newClient!.id);
   });
 
   it("modifica: precompila e salva 'cosa è andato storto' e 'prossimi passi'", async () => {

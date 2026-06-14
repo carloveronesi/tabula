@@ -9,6 +9,7 @@ import {
   type EntryDraft,
 } from "@/domain/entryDraft";
 import { conflictsOnDay } from "@/domain/conflict";
+import { collaboratorCandidateIds } from "@/domain/collaborators";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -37,30 +38,25 @@ const TYPES: SegmentedOption<EntryType>[] = [
   { id: "vacation", label: "Ferie" },
 ];
 
-/** Chip selezionabile (toggle) per le multi-selezioni dell'editor. */
-function Chip({
-  label,
-  on,
-  onClick,
-}: {
-  label: string;
-  on: boolean;
-  onClick: () => void;
-}) {
+/** Token selezionato (con rimozione) per le multi-selezioni dell'editor. */
+function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
+    <span
       className={cn(
-        "rounded-pill border px-2.5 py-1 text-xs transition-colors duration-[var(--dur-fast)]",
-        on
-          ? "border-primary bg-primary-wash text-accent"
-          : "border-line text-muted hover:bg-raised hover:text-ink",
+        "inline-flex items-center gap-1 rounded-pill border border-primary bg-primary-wash",
+        "py-1 pl-2.5 pr-1 text-xs text-accent",
       )}
     >
       {label}
-    </button>
+      <IconButton
+        label={`Rimuovi ${label}`}
+        size="sm"
+        className="h-5 w-5"
+        onClick={onRemove}
+      >
+        <Icons.IconClose size={13} />
+      </IconButton>
+    </span>
   );
 }
 
@@ -82,6 +78,10 @@ export function EntryEditor() {
   const projects = useInventoryStore((s) => s.projects);
   const people = useInventoryStore((s) => s.people);
   const contacts = useInventoryStore((s) => s.contacts);
+  const saveClient = useInventoryStore((s) => s.saveClient);
+  const saveProject = useInventoryStore((s) => s.saveProject);
+  const savePerson = useInventoryStore((s) => s.savePerson);
+  const saveContact = useInventoryStore((s) => s.saveContact);
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
 
   const [draft, setDraft] = useState<EntryDraft>(() =>
@@ -143,17 +143,92 @@ export function EntryEditor() {
   const removeLink = (i: number) =>
     setDraft((d) => ({ ...d, links: d.links.filter((_, j) => j !== i) }));
 
-  const contactOptions = useMemo(
-    () => contacts.filter((k) => k.clientId === draft.clientId),
-    [contacts, draft.clientId],
+  const removeId = (key: "collaboratorIds" | "contactIds", id: string) =>
+    setDraft((d) => ({ ...d, [key]: d[key].filter((x) => x !== id) }));
+  const addId = (key: "collaboratorIds" | "contactIds", id: string) =>
+    setDraft((d) =>
+      d[key].includes(id) ? d : { ...d, [key]: [...d[key], id] },
+    );
+
+  // Collaboratori: candidati dai team dei progetti (cliente+progetto).
+  const candidateIds = useMemo(
+    () => collaboratorCandidateIds(projects, draft.projectId, draft.clientId),
+    [projects, draft.projectId, draft.clientId],
   );
-  const toggleId = (key: "collaboratorIds" | "contactIds", id: string) =>
-    setDraft((d) => ({
-      ...d,
-      [key]: d[key].includes(id)
-        ? d[key].filter((x) => x !== id)
-        : [...d[key], id],
-    }));
+  const selectedCollaborators = draft.collaboratorIds
+    .map((id) => people.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+  const collaboratorAddOptions = useMemo(
+    () =>
+      people
+        .filter(
+          (p) =>
+            candidateIds.includes(p.id) &&
+            !draft.collaboratorIds.includes(p.id),
+        )
+        .map((p) => ({ id: p.id, label: p.name })),
+    [people, candidateIds, draft.collaboratorIds],
+  );
+
+  // Referenti: contatti del cliente selezionato.
+  const selectedContacts = draft.contactIds
+    .map((id) => contacts.find((k) => k.id === id))
+    .filter((k): k is NonNullable<typeof k> => !!k);
+  const contactAddOptions = useMemo(
+    () =>
+      contacts
+        .filter(
+          (k) =>
+            k.clientId === draft.clientId && !draft.contactIds.includes(k.id),
+        )
+        .map((k) => ({ id: k.id, label: k.name })),
+    [contacts, draft.clientId, draft.contactIds],
+  );
+
+  async function createClient(name: string) {
+    const id = nanoid();
+    await saveClient({ id, name, color: null, createdAt: Date.now() });
+    patch({ clientId: id, projectId: null });
+  }
+
+  async function createProject(name: string) {
+    const id = nanoid();
+    const clientId = draft.clientId;
+    await saveProject({
+      id,
+      clientId,
+      kind: clientId ? "client" : "internal",
+      name,
+      subtaskDefs: [],
+      status: "active",
+      description: "",
+      objectives: "",
+      startDate: "",
+      endDate: "",
+      teamIds: [],
+      contactIds: [],
+      estimatedHours: 0,
+    });
+    patch({ projectId: id, clientId });
+  }
+
+  async function createCollaborator(name: string) {
+    const id = nanoid();
+    await savePerson({ id, name });
+    // Lega la persona al team del progetto, così ricompare la volta dopo.
+    const proj = projects.find((p) => p.id === draft.projectId);
+    if (proj && !proj.teamIds.includes(id)) {
+      await saveProject({ ...proj, teamIds: [...proj.teamIds, id] });
+    }
+    addId("collaboratorIds", id);
+  }
+
+  async function createContact(name: string) {
+    if (!draft.clientId) return;
+    const id = nanoid();
+    await saveContact({ id, clientId: draft.clientId, name, role: "" });
+    addId("contactIds", id);
+  }
 
   async function onSave() {
     if (!valid || conflict) return;
@@ -237,16 +312,17 @@ export function EntryEditor() {
           <Field label="Cliente">
             <Combobox
               label="Cliente"
-              placeholder="Nessuno"
+              placeholder="Cerca o crea…"
               options={clientOptions}
               value={draft.clientId}
               onChange={(id) => patch({ clientId: id, projectId: null })}
+              onCreate={(name) => void createClient(name)}
             />
           </Field>
           <Field label="Progetto">
             <Combobox
               label="Progetto"
-              placeholder="Nessuno"
+              placeholder="Cerca o crea…"
               options={projectOptions}
               value={draft.projectId}
               onChange={(id) =>
@@ -257,6 +333,7 @@ export function EntryEditor() {
                     draft.clientId,
                 })
               }
+              onCreate={(name) => void createProject(name)}
             />
           </Field>
         </div>
@@ -346,32 +423,60 @@ export function EntryEditor() {
           </div>
         </Field>
 
-        {people.length > 0 && (
-          <Field label="Collaboratori">
-            <div className="flex flex-wrap gap-2">
-              {people.map((p) => (
-                <Chip
-                  key={p.id}
-                  label={p.name}
-                  on={draft.collaboratorIds.includes(p.id)}
-                  onClick={() => toggleId("collaboratorIds", p.id)}
-                />
-              ))}
-            </div>
-          </Field>
-        )}
+        <Field label="Collaboratori">
+          <div className="space-y-2">
+            {selectedCollaborators.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedCollaborators.map((p) => (
+                  <Token
+                    key={p.id}
+                    label={p.name}
+                    onRemove={() => removeId("collaboratorIds", p.id)}
+                  />
+                ))}
+              </div>
+            )}
+            <Combobox
+              key={`collab-${draft.collaboratorIds.length}`}
+              label="Aggiungi collaboratore"
+              placeholder={
+                candidateIds.length || draft.projectId || draft.clientId
+                  ? "Cerca o crea…"
+                  : "Scegli prima cliente o progetto"
+              }
+              options={collaboratorAddOptions}
+              value={null}
+              onChange={(id) => addId("collaboratorIds", id)}
+              onCreate={(name) => void createCollaborator(name)}
+            />
+          </div>
+        </Field>
 
-        {contactOptions.length > 0 && (
+        {(draft.clientId || selectedContacts.length > 0) && (
           <Field label="Referenti">
-            <div className="flex flex-wrap gap-2">
-              {contactOptions.map((k) => (
-                <Chip
-                  key={k.id}
-                  label={k.name}
-                  on={draft.contactIds.includes(k.id)}
-                  onClick={() => toggleId("contactIds", k.id)}
+            <div className="space-y-2">
+              {selectedContacts.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedContacts.map((k) => (
+                    <Token
+                      key={k.id}
+                      label={k.name}
+                      onRemove={() => removeId("contactIds", k.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              {draft.clientId && (
+                <Combobox
+                  key={`contact-${draft.contactIds.length}`}
+                  label="Aggiungi referente"
+                  placeholder="Cerca o crea…"
+                  options={contactAddOptions}
+                  value={null}
+                  onChange={(id) => addId("contactIds", id)}
+                  onCreate={(name) => void createContact(name)}
                 />
-              ))}
+              )}
             </div>
           </Field>
         )}
