@@ -1,8 +1,13 @@
+import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, beforeAll } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { Client, Entry, Project } from "@/data/types";
+import { db } from "@/data/db";
+import { DEFAULT_SETTINGS } from "@/data/settings";
 import { useEditorStore } from "@/store/editor";
 import { useInventoryStore } from "@/store/inventory";
+import { useCalendarStore } from "@/store/calendar";
+import { useSettingsStore } from "@/store/settings";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
 
 beforeAll(() => {
@@ -39,12 +44,15 @@ function entry(over: Partial<Entry> = {}): Entry {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await db.entries.clear();
   useEditorStore.setState({ open: false, base: null, detail: null });
   useInventoryStore.setState({
     clients: [{ id: "c1", name: "Acme" } as Client],
     projects: [{ id: "p1", clientId: "c1", name: "Sito" } as Project],
   });
+  useCalendarStore.setState({ entries: [] });
+  useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
 });
 
 describe("EntryDetail", () => {
@@ -81,5 +89,24 @@ describe("EntryDetail", () => {
     expect(s.open).toBe(true);
     expect(s.base).toBe(e);
     expect(s.detail).toBeNull();
+  });
+
+  it("Duplica crea una copia nel primo slot libero della giornata", async () => {
+    const e = entry(); // 09:00–10:30
+    useCalendarStore.setState({ entries: [e] });
+    useEditorStore.getState().showDetail(e);
+    render(<EntryDetail />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Duplica" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(2),
+    );
+    const dup = useCalendarStore.getState().entries.find((x) => x.id !== "e1");
+    expect(dup?.title).toBe("Riunione Alfa");
+    expect(dup?.startsAt.slice(0, 10)).toBe("2026-06-12");
+    // non si sovrappone all'originale (09:00–10:30) → parte da 10:30
+    expect(dup?.startsAt).toBe("2026-06-12T10:30:00");
+    expect(await db.entries.get(dup!.id)).toBeTruthy();
   });
 });
