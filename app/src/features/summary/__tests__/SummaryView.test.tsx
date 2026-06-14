@@ -71,6 +71,7 @@ describe("SummaryView", () => {
     render(<SummaryView />);
 
     expect(screen.getByText("3h 30m")).toBeInTheDocument(); // totale
+    expect(screen.getByText(/2 giorni/)).toBeInTheDocument(); // presenze (1 e 2 giu)
     expect(screen.getByText("Acme")).toBeInTheDocument();
     expect(screen.getByText("Beta")).toBeInTheDocument();
     expect(screen.getByText("Cliente")).toBeInTheDocument();

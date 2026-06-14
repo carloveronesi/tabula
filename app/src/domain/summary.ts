@@ -15,6 +15,8 @@ export interface ProjectTotal {
 }
 export interface Summary {
   totalMin: number;
+  /** Giorni distinti con almeno un'attività (presenze nel periodo). */
+  activeDays: number;
   byType: TypeTotal[];
   byClient: ClientTotal[];
   byProject: ProjectTotal[];
@@ -31,10 +33,12 @@ export function summarize(entries: Entry[]): Summary {
   const byTypeMap = new Map<EntryType, number>();
   const byClientMap = new Map<Id, number>();
   const byProjectMap = new Map<Id, number>();
+  const activeDaySet = new Set<string>();
 
   for (const e of entries) {
     const min = durationMinutes(e);
     totalMin += min;
+    activeDaySet.add(e.startsAt.slice(0, 10));
     byTypeMap.set(e.type, (byTypeMap.get(e.type) ?? 0) + min);
     if (e.clientId) {
       byClientMap.set(e.clientId, (byClientMap.get(e.clientId) ?? 0) + min);
@@ -49,6 +53,7 @@ export function summarize(entries: Entry[]): Summary {
 
   return {
     totalMin,
+    activeDays: activeDaySet.size,
     byType: [...byTypeMap]
       .map(([type, minutes]) => ({ type, minutes }))
       .sort(byMinutesDesc),

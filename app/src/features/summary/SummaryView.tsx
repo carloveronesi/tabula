@@ -87,6 +87,19 @@ export function SummaryView() {
         <p className="tnum text-4xl font-semibold tracking-tight text-ink">
           {formatHours(summary.totalMin)}
         </p>
+        <p className="mt-1 text-sm text-muted">
+          su {summary.activeDays}{" "}
+          {summary.activeDays === 1 ? "giorno" : "giorni"}
+          {summary.activeDays > 0 && (
+            <>
+              {" · "}
+              <span className="tnum tabular-nums">
+                {formatHours(Math.round(summary.totalMin / summary.activeDays))}
+              </span>{" "}
+              in media
+            </>
+          )}
+        </p>
       </header>
 
       <section className="space-y-2">

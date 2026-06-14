@@ -35,10 +35,21 @@ describe("summarize", () => {
   it("vuoto → totali a zero", () => {
     expect(summarize([])).toEqual({
       totalMin: 0,
+      activeDays: 0,
       byType: [],
       byClient: [],
       byProject: [],
     });
+  });
+
+  it("conta i giorni attivi distinti (presenze)", () => {
+    const entries = [
+      entry("a", "2026-06-01T09:00:00", "2026-06-01T11:00:00", "client", "c1"),
+      entry("b", "2026-06-01T11:00:00", "2026-06-01T12:00:00", "client", "c1"), // stesso giorno
+      entry("c", "2026-06-02T09:00:00", "2026-06-02T10:00:00", "internal", null),
+      entry("d", "2026-06-05T09:00:00", "2026-06-05T10:00:00", "internal", null),
+    ];
+    expect(summarize(entries).activeDays).toBe(3);
   });
 
   it("somma le durate per progetto (ignora le entry senza projectId), desc", () => {
