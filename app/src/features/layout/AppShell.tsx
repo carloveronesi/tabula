@@ -15,6 +15,7 @@ import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { SummaryView } from "@/features/summary/SummaryView";
 import { ProjectsView } from "@/features/projects/ProjectsView";
+import { TodoView } from "@/features/todo/TodoView";
 import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
@@ -110,9 +111,7 @@ export function AppShell() {
         {view === "projects" && <ProjectsView />}
         {view === "search" && <SearchView />}
         {view === "settings" && <SettingsView />}
-        {view === "todo" && (
-          <p className="text-sm text-muted">{VIEW_LABEL[view]}</p>
-        )}
+        {view === "todo" && <TodoView />}
       </main>
       <EntryEditor />
       <EntryDetail />

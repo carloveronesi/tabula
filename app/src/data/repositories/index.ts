@@ -3,7 +3,14 @@
  * Le query usano l'indice temporale `startsAt`.
  */
 import { db } from "@/data/db";
-import type { Client, Entry, ISODate, ISODateTime, Project } from "@/data/types";
+import type {
+  Client,
+  Entry,
+  ISODate,
+  ISODateTime,
+  Project,
+  Todo,
+} from "@/data/types";
 
 /** Le entry di un giorno: query sull'indice temporale, non lettura di un contenitore. */
 export function entriesOfDay(date: ISODate): Promise<Entry[]> {
@@ -50,4 +57,17 @@ export function putProject(project: Project): Promise<string> {
 
 export function deleteProject(id: string): Promise<void> {
   return db.projects.delete(id);
+}
+
+/** Tutti i todo (la vista ordina/filtra in memoria). */
+export function allTodos(): Promise<Todo[]> {
+  return db.todos.toArray();
+}
+
+export function putTodo(todo: Todo): Promise<string> {
+  return db.todos.put(todo);
+}
+
+export function deleteTodo(id: string): Promise<void> {
+  return db.todos.delete(id);
 }
