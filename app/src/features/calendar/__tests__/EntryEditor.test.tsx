@@ -168,6 +168,74 @@ describe("EntryEditor", () => {
     expect(useCalendarStore.getState().entries[0].id).toBe("e1");
   });
 
+  it("modifica: precompila e salva 'cosa è andato storto' e 'prossimi passi'", async () => {
+    const e = entry({ blockers: "vecchio problema", nextSteps: "vecchio passo" });
+    await db.entries.put(e);
+    useCalendarStore.setState({ entries: [e] });
+    useEditorStore.getState().openEdit(e);
+    render(<EntryEditor />);
+
+    const blk = screen.getByLabelText(
+      "Cosa è andato storto",
+    ) as HTMLTextAreaElement;
+    expect(blk.value).toBe("vecchio problema");
+    fireEvent.change(blk, { target: { value: "nuovo problema" } });
+
+    const nxt = screen.getByLabelText("Prossimi passi") as HTMLTextAreaElement;
+    expect(nxt.value).toBe("vecchio passo");
+    fireEvent.change(nxt, { target: { value: "nuovo passo" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries[0].blockers).toBe(
+        "nuovo problema",
+      ),
+    );
+    expect(useCalendarStore.getState().entries[0].nextSteps).toBe("nuovo passo");
+  });
+
+  it("aggiunge un link e lo salva con la entry", async () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Con link" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
+    fireEvent.change(screen.getByLabelText("Etichetta link 1"), {
+      target: { value: "Doc" },
+    });
+    fireEvent.change(screen.getByLabelText("URL link 1"), {
+      target: { value: "http://x" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    expect(useCalendarStore.getState().entries[0].links).toEqual([
+      { label: "Doc", url: "http://x" },
+    ]);
+  });
+
+  it("rimuove un link esistente in modifica", async () => {
+    const e = entry({ links: [{ label: "Doc", url: "http://x" }] });
+    await db.entries.put(e);
+    useCalendarStore.setState({ entries: [e] });
+    useEditorStore.getState().openEdit(e);
+    render(<EntryEditor />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Rimuovi link 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries[0].links).toEqual([]),
+    );
+  });
+
   it("elimina: rimuove la entry in modifica", async () => {
     const e = entry();
     await db.entries.put(e);

@@ -43,6 +43,9 @@ describe("emptyDraft", () => {
       projectId: null,
       subtypeId: null,
       notes: "",
+      blockers: "",
+      nextSteps: "",
+      links: [],
     });
   });
 });
@@ -60,7 +63,17 @@ describe("draftFromEntry", () => {
       projectId: "p1",
       subtypeId: "s1",
       notes: "note",
+      blockers: "blk",
+      nextSteps: "next",
+      links: [{ label: "doc", url: "http://x" }],
     });
+  });
+
+  it("copia l'array dei link (no aliasing con la entry di origine)", () => {
+    const base = entry();
+    const d = draftFromEntry(base);
+    d.links.push({ label: "altro", url: "http://y" });
+    expect(base.links).toHaveLength(1);
   });
 });
 
@@ -109,10 +122,30 @@ describe("applyDraft", () => {
     expect(e.createdAt).toBe(100);
     expect(e.updatedAt).toBe(555);
     expect(e.title).toBe("Rinominato");
-    // preservati dalla base
+    // preservati dalla base (non modificati nella bozza)
     expect(e.blockers).toBe("blk");
     expect(e.nextSteps).toBe("next");
     expect(e.links).toEqual([{ label: "doc", url: "http://x" }]);
+    expect(e.collaboratorIds).toEqual(["u1"]);
+    expect(e.milestone).toBe("M1");
+  });
+
+  it("modifica: applica blockers/nextSteps/links editati nella bozza", () => {
+    const base = entry();
+    const d = draftFromEntry(base);
+    const e = applyDraft(
+      {
+        ...d,
+        blockers: "nuovo blocco",
+        nextSteps: "nuovo passo",
+        links: [{ label: "spec", url: "http://z" }],
+      },
+      { id: "ignored", now: 555, base },
+    );
+    expect(e.blockers).toBe("nuovo blocco");
+    expect(e.nextSteps).toBe("nuovo passo");
+    expect(e.links).toEqual([{ label: "spec", url: "http://z" }]);
+    // campi anagrafici non gestiti dall'editor restano dalla base
     expect(e.collaboratorIds).toEqual(["u1"]);
     expect(e.milestone).toBe("M1");
   });

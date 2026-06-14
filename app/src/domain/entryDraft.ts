@@ -13,6 +13,9 @@ export interface EntryDraft {
   projectId: Id | null;
   subtypeId: Id | null;
   notes: string;
+  blockers: string;
+  nextSteps: string;
+  links: { label: string; url: string }[];
 }
 
 /** Bozza vuota per una nuova entry in un giorno/fascia. */
@@ -31,6 +34,9 @@ export function emptyDraft(
     projectId: null,
     subtypeId: null,
     notes: "",
+    blockers: "",
+    nextSteps: "",
+    links: [],
   };
 }
 
@@ -46,6 +52,9 @@ export function draftFromEntry(e: Entry): EntryDraft {
     projectId: e.projectId,
     subtypeId: e.subtypeId,
     notes: e.notes,
+    blockers: e.blockers,
+    nextSteps: e.nextSteps,
+    links: e.links.map((l) => ({ ...l })),
   };
 }
 
@@ -76,9 +85,9 @@ export function applyDraft(
     collaboratorIds: base?.collaboratorIds ?? [],
     contactIds: base?.contactIds ?? [],
     notes: d.notes,
-    blockers: base?.blockers ?? "",
-    nextSteps: base?.nextSteps ?? "",
-    links: base?.links ?? [],
+    blockers: d.blockers,
+    nextSteps: d.nextSteps,
+    links: d.links.map((l) => ({ ...l })),
     milestone: base?.milestone ?? null,
     createdAt: base?.createdAt ?? ctx.now,
     updatedAt: ctx.now,

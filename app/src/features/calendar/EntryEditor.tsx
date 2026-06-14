@@ -18,10 +18,13 @@ import {
   Button,
   Combobox,
   Field,
+  IconButton,
+  Icons,
   Input,
   MarkdownEditor,
   Modal,
   Segmented,
+  Textarea,
   TimeField,
   type SegmentedOption,
 } from "@/ui";
@@ -88,6 +91,16 @@ export function EntryEditor() {
       base?.id ?? null,
     );
   const patch = (p: Partial<EntryDraft>) => setDraft((d) => ({ ...d, ...p }));
+
+  const addLink = () =>
+    setDraft((d) => ({ ...d, links: [...d.links, { label: "", url: "" }] }));
+  const patchLink = (i: number, p: Partial<{ label: string; url: string }>) =>
+    setDraft((d) => ({
+      ...d,
+      links: d.links.map((l, j) => (j === i ? { ...l, ...p } : l)),
+    }));
+  const removeLink = (i: number) =>
+    setDraft((d) => ({ ...d, links: d.links.filter((_, j) => j !== i) }));
 
   async function onSave() {
     if (!valid || conflict) return;
@@ -202,6 +215,60 @@ export function EntryEditor() {
             onChange={(notes) => patch({ notes })}
             placeholder="Dettagli, contesto… (Markdown supportato)"
           />
+        </Field>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Cosa è andato storto">
+            <Textarea
+              aria-label="Cosa è andato storto"
+              value={draft.blockers}
+              onChange={(e) => patch({ blockers: e.target.value })}
+              placeholder="Problemi o blocchi incontrati"
+            />
+          </Field>
+          <Field label="Prossimi passi">
+            <Textarea
+              aria-label="Prossimi passi"
+              value={draft.nextSteps}
+              onChange={(e) => patch({ nextSteps: e.target.value })}
+              placeholder="Cosa fare la prossima volta"
+            />
+          </Field>
+        </div>
+
+        <Field label="Link">
+          <div className="space-y-2">
+            {draft.links.map((link, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  aria-label={`Etichetta link ${i + 1}`}
+                  value={link.label}
+                  onChange={(e) => patchLink(i, { label: e.target.value })}
+                  placeholder="Etichetta"
+                  className="flex-1"
+                />
+                <Input
+                  aria-label={`URL link ${i + 1}`}
+                  type="url"
+                  value={link.url}
+                  onChange={(e) => patchLink(i, { url: e.target.value })}
+                  placeholder="https://…"
+                  className="flex-[2]"
+                />
+                <IconButton
+                  label={`Rimuovi link ${i + 1}`}
+                  size="sm"
+                  onClick={() => removeLink(i)}
+                >
+                  <Icons.IconClose size={16} />
+                </IconButton>
+              </div>
+            ))}
+            <Button variant="ghost" onClick={addLink}>
+              <Icons.IconPlus size={16} />
+              Aggiungi link
+            </Button>
+          </div>
         </Field>
 
         {conflict && (
