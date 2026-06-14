@@ -29,4 +29,13 @@ describe("useSettingsStore", () => {
     useSettingsStore.getState().setSettings({ ...DEFAULT_SETTINGS, theme: "dark" });
     expect(useSettingsStore.getState().settings.theme).toBe("dark");
   });
+
+  it("saveSettings persiste su IndexedDB e aggiorna lo stato", async () => {
+    await useSettingsStore
+      .getState()
+      .saveSettings({ ...DEFAULT_SETTINGS, slotMinutes: 30 });
+
+    expect(useSettingsStore.getState().settings.slotMinutes).toBe(30);
+    expect((await db.settings.get("app"))?.slotMinutes).toBe(30);
+  });
 });

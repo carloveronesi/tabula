@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
     afternoonEnd: 1080,
   },
   workingDays: [0, 1, 2, 3, 4],
-  slotMinutes: 30,
+  slotMinutes: 15,
   subtypes: { client: [], internal: [] },
   clientColors: {},
   internalColors: {},
@@ -97,7 +97,10 @@ export function normalizeSettings(source: SourceSettings | null): Settings {
       s.workingDays.every((n) => typeof n === "number")
         ? (s.workingDays as number[])
         : [...d.workingDays],
-    slotMinutes: s.slotMinutes === 15 ? 15 : 30,
+    slotMinutes:
+      s.slotMinutes === 15 || s.slotMinutes === 30
+        ? s.slotMinutes
+        : d.slotMinutes,
     subtypes: { client: subtypeList(ts.client), internal: subtypeList(ts.internal) },
     clientColors: {},
     internalColors: stringRecord(s.internalColors),

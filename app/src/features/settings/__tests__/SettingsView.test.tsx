@@ -2,7 +2,9 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
+import { DEFAULT_SETTINGS } from "@/data/settings";
 import { useInventoryStore } from "@/store/inventory";
+import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import type { Entry } from "@/data/types";
 import { SettingsView } from "@/features/settings/SettingsView";
@@ -58,6 +60,7 @@ function fileWithText(text: string, name = "export.json"): File {
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()));
   useInventoryStore.setState({ clients: [], projects: [] });
+  useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
   useToastStore.setState({ toasts: [] });
   downloads.length = 0;
 });
@@ -107,5 +110,21 @@ describe("SettingsView", () => {
       expect(useToastStore.getState().toasts).toHaveLength(1),
     );
     expect(useToastStore.getState().toasts[0].message).toMatch(/2 attività/);
+  });
+
+  it("cambia la granularità del calendario e la persiste", async () => {
+    render(<SettingsView />);
+
+    expect(screen.getByRole("button", { name: "15 min" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "30 min" }));
+
+    await waitFor(() =>
+      expect(useSettingsStore.getState().settings.slotMinutes).toBe(30),
+    );
+    expect((await db.settings.get("app"))?.slotMinutes).toBe(30);
   });
 });

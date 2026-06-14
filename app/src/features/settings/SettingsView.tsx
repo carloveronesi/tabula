@@ -9,7 +9,7 @@ import { useSettingsStore } from "@/store/settings";
 import { useInventoryStore } from "@/store/inventory";
 import { useCalendarStore } from "@/store/calendar";
 import { useToastStore } from "@/store/toast";
-import { Button } from "@/ui";
+import { Button, Segmented } from "@/ui";
 
 const ROWS: { key: keyof ImportSummary; label: string }[] = [
   { key: "entries", label: "Attività" },
@@ -32,6 +32,8 @@ export function SettingsView() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  const settings = useSettingsStore((s) => s.settings);
+  const saveSettings = useSettingsStore((s) => s.saveSettings);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const loadInventory = useInventoryStore((s) => s.loadInventory);
   const loadRange = useCalendarStore((s) => s.loadRange);
@@ -76,6 +78,30 @@ export function SettingsView() {
           Tutto resta sul tuo dispositivo: nessun dato lascia il browser.
         </p>
       </header>
+
+      <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+        <div>
+          <h3 className="font-medium text-ink">Preferenze</h3>
+          <p className="mt-1 text-sm text-muted">
+            Granularità del calendario: la dimensione dei blocchi e lo scatto del
+            trascinamento. A 15 min puoi usare orari come 10:15 o 10:45.
+          </p>
+        </div>
+        <Segmented
+          label="Granularità calendario"
+          value={String(settings.slotMinutes)}
+          onChange={(id) =>
+            void saveSettings({
+              ...settings,
+              slotMinutes: id === "15" ? 15 : 30,
+            })
+          }
+          options={[
+            { id: "15", label: "15 min" },
+            { id: "30", label: "30 min" },
+          ]}
+        />
+      </section>
 
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
         <div>

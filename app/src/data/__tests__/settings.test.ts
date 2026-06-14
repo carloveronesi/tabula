@@ -29,7 +29,11 @@ describe("normalizeSettings", () => {
   it("valori non validi → default (theme, slotMinutes)", () => {
     const s = normalizeSettings({ theme: "boh", slotMinutes: 7 });
     expect(s.theme).toBe("light");
-    expect(s.slotMinutes).toBe(30);
+    expect(s.slotMinutes).toBe(15); // default
+  });
+
+  it("preserva una granularità valida di 30 minuti", () => {
+    expect(normalizeSettings({ slotMinutes: 30 }).slotMinutes).toBe(30);
   });
 
   it("mappa taskSubtypes su subtypes (solo client/internal)", () => {

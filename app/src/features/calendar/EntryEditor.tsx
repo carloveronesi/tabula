@@ -13,6 +13,7 @@ import { conflictsOnDay } from "@/domain/conflict";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import {
   Button,
@@ -54,6 +55,7 @@ export function EntryEditor() {
   const notify = useToastStore((s) => s.notify);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
 
   const [draft, setDraft] = useState<EntryDraft>(() =>
     emptyDraft(seed.date, seed.startMin, seed.endMin),
@@ -148,6 +150,7 @@ export function EntryEditor() {
             <Input
               type="time"
               aria-label="Inizio"
+              step={slotMinutes * 60}
               value={minutesToLabel(draft.startMin)}
               onChange={(e) => patch({ startMin: timeToMinutes(e.target.value) })}
             />
@@ -156,6 +159,7 @@ export function EntryEditor() {
             <Input
               type="time"
               aria-label="Fine"
+              step={slotMinutes * 60}
               value={minutesToLabel(draft.endMin)}
               onChange={(e) => patch({ endMin: timeToMinutes(e.target.value) })}
             />
