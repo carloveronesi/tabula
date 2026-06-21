@@ -8,6 +8,7 @@ import { useUiStore, type ViewMode } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { usePresenceStore } from "@/store/presence";
 import { useEditorStore } from "@/store/editor";
 import { useToastStore } from "@/store/toast";
 import { Toaster } from "@/ui";
@@ -54,6 +55,8 @@ export function AppShell() {
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
+  const locations = usePresenceStore((s) => s.metas);
+  const setLocation = usePresenceStore((s) => s.setLocation);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
   const undo = useCalendarStore((s) => s.undo);
   const notify = useToastStore((s) => s.notify);
@@ -153,6 +156,10 @@ export function AppShell() {
                 onAdd={() =>
                   openCreate({ date: dayKey, startMin: 540, endMin: 600 })
                 }
+                presenceEnabled={settings.presenceTracking.enabled}
+                location={locations[dayKey] ?? null}
+                onSetLocation={(loc) => void setLocation(dayKey, loc)}
+                suggestedLocation={settings.defaultLocation}
               />
             </div>
           ) : (
@@ -172,6 +179,11 @@ export function AppShell() {
             colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
+            presenceEnabled={settings.presenceTracking.enabled}
+            locations={locations}
+            onSetLocation={(date, loc) => void setLocation(date, loc)}
+            suggestedLocation={settings.defaultLocation}
+            patronDay={settings.patronDay}
           />
         )}
         {view === "month" && (
@@ -180,6 +192,7 @@ export function AppShell() {
             entries={entries}
             onOpenDay={openDay}
             colorOf={colorOf}
+            patronDay={settings.patronDay}
           />
         )}
             {view === "riepilogo" && <SummaryView />}

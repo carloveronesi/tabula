@@ -68,6 +68,7 @@ beforeEach(async () => {
 describe("SettingsView", () => {
   it("importa il file scelto e mostra il riepilogo", async () => {
     render(<SettingsView />);
+    fireEvent.click(screen.getByRole("button", { name: "Dati" }));
 
     fireEvent.change(screen.getByLabelText("File di export"), {
       target: { files: [fileWithText(exportText)] },
@@ -83,6 +84,7 @@ describe("SettingsView", () => {
 
   it("mostra un errore su file non valido", async () => {
     render(<SettingsView />);
+    fireEvent.click(screen.getByRole("button", { name: "Dati" }));
 
     fireEvent.change(screen.getByLabelText("File di export"), {
       target: { files: [fileWithText("{ rotto")] },
@@ -96,6 +98,7 @@ describe("SettingsView", () => {
   it("esporta un backup JSON con i dati dell'archivio e notifica", async () => {
     await db.entries.bulkPut([entry("a"), entry("b")]);
     render(<SettingsView />);
+    fireEvent.click(screen.getByRole("button", { name: "Dati" }));
 
     fireEvent.click(screen.getByRole("button", { name: /Esporta backup/ }));
 

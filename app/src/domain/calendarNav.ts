@@ -30,6 +30,37 @@ export function dowMon0(date: Date): number {
   return (date.getDay() + 6) % 7;
 }
 
+/**
+ * Vero se `date` cade nel giorno del patrono (`patronDay` = "MM-GG"), confronto
+ * mese-giorno indipendente dall'anno. Stringa vuota → mai.
+ */
+export function isPatronDay(date: Date, patronDay: string): boolean {
+  if (!patronDay) return false;
+  return `${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}` === patronDay;
+}
+
+/**
+ * Date feriali (lavorative) del mese di `date`: i giorni in `workingDays`
+ * (lun=0…dom=6) escluso il patrono. Usato per il denominatore delle presenze.
+ */
+export function workingDatesOfMonth(
+  date: Date,
+  workingDays: number[],
+  patronDay: string,
+): ISODate[] {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const last = new Date(year, month + 1, 0).getDate();
+  const out: ISODate[] = [];
+  for (let day = 1; day <= last; day++) {
+    const d = new Date(year, month, day);
+    if (workingDays.includes(dowMon0(d)) && !isPatronDay(d, patronDay)) {
+      out.push(isoDate(d));
+    }
+  }
+  return out;
+}
+
 /** Sposta la data focale in base alla vista; projects/todo non si spostano. */
 export function shiftFocus(date: Date, view: ViewMode, dir: -1 | 1): Date {
   switch (view) {

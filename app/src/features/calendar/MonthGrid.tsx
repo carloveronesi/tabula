@@ -1,5 +1,5 @@
 import type { Entry } from "@/data/types";
-import { isoDate, monthGridDates, dowMon0 } from "@/domain/calendarNav";
+import { isoDate, monthGridDates, dowMon0, isPatronDay } from "@/domain/calendarNav";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -9,6 +9,8 @@ interface MonthGridProps {
   onOpenDay?: (date: Date) => void;
   /** Colore di un'attività (per cliente/sottotipo); `null` → accento. */
   colorOf?: (entry: Entry) => string | null;
+  /** Giorno del patrono ("MM-GG"): reso come festivo. */
+  patronDay?: string;
 }
 
 /** Massimo di puntini mostrati in una cella prima del "+N". */
@@ -20,7 +22,13 @@ const MAX_DOTS = 5;
  * attività (colore cliente/sottotipo), col titolo nel tooltip; il click apre
  * quel giorno nella vista Giorno.
  */
-export function MonthGrid({ date, entries = [], onOpenDay, colorOf }: MonthGridProps) {
+export function MonthGrid({
+  date,
+  entries = [],
+  onOpenDay,
+  colorOf,
+  patronDay = "",
+}: MonthGridProps) {
   const month = date.getMonth();
   const cells = monthGridDates(date);
 
@@ -58,7 +66,7 @@ export function MonthGrid({ date, entries = [], onOpenDay, colorOf }: MonthGridP
       <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px bg-line">
         {cells.map((d) => {
           const outside = d.getMonth() !== month;
-          const weekend = dowMon0(d) >= 5;
+          const weekend = dowMon0(d) >= 5 || isPatronDay(d, patronDay);
           const today = isoDate(d) === todayKey;
           const dayEntries = byDay.get(isoDate(d)) ?? [];
           const count = dayEntries.length;

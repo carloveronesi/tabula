@@ -2,8 +2,13 @@ import { useMemo } from "react";
 import type { EntryType } from "@/data/types";
 import { summarize } from "@/domain/summary";
 import { formatHours } from "@/domain/format";
+import { presenceBreakdown, LOCATION_LABEL } from "@/domain/presence";
+import { workingDatesOfMonth } from "@/domain/calendarNav";
+import { useUiStore } from "@/store";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { usePresenceStore } from "@/store/presence";
+import { useSettingsStore } from "@/store/settings";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -48,7 +53,22 @@ export function SummaryView() {
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const activeDate = useUiStore((s) => s.activeDate);
+  const presence = useSettingsStore((s) => s.settings.presenceTracking);
+  const workingDays = useSettingsStore((s) => s.settings.workingDays);
+  const patronDay = useSettingsStore((s) => s.settings.patronDay);
+  const metas = usePresenceStore((s) => s.metas);
   const summary = useMemo(() => summarize(entries), [entries]);
+  const presenceData = useMemo(
+    () =>
+      presenceBreakdown(
+        workingDatesOfMonth(activeDate, workingDays, patronDay),
+        metas,
+        presence,
+      ),
+    [activeDate, workingDays, patronDay, metas, presence],
+  );
+  const showPresence = presence.enabled;
 
   const clientName = (id: string) =>
     clients.find((c) => c.id === id)?.name ?? "Cliente sconosciuto";
@@ -68,7 +88,7 @@ export function SummaryView() {
     minutes: t.minutes,
   }));
 
-  if (summary.totalMin === 0) {
+  if (summary.totalMin === 0 && !(showPresence && presenceData.workingDays > 0)) {
     return (
       <div className="mx-auto max-w-xl py-12 text-center">
         <p className="text-sm text-muted">
@@ -130,12 +150,77 @@ export function SummaryView() {
         </section>
       )}
 
-      <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Per tipo
-        </h3>
-        <Bars rows={typeRows} max={typeRows[0].minutes} tint="bg-primary-wash" />
-      </section>
+      {typeRows.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Per tipo
+          </h3>
+          <Bars rows={typeRows} max={typeRows[0].minutes} tint="bg-primary-wash" />
+        </section>
+      )}
+
+      {showPresence && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Presenze
+          </h3>
+          {presenceData.workingDays === 0 ? (
+            <p className="text-sm text-muted">
+              Nessun giorno feriale in questo periodo.
+            </p>
+          ) : (
+            <>
+              <ul className="space-y-1.5">
+                {presenceData.rows.map((r) => (
+                  <li
+                    key={r.location}
+                    className="relative flex items-center justify-between overflow-hidden rounded border border-line px-3 py-1.5"
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 bg-accent-wash"
+                      style={{ width: `${r.pct}%` }}
+                    />
+                    <span className="relative truncate text-sm text-ink">
+                      {LOCATION_LABEL[r.location]}
+                    </span>
+                    <span className="relative text-sm text-muted">
+                      <span className="tnum tabular-nums">{r.days}g</span>
+                      {" · "}
+                      <span className="tnum tabular-nums">{r.pct}%</span>
+                      {r.targetPct !== null && (
+                        <span className="text-faint">
+                          {" · obiettivo "}
+                          <span className="tnum tabular-nums">
+                            {r.targetPct}%
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-faint">
+                <span className="tnum tabular-nums">{presenceData.tracked}</span>{" "}
+                su{" "}
+                <span className="tnum tabular-nums">
+                  {presenceData.workingDays}
+                </span>{" "}
+                giorni feriali registrati
+                {presenceData.untracked > 0 && (
+                  <>
+                    {" · "}
+                    <span className="tnum tabular-nums">
+                      {presenceData.untracked}
+                    </span>{" "}
+                    non registrati
+                  </>
+                )}
+              </p>
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 }

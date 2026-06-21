@@ -6,6 +6,7 @@ import { db } from "@/data/db";
 import type {
   Client,
   Contact,
+  DayMeta,
   Entry,
   ISODate,
   ISODateTime,
@@ -95,6 +96,22 @@ export function putTodo(todo: Todo): Promise<string> {
 
 export function deleteTodo(id: string): Promise<void> {
   return db.todos.delete(id);
+}
+
+/** Metadati-giornata (sede) il cui `date` cade in [from, to] (estremi inclusi). */
+export function dayMetasInRange(
+  from: ISODate,
+  to: ISODate,
+): Promise<DayMeta[]> {
+  return db.days.where("date").between(from, to, true, true).toArray();
+}
+
+export function putDayMeta(meta: DayMeta): Promise<string> {
+  return db.days.put(meta);
+}
+
+export function deleteDayMeta(date: ISODate): Promise<void> {
+  return db.days.delete(date);
 }
 
 /** Timer "in corso" persistito (record singolo `id: "active"`), o `undefined`. */

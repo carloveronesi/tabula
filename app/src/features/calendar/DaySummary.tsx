@@ -1,11 +1,19 @@
 import type { DayBreakdown } from "@/domain/dayBreakdown";
+import type { Location } from "@/data/types";
 import { formatHours } from "@/domain/format";
 import { IconPlus } from "@/ui/icons";
+import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 
 interface DaySummaryProps {
   breakdown: DayBreakdown;
   /** Nuova attività in questa giornata. */
   onAdd: () => void;
+  /** Mostra il selettore della sede (tracciamento presenze attivo). */
+  presenceEnabled?: boolean;
+  location?: Location | null;
+  onSetLocation?: (location: Location | null) => void;
+  /** Sede predefinita, suggerita quando il giorno non ha sede. */
+  suggestedLocation?: Location | null;
 }
 
 /**
@@ -15,7 +23,14 @@ interface DaySummaryProps {
  * la ripartizione già calcolata. Nascosto sotto `lg` per dare spazio alla
  * timeline su schermi stretti.
  */
-export function DaySummary({ breakdown, onAdd }: DaySummaryProps) {
+export function DaySummary({
+  breakdown,
+  onAdd,
+  presenceEnabled = false,
+  location = null,
+  onSetLocation,
+  suggestedLocation = null,
+}: DaySummaryProps) {
   const { totalMin, count, rows } = breakdown;
 
   return (
@@ -32,6 +47,22 @@ export function DaySummary({ breakdown, onAdd }: DaySummaryProps) {
             ? "Nessuna attività"
             : `${count} ${count === 1 ? "attività" : "attività"}`}
         </div>
+
+        {presenceEnabled && onSetLocation && (
+          <>
+            <div className="my-4 h-px bg-line" />
+            <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
+              Sede
+            </div>
+            <div className="mt-2">
+              <DayLocationPicker
+                value={location}
+                onChange={onSetLocation}
+                suggested={suggestedLocation}
+              />
+            </div>
+          </>
+        )}
 
         {rows.length > 0 && (
           <>

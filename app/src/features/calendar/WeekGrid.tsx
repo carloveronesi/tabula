@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import type { Entry } from "@/data/types";
-import { workWeekDays, dowMon0, isoDate } from "@/domain/calendarNav";
+import type { Entry, Location } from "@/data/types";
+import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
+import { workWeekDays, dowMon0, isoDate, isPatronDay } from "@/domain/calendarNav";
 import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
@@ -41,6 +42,15 @@ interface WeekGridProps {
     startMin: number,
     endMin: number,
   ) => void;
+  /** Mostra il selettore sede nelle intestazioni (presenze attive). */
+  presenceEnabled?: boolean;
+  /** Sede per data (giorni con sede registrata). */
+  locations?: Record<string, Location>;
+  onSetLocation?: (dateISO: string, location: Location | null) => void;
+  /** Sede predefinita, suggerita nei giorni senza sede. */
+  suggestedLocation?: Location | null;
+  /** Giorno del patrono ("MM-GG"): reso come festivo. */
+  patronDay?: string;
 }
 
 type Drag =
@@ -93,6 +103,11 @@ export function WeekGrid({
   colorOf,
   onCreateRange,
   onUpdateEntry,
+  presenceEnabled = false,
+  locations,
+  onSetLocation,
+  suggestedLocation = null,
+  patronDay = "",
 }: WeekGridProps) {
   const days = workWeekDays(date, workingDays);
   const todayKey = isoDate(new Date());
@@ -195,17 +210,31 @@ export function WeekGrid({
         <span className="shrink-0" style={{ width: TIME_GUTTER }} />
         {days.map((d) => {
           const today = isoDate(d) === todayKey;
-          const weekend = dowMon0(d) >= 5;
+          const holiday = dowMon0(d) >= 5 || isPatronDay(d, patronDay);
+          const key = isoDate(d);
           return (
-            <span
+            <div
               key={d.toISOString()}
               role="columnheader"
-              className={`flex-1 px-2 py-2.5 text-xs font-semibold ${
-                today ? "text-accent" : weekend ? "text-faint" : "text-muted"
-              }`}
+              className="flex flex-1 flex-col items-start gap-1.5 px-2 py-2.5"
             >
-              {dayLabel(d)}
-            </span>
+              <span
+                className={`text-xs font-semibold ${
+                  today ? "text-accent" : holiday ? "text-faint" : "text-muted"
+                }`}
+              >
+                {dayLabel(d)}
+              </span>
+              {presenceEnabled && onSetLocation && (
+                <DayLocationPicker
+                  variant="compact"
+                  dayLabel={dayLabel(d)}
+                  value={locations?.[key] ?? null}
+                  suggested={suggestedLocation}
+                  onChange={(loc) => onSetLocation(key, loc)}
+                />
+              )}
+            </div>
           );
         })}
       </div>
@@ -246,7 +275,7 @@ export function WeekGrid({
               className={`relative flex flex-1 flex-col border-l border-line ${
                 isoDate(d) === todayKey
                   ? "bg-primary-wash"
-                  : dowMon0(d) >= 5
+                  : dowMon0(d) >= 5 || isPatronDay(d, patronDay)
                     ? "bg-weekend"
                     : ""
               }`}
