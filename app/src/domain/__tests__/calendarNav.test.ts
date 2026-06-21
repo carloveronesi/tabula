@@ -4,13 +4,43 @@ import {
   addMonths,
   dowMon0,
   isoDate,
+  isPatronDay,
   monthGridDates,
+  workingDatesOfMonth,
   shiftFocus,
   viewRange,
   workWeekDays,
 } from "@/domain/calendarNav";
 
 const D = (y: number, m0: number, d: number) => new Date(y, m0, d);
+
+describe("isPatronDay", () => {
+  it("confronta mese-giorno indipendentemente dall'anno", () => {
+    expect(isPatronDay(D(2026, 5, 24), "06-24")).toBe(true); // 24 giugno
+    expect(isPatronDay(D(2027, 5, 24), "06-24")).toBe(true);
+    expect(isPatronDay(D(2026, 5, 25), "06-24")).toBe(false);
+  });
+
+  it("stringa vuota → mai festivo", () => {
+    expect(isPatronDay(D(2026, 5, 24), "")).toBe(false);
+  });
+});
+
+describe("workingDatesOfMonth", () => {
+  it("conta i feriali lun–ven escludendo i weekend", () => {
+    // Giugno 2026: 22 giorni feriali lun–ven.
+    const dates = workingDatesOfMonth(D(2026, 5, 15), [0, 1, 2, 3, 4], "");
+    expect(dates).toHaveLength(22);
+    expect(dates[0]).toBe("2026-06-01"); // 1 giugno è lunedì
+  });
+
+  it("esclude il giorno del patrono", () => {
+    const full = workingDatesOfMonth(D(2026, 5, 15), [0, 1, 2, 3, 4], "");
+    const less = workingDatesOfMonth(D(2026, 5, 15), [0, 1, 2, 3, 4], "06-24");
+    expect(less).toHaveLength(full.length - 1); // 24 giugno 2026 è mercoledì
+    expect(less).not.toContain("2026-06-24");
+  });
+});
 
 describe("addDays / addMonths", () => {
   it("addDays somma i giorni", () => {
