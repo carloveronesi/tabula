@@ -196,6 +196,11 @@ export function DayView({
             ? dragGeom(drag, slotCount)
             : { startRow: b.startRow, span: b.span };
           const color = colorOf?.(b.entry) ?? null;
+          const heightPx = live.span * slotHeight - 4;
+          // Blocchi bassi (~30 min): titolo e orario stanno su una riga sola,
+          // altrimenti due righe impilate non ci stanno e il titolo viene tagliato.
+          const compact = heightPx < 44;
+          const time = `${b.entry.startsAt.slice(11, 16)}–${b.entry.endsAt.slice(11, 16)}`;
           return (
             <button
               key={b.entry.id}
@@ -216,23 +221,35 @@ export function DayView({
               style={{
                 position: "absolute",
                 top: live.startRow * slotHeight + 2,
-                height: live.span * slotHeight - 4,
+                height: heightPx,
                 left: 4,
                 right: 4,
                 backgroundColor: color ? withAlpha(color, 0.16) : undefined,
               }}
-              className={`group relative flex touch-none flex-col gap-0.5 overflow-hidden rounded-lg bg-primary-wash py-1.5 pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
-                active && dragConflict ? "ring-2 ring-danger" : ""
-              }`}
+              className={`group relative flex touch-none overflow-hidden rounded-lg bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
+                compact
+                  ? "items-baseline gap-2 py-1"
+                  : "flex-col gap-0.5 py-1.5"
+              } ${active && dragConflict ? "ring-2 ring-danger" : ""}`}
             >
               <span
                 aria-hidden
                 style={{ backgroundColor: color ?? undefined }}
                 className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-accent"
               />
-              <span className="truncate leading-tight">{b.entry.title}</span>
-              <span className="tnum truncate font-mono text-[10px] font-normal text-muted">
-                {b.entry.startsAt.slice(11, 16)}–{b.entry.endsAt.slice(11, 16)}
+              <span
+                className={`min-w-0 truncate leading-tight ${
+                  compact ? "flex-1" : ""
+                }`}
+              >
+                {b.entry.title}
+              </span>
+              <span
+                className={`tnum truncate font-mono text-[10px] font-normal text-muted ${
+                  compact ? "shrink-0" : ""
+                }`}
+              >
+                {time}
               </span>
               <span
                 data-testid="resize-top"
