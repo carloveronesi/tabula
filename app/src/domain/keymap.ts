@@ -10,7 +10,8 @@ export type ShortcutAction =
   | { type: "undo" }
   | { type: "redo" }
   | { type: "view"; view: ViewMode }
-  | { type: "new" };
+  | { type: "new" }
+  | { type: "timer" };
 
 export interface KeyState {
   /** Prefisso di una sequenza in atteso del secondo tasto. */
@@ -60,6 +61,7 @@ export function resolveKey(
 
   if (k === "g") return { state: { prefix: "g" }, action: null };
   if (k === "n") return cleared({ type: "new" });
+  if (k === "t") return cleared({ type: "timer" });
 
   return cleared(null);
 }

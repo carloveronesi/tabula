@@ -4,6 +4,7 @@ import { isoDate } from "@/domain/calendarNav";
 import { useUiStore } from "@/store";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
+import { toggleTimer } from "@/features/layout/timerActions";
 
 /** Il bersaglio dell'evento è un campo editabile (lì vince il comportamento nativo). */
 function isEditable(target: EventTarget | null): boolean {
@@ -20,7 +21,8 @@ function isEditable(target: EventTarget | null): boolean {
 
 /**
  * Scorciatoie globali da tastiera (vedi `domain/keymap`): undo/redo, `g d/w/m`
- * per cambiare vista, Ctrl/Cmd+K per la Ricerca, `n` per una nuova attività.
+ * per cambiare vista, Ctrl/Cmd+K per la Ricerca, `n` per una nuova attività,
+ * `t` per avviare/fermare il timer.
  * Disattive quando il focus è in un campo testo o l'editor è aperto, così non
  * interferiscono con la digitazione.
  */
@@ -55,6 +57,9 @@ export function useKeyboardShortcuts(): void {
             startMin: 540,
             endMin: 600,
           });
+          break;
+        case "timer":
+          void toggleTimer();
           break;
       }
     };

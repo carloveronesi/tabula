@@ -40,6 +40,11 @@ describe("keymap (scorciatoie pure)", () => {
     expect(r.action).toEqual({ type: "new" });
   });
 
+  it("t → toggle del timer", () => {
+    const r = resolveKey(initialKeyState, key("t"));
+    expect(r.action).toEqual({ type: "timer" });
+  });
+
   it("la sequenza g poi d apre la vista Giorno", () => {
     const first = resolveKey(initialKeyState, key("g"));
     expect(first.action).toBeNull();

@@ -1,22 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTimerStore } from "@/store/timer";
-import { useEditorStore } from "@/store/editor";
-import { useSettingsStore } from "@/store/settings";
-import { elapsedLabel, timerSeed } from "@/domain/timer";
+import { toggleTimer } from "@/features/layout/timerActions";
+import { elapsedLabel } from "@/domain/timer";
 import { Button, cn, IconButton, Icons } from "@/ui";
 
 /**
- * Controllo del timer "in corso" nella TopBar. Da fermo: un pulsante "Avvia".
+ * Controllo del timer "in corso" nella TopBar. Da fermo: un pulsante "Timer".
  * Mentre gira: il tempo trascorso che scorre (aggiornato ogni secondo) con stop
- * e annulla. Lo stop pre-compila l'editor con la fascia calcolata, da rivedere.
+ * e annulla, e l'orario riflesso nel titolo della tab. Avvio/stop passano da
+ * `toggleTimer` (condiviso con la scorciatoia `t`); lo stop apre l'editor.
  */
 export function TimerControl() {
   const startedAt = useTimerStore((s) => s.startedAt);
-  const start = useTimerStore((s) => s.start);
-  const stop = useTimerStore((s) => s.stop);
   const cancel = useTimerStore((s) => s.cancel);
-  const openCreate = useEditorStore((s) => s.openCreate);
-  const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
 
   const running = startedAt !== null;
 
@@ -29,19 +25,28 @@ export function TimerControl() {
     return () => window.clearInterval(id);
   }, [running]);
 
-  const onStop = async () => {
-    const span = await stop();
-    if (!span) return;
-    openCreate(timerSeed(span.startedAt, span.stoppedAt, slotMinutes));
-  };
+  // Riflette il tempo trascorso nel titolo della tab (utile con la PWA di lato).
+  const baseTitle = useRef(document.title);
+  useEffect(() => {
+    document.title =
+      running && startedAt !== null
+        ? `⏱ ${elapsedLabel(now - startedAt)} · ${baseTitle.current}`
+        : baseTitle.current;
+  }, [now, running, startedAt]);
+  useEffect(() => {
+    const base = baseTitle.current;
+    return () => {
+      document.title = base;
+    };
+  }, []);
 
   if (!running) {
     return (
       <Button
         variant="subtle"
         size="sm"
-        onClick={() => void start()}
-        title="Avvia timer"
+        onClick={() => void toggleTimer()}
+        title="Avvia timer (t)"
       >
         <Icons.IconPlay size={15} />
         Timer
@@ -67,8 +72,8 @@ export function TimerControl() {
         variant="primary"
         size="sm"
         className="ml-1 h-7 px-2.5"
-        onClick={() => void onStop()}
-        title="Ferma e salva"
+        onClick={() => void toggleTimer()}
+        title="Ferma e salva (t)"
       >
         <Icons.IconStop size={14} />
         Ferma
