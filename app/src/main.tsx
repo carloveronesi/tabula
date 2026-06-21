@@ -15,4 +15,5 @@ createRoot(container).render(
 
 // Offline / installabilità: il service worker fa runtime caching dell'app shell.
 // Solo in produzione (in dev intralcerebbe l'HMR di Vite).
-if (import.meta.env.PROD) registerServiceWorker("/sw.js");
+if (import.meta.env.PROD)
+  registerServiceWorker(`${import.meta.env.BASE_URL}sw.js`);
