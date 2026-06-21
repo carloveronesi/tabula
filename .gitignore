@@ -29,6 +29,7 @@ app/test/local/
 /.gemini/
 # output locale di impeccable (critique snapshot, live config)
 /.impeccable/
+app/.impeccable/
 
 # cache TS / Vite
 **/.tmp/
