@@ -81,7 +81,7 @@ export function Sidebar() {
       className="sticky top-0 flex h-screen w-[82px] shrink-0 flex-col items-center gap-1 border-r border-line bg-surface px-3 py-[18px]"
     >
       <img
-        src="/tabula-mark.svg"
+        src={`${import.meta.env.BASE_URL}tabula-mark.svg`}
         alt="Tabula"
         width={34}
         height={34}
