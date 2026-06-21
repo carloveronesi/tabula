@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
+import { cn } from "@/ui/cn";
 import { Markdown } from "@/ui/Markdown";
 
 export interface MarkdownEditorProps {
@@ -7,6 +8,8 @@ export interface MarkdownEditorProps {
   label?: string;
   placeholder?: string;
   rows?: number;
+  /** Riempie in altezza il contenitore flex (l'area di testo cresce). */
+  grow?: boolean;
 }
 
 function ToolbarBtn({
@@ -44,6 +47,7 @@ export function MarkdownEditor({
   label,
   placeholder,
   rows = 4,
+  grow = false,
 }: MarkdownEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState(false);
@@ -75,7 +79,12 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className="rounded border border-line bg-bg focus-within:border-primary">
+    <div
+      className={cn(
+        "rounded border border-line bg-bg focus-within:border-primary",
+        grow && "flex flex-1 flex-col",
+      )}
+    >
       <div className="flex items-center gap-0.5 border-b border-line px-1 py-1">
         <ToolbarBtn label="Grassetto" onClick={() => surround("**", "**")}>
           <span className="font-bold">B</span>
@@ -99,7 +108,7 @@ export function MarkdownEditor({
       </div>
 
       {preview ? (
-        <div className="min-h-[5rem] px-3 py-2">
+        <div className={cn("min-h-[5rem] px-3 py-2", grow && "flex-1")}>
           {value.trim() ? (
             <Markdown>{value}</Markdown>
           ) : (
@@ -114,7 +123,10 @@ export function MarkdownEditor({
           value={value}
           rows={rows}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full resize-y bg-transparent px-3 py-2 text-sm text-ink placeholder:text-faint focus:outline-none"
+          className={cn(
+            "w-full bg-transparent px-3 py-2 text-sm text-ink placeholder:text-faint focus:outline-none",
+            grow ? "flex-1 resize-none" : "resize-y",
+          )}
         />
       )}
     </div>

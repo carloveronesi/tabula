@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import type { EntryType } from "@/data/types";
 import {
@@ -255,260 +255,291 @@ export function EntryEditor() {
     });
   }
 
+  // Ctrl/Cmd+Invio salva da qualsiasi campo (ref per evitare closure stantie).
+  const saveRef = useRef(onSave);
+  saveRef.current = onSave;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        void saveRef.current();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <Modal
       open={open}
       onClose={close}
+      variant="full"
       title={base ? "Modifica attività" : "Nuova attività"}
-    >
-      <div className="space-y-4">
-        <Field label="Titolo">
-          <Input
-            aria-label="Titolo"
-            autoFocus
-            value={draft.title}
-            onChange={(e) => patch({ title: e.target.value })}
-            placeholder="Cosa hai fatto?"
-          />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]">
-          <Field label="Data">
-            <Input
-              type="date"
-              aria-label="Data"
-              value={draft.date}
-              onChange={(e) => patch({ date: e.target.value })}
-            />
-          </Field>
-          <Field label="Inizio">
-            <TimeField
-              label="Inizio"
-              step={slotMinutes}
-              value={draft.startMin}
-              onChange={(startMin) => patch({ startMin })}
-            />
-          </Field>
-          <Field label="Fine">
-            <TimeField
-              label="Fine"
-              step={slotMinutes}
-              value={draft.endMin}
-              onChange={(endMin) => patch({ endMin })}
-            />
-          </Field>
-        </div>
-
-        <Field label="Tipo">
-          <Segmented
-            label="Tipo"
-            options={TYPES}
-            value={draft.type}
-            onChange={(type) => patch({ type, subtypeId: null })}
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Cliente">
-            <Combobox
-              label="Cliente"
-              placeholder="Cerca o crea…"
-              options={clientOptions}
-              value={draft.clientId}
-              onChange={(id) => patch({ clientId: id, projectId: null })}
-              onCreate={(name) => void createClient(name)}
-            />
-          </Field>
-          <Field label="Progetto">
-            <Combobox
-              label="Progetto"
-              placeholder="Cerca o crea…"
-              options={projectOptions}
-              value={draft.projectId}
-              onChange={(id) =>
-                patch({
-                  projectId: id,
-                  clientId:
-                    projects.find((p) => p.id === id)?.clientId ??
-                    draft.clientId,
-                })
-              }
-              onCreate={(name) => void createProject(name)}
-            />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {subtypeOptions.length > 0 && (
-            <Field label="Sottotipo">
-              <Combobox
-                label="Sottotipo"
-                placeholder="Nessuno"
-                options={subtypeOptions}
-                value={draft.subtypeId}
-                onChange={(subtypeId) => patch({ subtypeId })}
-              />
-            </Field>
+      header={
+        <input
+          aria-label="Titolo"
+          autoFocus
+          value={draft.title}
+          onChange={(e) => patch({ title: e.target.value })}
+          placeholder="Cosa hai fatto?"
+          className={cn(
+            "w-full border-b border-line bg-transparent pb-1 text-2xl font-semibold tracking-tight text-ink",
+            "transition-colors placeholder:font-normal placeholder:text-faint",
+            "focus:border-primary focus:outline-none",
           )}
-          <Field label="Milestone">
-            <Input
-              aria-label="Milestone"
-              value={draft.milestone}
-              onChange={(e) => patch({ milestone: e.target.value })}
-              placeholder="Es. Fase 2, Rilascio…"
-            />
-          </Field>
-        </div>
-
-        <Field label="Note">
-          <MarkdownEditor
-            label="Note"
-            value={draft.notes}
-            onChange={(notes) => patch({ notes })}
-            placeholder="Dettagli, contesto… (Markdown supportato)"
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Cosa è andato storto">
-            <Textarea
-              aria-label="Cosa è andato storto"
-              value={draft.blockers}
-              onChange={(e) => patch({ blockers: e.target.value })}
-              placeholder="Problemi o blocchi incontrati"
-            />
-          </Field>
-          <Field label="Prossimi passi">
-            <Textarea
-              aria-label="Prossimi passi"
-              value={draft.nextSteps}
-              onChange={(e) => patch({ nextSteps: e.target.value })}
-              placeholder="Cosa fare la prossima volta"
-            />
-          </Field>
-        </div>
-
-        <Field label="Link">
-          <div className="space-y-2">
-            {draft.links.map((link, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  aria-label={`Etichetta link ${i + 1}`}
-                  value={link.label}
-                  onChange={(e) => patchLink(i, { label: e.target.value })}
-                  placeholder="Etichetta"
-                  className="flex-1"
-                />
-                <Input
-                  aria-label={`URL link ${i + 1}`}
-                  type="url"
-                  value={link.url}
-                  onChange={(e) => patchLink(i, { url: e.target.value })}
-                  placeholder="https://…"
-                  className="flex-[2]"
-                />
-                <IconButton
-                  label={`Rimuovi link ${i + 1}`}
-                  size="sm"
-                  onClick={() => removeLink(i)}
-                >
-                  <Icons.IconClose size={16} />
-                </IconButton>
-              </div>
-            ))}
-            <Button variant="ghost" onClick={addLink}>
-              <Icons.IconPlus size={16} />
-              Aggiungi link
-            </Button>
-          </div>
-        </Field>
-
-        <Field label="Collaboratori">
-          <div className="space-y-2">
-            {selectedCollaborators.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedCollaborators.map((p) => (
-                  <Token
-                    key={p.id}
-                    label={p.name}
-                    onRemove={() => removeId("collaboratorIds", p.id)}
-                  />
-                ))}
-              </div>
-            )}
-            <Combobox
-              key={`collab-${draft.collaboratorIds.length}`}
-              label="Aggiungi collaboratore"
-              placeholder={
-                candidateIds.length || draft.projectId || draft.clientId
-                  ? "Cerca o crea…"
-                  : "Scegli prima cliente o progetto"
-              }
-              options={collaboratorAddOptions}
-              value={null}
-              onChange={(id) => addId("collaboratorIds", id)}
-              onCreate={(name) => void createCollaborator(name)}
-            />
-          </div>
-        </Field>
-
-        {(draft.clientId || selectedContacts.length > 0) && (
-          <Field label="Referenti">
-            <div className="space-y-2">
-              {selectedContacts.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedContacts.map((k) => (
-                    <Token
-                      key={k.id}
-                      label={k.name}
-                      onRemove={() => removeId("contactIds", k.id)}
-                    />
-                  ))}
-                </div>
-              )}
-              {draft.clientId && (
-                <Combobox
-                  key={`contact-${draft.contactIds.length}`}
-                  label="Aggiungi referente"
-                  placeholder="Cerca o crea…"
-                  options={contactAddOptions}
-                  value={null}
-                  onChange={(id) => addId("contactIds", id)}
-                  onCreate={(name) => void createContact(name)}
-                />
+        />
+      }
+      footer={
+        <div className="space-y-3">
+          {conflict && (
+            <p
+              role="alert"
+              className="flex items-center gap-1.5 text-sm text-danger"
+            >
+              Si sovrappone a un'altra attività di quel giorno.
+            </p>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              {base && (
+                <Button variant="danger" onClick={onDelete}>
+                  Elimina
+                </Button>
               )}
             </div>
-          </Field>
-        )}
-
-        {conflict && (
-          <p role="alert" className="text-sm text-danger">
-            Si sovrappone a un'altra attività di quel giorno.
-          </p>
-        )}
-
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <div>
-            {base && (
-              <Button variant="danger" onClick={onDelete}>
-                Elimina
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={close}>
+                Annulla
               </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={close}>
-              Annulla
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!valid || conflict}
-              onClick={onSave}
-            >
-              Salva
-            </Button>
+              <Button
+                variant="primary"
+                disabled={!valid || conflict}
+                onClick={onSave}
+              >
+                Salva
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      }
+    >
+      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-2">
+          {/* Colonna sinistra — classificazione: quando, chi, dove. */}
+          <div className="space-y-5">
+            <Field label="Tipo">
+              <Segmented
+                label="Tipo"
+                options={TYPES}
+                value={draft.type}
+                onChange={(type) => patch({ type, subtypeId: null })}
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]">
+              <Field label="Data">
+                <Input
+                  type="date"
+                  aria-label="Data"
+                  value={draft.date}
+                  onChange={(e) => patch({ date: e.target.value })}
+                />
+              </Field>
+              <Field label="Inizio">
+                <TimeField
+                  label="Inizio"
+                  step={slotMinutes}
+                  value={draft.startMin}
+                  onChange={(startMin) => patch({ startMin })}
+                />
+              </Field>
+              <Field label="Fine">
+                <TimeField
+                  label="Fine"
+                  step={slotMinutes}
+                  value={draft.endMin}
+                  onChange={(endMin) => patch({ endMin })}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Cliente">
+                <Combobox
+                  label="Cliente"
+                  placeholder="Cerca o crea…"
+                  options={clientOptions}
+                  value={draft.clientId}
+                  onChange={(id) => patch({ clientId: id, projectId: null })}
+                  onCreate={(name) => void createClient(name)}
+                />
+              </Field>
+              <Field label="Progetto">
+                <Combobox
+                  label="Progetto"
+                  placeholder="Cerca o crea…"
+                  options={projectOptions}
+                  value={draft.projectId}
+                  onChange={(id) =>
+                    patch({
+                      projectId: id,
+                      clientId:
+                        projects.find((p) => p.id === id)?.clientId ??
+                        draft.clientId,
+                    })
+                  }
+                  onCreate={(name) => void createProject(name)}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {subtypeOptions.length > 0 && (
+                <Field label="Sottotipo">
+                  <Combobox
+                    label="Sottotipo"
+                    placeholder="Nessuno"
+                    options={subtypeOptions}
+                    value={draft.subtypeId}
+                    onChange={(subtypeId) => patch({ subtypeId })}
+                  />
+                </Field>
+              )}
+              <Field label="Milestone">
+                <Input
+                  aria-label="Milestone"
+                  value={draft.milestone}
+                  onChange={(e) => patch({ milestone: e.target.value })}
+                  placeholder="Es. Fase 2, Rilascio…"
+                />
+              </Field>
+            </div>
+
+            <Field label="Collaboratori">
+              <div className="space-y-2">
+                {selectedCollaborators.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCollaborators.map((p) => (
+                      <Token
+                        key={p.id}
+                        label={p.name}
+                        onRemove={() => removeId("collaboratorIds", p.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+                <Combobox
+                  key={`collab-${draft.collaboratorIds.length}`}
+                  label="Aggiungi collaboratore"
+                  placeholder={
+                    candidateIds.length || draft.projectId || draft.clientId
+                      ? "Cerca o crea…"
+                      : "Scegli prima cliente o progetto"
+                  }
+                  options={collaboratorAddOptions}
+                  value={null}
+                  onChange={(id) => addId("collaboratorIds", id)}
+                  onCreate={(name) => void createCollaborator(name)}
+                />
+              </div>
+            </Field>
+
+            {(draft.clientId || selectedContacts.length > 0) && (
+              <Field label="Referenti">
+                <div className="space-y-2">
+                  {selectedContacts.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedContacts.map((k) => (
+                        <Token
+                          key={k.id}
+                          label={k.name}
+                          onRemove={() => removeId("contactIds", k.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {draft.clientId && (
+                    <Combobox
+                      key={`contact-${draft.contactIds.length}`}
+                      label="Aggiungi referente"
+                      placeholder="Cerca o crea…"
+                      options={contactAddOptions}
+                      value={null}
+                      onChange={(id) => addId("contactIds", id)}
+                      onCreate={(name) => void createContact(name)}
+                    />
+                  )}
+                </div>
+              </Field>
+            )}
+          </div>
+
+          {/* Colonna destra — i testi: note e riflessione. */}
+          <div className="flex h-full flex-col gap-5">
+            <Field label="Note" className="flex flex-1 flex-col">
+              <MarkdownEditor
+                label="Note"
+                value={draft.notes}
+                onChange={(notes) => patch({ notes })}
+                rows={8}
+                grow
+                placeholder="Dettagli, contesto… (Markdown supportato)"
+              />
+            </Field>
+
+            <Field label="Cosa è andato storto">
+              <Textarea
+                aria-label="Cosa è andato storto"
+                value={draft.blockers}
+                onChange={(e) => patch({ blockers: e.target.value })}
+                placeholder="Problemi o blocchi incontrati"
+              />
+            </Field>
+            <Field label="Prossimi passi">
+              <Textarea
+                aria-label="Prossimi passi"
+                value={draft.nextSteps}
+                onChange={(e) => patch({ nextSteps: e.target.value })}
+                placeholder="Cosa fare la prossima volta"
+              />
+            </Field>
+
+            <Field label="Link">
+              <div className="space-y-2">
+                {draft.links.map((link, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      aria-label={`Etichetta link ${i + 1}`}
+                      value={link.label}
+                      onChange={(e) => patchLink(i, { label: e.target.value })}
+                      placeholder="Etichetta"
+                      className="flex-1"
+                    />
+                    <Input
+                      aria-label={`URL link ${i + 1}`}
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => patchLink(i, { url: e.target.value })}
+                      placeholder="https://…"
+                      className="flex-[2]"
+                    />
+                    <IconButton
+                      label={`Rimuovi link ${i + 1}`}
+                      size="sm"
+                      onClick={() => removeLink(i)}
+                    >
+                      <Icons.IconClose size={16} />
+                    </IconButton>
+                  </div>
+                ))}
+                <Button variant="ghost" onClick={addLink}>
+                  <Icons.IconPlus size={16} />
+                  Aggiungi link
+                </Button>
+              </div>
+            </Field>
+          </div>
+        </div>
     </Modal>
   );
 }

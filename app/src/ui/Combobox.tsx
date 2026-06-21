@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/ui/cn";
+import { inputClasses } from "@/ui/Input";
 
 export interface ComboboxOption {
   id: string;
@@ -119,11 +120,7 @@ export function Combobox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className={cn(
-          "h-9 w-full rounded border border-line bg-bg px-3 text-sm text-ink",
-          "placeholder:text-faint",
-          "focus:border-primary focus:outline-none",
-        )}
+        className={inputClasses}
       />
       {open && (
         <ul

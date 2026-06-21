@@ -78,11 +78,8 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Sezioni"
-      className="sticky top-0 flex h-screen w-[76px] shrink-0 flex-col items-center gap-1 border-r border-line bg-surface px-2.5 py-3"
+      className="sticky top-0 flex h-screen w-[82px] shrink-0 flex-col items-center gap-1 border-r border-line bg-surface px-3 py-[18px]"
     >
-      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-ink shadow-sm">
-        T
-      </div>
       <div className="flex w-full flex-1 flex-col gap-1">
         {PRIMARY.map((d) => (
           <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => setView(d.target)} />

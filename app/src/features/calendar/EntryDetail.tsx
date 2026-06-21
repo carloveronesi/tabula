@@ -35,9 +35,7 @@ function whenLabel(e: Entry): string {
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <h3 className="font-sans text-xs font-semibold uppercase tracking-wide text-muted">
-        {label}
-      </h3>
+      <h3 className="text-xs font-medium text-muted">{label}</h3>
       <div className="mt-1 text-sm text-ink">{children}</div>
     </div>
   );
@@ -101,7 +99,14 @@ export function EntryDetail() {
       return;
     }
     await saveEntry(
-      duplicateEntry(e, date, range.startMin, range.endMin, nanoid(), Date.now()),
+      duplicateEntry(
+        e,
+        date,
+        range.startMin,
+        range.endMin,
+        nanoid(),
+        Date.now(),
+      ),
     );
     notify("Attività duplicata", {
       action: { label: "Annulla", run: () => void undo() },
@@ -110,11 +115,29 @@ export function EntryDetail() {
   };
 
   return (
-    <Modal open={e !== null} onClose={hide} title={e?.title ?? ""}>
+    <Modal
+      open={e !== null}
+      onClose={hide}
+      title={e?.title ?? ""}
+      description={e ? <span className="tnum">{whenLabel(e)}</span> : undefined}
+      footer={
+        e && (
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={hide}>
+              Chiudi
+            </Button>
+            <Button variant="subtle" onClick={() => void duplicate()}>
+              Duplica
+            </Button>
+            <Button variant="primary" onClick={() => openEdit(e)}>
+              Modifica
+            </Button>
+          </div>
+        )
+      }
+    >
       {e && (
         <div className="space-y-4">
-          <p className="tnum text-sm text-muted">{whenLabel(e)}</p>
-
           <div className="flex flex-wrap gap-2">
             <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
               {TYPE_LABEL[e.type]}
@@ -157,7 +180,9 @@ export function EntryDetail() {
             </Section>
           )}
           {collaboratorNames.length > 0 && (
-            <Section label="Collaboratori">{collaboratorNames.join(", ")}</Section>
+            <Section label="Collaboratori">
+              {collaboratorNames.join(", ")}
+            </Section>
           )}
           {contactNames.length > 0 && (
             <Section label="Referenti">{contactNames.join(", ")}</Section>
@@ -180,18 +205,6 @@ export function EntryDetail() {
               </ul>
             </Section>
           )}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" onClick={hide}>
-              Chiudi
-            </Button>
-            <Button variant="subtle" onClick={() => void duplicate()}>
-              Duplica
-            </Button>
-            <Button variant="primary" onClick={() => openEdit(e)}>
-              Modifica
-            </Button>
-          </div>
         </div>
       )}
     </Modal>

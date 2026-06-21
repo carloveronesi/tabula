@@ -148,6 +148,13 @@
     backdrop-filter: blur(3px);
   }
 
+  /* Il pannello laterale (sheet) lascia intravedere il calendario dietro:
+     velo più tenue e niente blur. */
+  dialog[data-variant="sheet"]::backdrop {
+    background: oklch(0.2 0.01 256 / 0.16);
+    backdrop-filter: none;
+  }
+
   ::selection {
     background: var(--primary-wash);
     color: var(--ink);
@@ -176,6 +183,9 @@
 
 .dark dialog::backdrop {
   background: oklch(0 0 0 / 0.55);
+}
+.dark dialog[data-variant="sheet"]::backdrop {
+  background: oklch(0 0 0 / 0.3);
 }
 
 /* Markdown reso (.md): tipografia editoriale sui token. */
@@ -287,6 +297,32 @@
 }
 .animate-modal-in {
   animation: modal-in var(--dur) var(--ease-out);
+}
+
+/* A tutto schermo: semplice dissolvenza (niente scale sull'intera pagina). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in var(--dur) var(--ease-out);
+}
+
+/* Pannello laterale: entra scivolando dal bordo destro. */
+@keyframes sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-sheet-in {
+  animation: sheet-in var(--dur) var(--ease-out);
 }
 
 @keyframes block-in {

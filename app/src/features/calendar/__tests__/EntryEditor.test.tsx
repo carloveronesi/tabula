@@ -249,7 +249,7 @@ describe("EntryEditor", () => {
     fireEvent.focus(projectBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Sito" }));
 
-    const collabBox = screen.getByRole("combobox", {
+const collabBox = screen.getByRole("combobox", {
       name: "Aggiungi collaboratore",
     });
     fireEvent.focus(collabBox);
@@ -288,7 +288,7 @@ describe("EntryEditor", () => {
     fireEvent.focus(projectBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Sito" }));
 
-    const collabBox = screen.getByRole("combobox", {
+const collabBox = screen.getByRole("combobox", {
       name: "Aggiungi collaboratore",
     });
     fireEvent.focus(collabBox);
@@ -334,7 +334,7 @@ describe("EntryEditor", () => {
     fireEvent.focus(clientBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
 
-    const contactBox = screen.getByRole("combobox", {
+const contactBox = screen.getByRole("combobox", {
       name: "Aggiungi referente",
     });
     fireEvent.focus(contactBox);
@@ -417,7 +417,7 @@ describe("EntryEditor", () => {
     fireEvent.change(screen.getByLabelText("Titolo"), {
       target: { value: "Con link" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
+fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
     fireEvent.change(screen.getByLabelText("Etichetta link 1"), {
       target: { value: "Doc" },
     });
