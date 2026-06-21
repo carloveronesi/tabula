@@ -80,6 +80,13 @@ export function Sidebar() {
       aria-label="Sezioni"
       className="sticky top-0 flex h-screen w-[82px] shrink-0 flex-col items-center gap-1 border-r border-line bg-surface px-3 py-[18px]"
     >
+      <img
+        src="/tabula-mark.svg"
+        alt="Tabula"
+        width={34}
+        height={34}
+        className="mb-2 shrink-0"
+      />
       <div className="flex w-full flex-1 flex-col gap-1">
         {PRIMARY.map((d) => (
           <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => setView(d.target)} />

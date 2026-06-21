@@ -11,10 +11,16 @@
   "theme_color": "#3a5cd9",
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "./tabula-mark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./tabula-mark-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }

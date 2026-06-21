@@ -1,7 +1,7 @@
 // Service worker di Tabula — runtime caching dell'app shell per l'uso offline.
 // Strategia: network-first per la navigazione (fallback alla shell in cache),
 // stale-while-revalidate per gli asset same-origin. Nessuna dipendenza.
-const CACHE = "tabula-v1";
+const CACHE = "tabula-v2";
 // Base dello scope ricavata dalla posizione del SW (es. "/tabula/" su Pages,
 // "/" in locale): l'app shell resta corretta a prescindere dal sottopercorso.
 const BASE = self.location.pathname.replace(/sw\.js$/, "");
@@ -9,7 +9,7 @@ const APP_SHELL = [
   BASE,
   BASE + "index.html",
   BASE + "manifest.webmanifest",
-  BASE + "icon.svg",
+  BASE + "tabula-mark.svg",
 ];
 
 self.addEventListener("install", (event) => {

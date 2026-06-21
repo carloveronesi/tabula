@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="app/public/tabula-mark.svg" alt="Tabula" width="96" height="96" />
+</p>
+
 # Tabula
 
 PWA locale per il tracciamento giornaliero delle attività lavorative. Tutti i dati
