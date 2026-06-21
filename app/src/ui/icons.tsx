@@ -136,3 +136,15 @@ export const IconClose = (p: IconProps) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </Svg>
 );
+
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 5.5v13l11-6.5z" />
+  </Svg>
+);
+
+export const IconStop = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="6" y="6" width="12" height="12" rx="2.5" />
+  </Svg>
+);

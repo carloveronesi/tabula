@@ -11,6 +11,7 @@ import type {
   ISODateTime,
   Person,
   Project,
+  RunningTimer,
   Todo,
 } from "@/data/types";
 
@@ -94,4 +95,17 @@ export function putTodo(todo: Todo): Promise<string> {
 
 export function deleteTodo(id: string): Promise<void> {
   return db.todos.delete(id);
+}
+
+/** Timer "in corso" persistito (record singolo `id: "active"`), o `undefined`. */
+export function getTimer(): Promise<RunningTimer | undefined> {
+  return db.timer.get("active");
+}
+
+export function putTimer(timer: RunningTimer): Promise<string> {
+  return db.timer.put(timer);
+}
+
+export function clearTimer(): Promise<void> {
+  return db.timer.delete("active");
 }

@@ -7,6 +7,7 @@ import type {
   Person,
   Project,
   Recurrence,
+  RunningTimer,
   Settings,
   Todo,
 } from "@/data/types";
@@ -24,6 +25,7 @@ export class AppDB extends Dexie {
   todos!: Table<Todo, string>;
   days!: Table<DayMeta, string>;
   settings!: Table<Settings, string>;
+  timer!: Table<RunningTimer, string>;
 
   constructor() {
     super("tabula");
@@ -38,6 +40,8 @@ export class AppDB extends Dexie {
       days: "date",
       settings: "id",
     });
+    // v2: timer "in corso" persistito (sopravvive a reload e chiusura PWA).
+    this.version(2).stores({ timer: "id" });
   }
 }
 

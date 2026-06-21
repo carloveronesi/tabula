@@ -4,6 +4,7 @@ import { useCalendarStore } from "@/store/calendar";
 import { formatPeriod } from "@/domain/format";
 import { isoDate } from "@/domain/calendarNav";
 import { canRedo, canUndo } from "@/domain/history";
+import { TimerControl } from "@/features/layout/TimerControl";
 import { Button, IconButton, Segmented, type SegmentedOption } from "@/ui";
 import {
   IconChevronLeft,
@@ -76,6 +77,7 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-2.5">
+        <TimerControl />
         <div className="flex items-center gap-0.5">
           <IconButton
             label="Annulla"

@@ -80,6 +80,15 @@ export interface Recurrence {
   until: ISODate | null;
 }
 
+/**
+ * Timer "in corso": un solo record (`id: "active"`) col momento di avvio.
+ * Allo stop diventa una Entry; finché gira non sporca il calendario.
+ */
+export interface RunningTimer {
+  id: "active";
+  startedAt: number; // epoch ms
+}
+
 export interface Todo {
   id: Id;
   title: string;
