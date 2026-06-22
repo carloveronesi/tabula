@@ -26,6 +26,7 @@ describe("timeField", () => {
     expect(parseTimeInput("09.30")).toBe(570);
     expect(parseTimeInput("9h30")).toBe(570);
     expect(parseTimeInput("17:45")).toBe(17 * 60 + 45);
+    expect(parseTimeInput("9:3")).toBe(9 * 60 + 3); // minuti a una cifra → 09:03
   });
 
   it("parseTimeInput accetta cifre compatte", () => {
