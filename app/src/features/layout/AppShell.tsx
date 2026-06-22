@@ -4,7 +4,7 @@ import { dateTimeAt } from "@/domain/time";
 import { entryColor } from "@/domain/colors";
 import { isoDate } from "@/domain/calendarNav";
 import { dayBreakdown } from "@/domain/dayBreakdown";
-import { useUiStore, type ViewMode } from "@/store";
+import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -28,17 +28,6 @@ import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 import { useKeyboardShortcuts } from "@/features/layout/useKeyboardShortcuts";
-
-const VIEW_LABEL: Record<ViewMode, string> = {
-  day: "Giorno",
-  week: "Settimana",
-  month: "Mese",
-  riepilogo: "Riepilogo",
-  projects: "Progetti",
-  todo: "Todo",
-  search: "Ricerca",
-  settings: "Impostazioni",
-};
 
 /**
  * Shell dell'app: barra superiore + area contenuto instradata sulla vista.
