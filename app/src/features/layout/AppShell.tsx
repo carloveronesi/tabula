@@ -179,6 +179,7 @@ export function AppShell() {
                   colorOf={colorOf}
                   patronDay={settings.patronDay}
                   highlight={monthFilter}
+                  locations={locations}
                 />
               </div>
               <MonthSummary

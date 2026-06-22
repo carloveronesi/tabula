@@ -96,6 +96,27 @@ describe("MonthGrid", () => {
     expect(cell16).toHaveAttribute("data-dimmed", "true");
   });
 
+  it("mostra l'icona della sede sui giorni con una location", () => {
+    render(<MonthGrid date={DATE} locations={{ "2026-06-15": "office" }} />);
+    expect(screen.getByLabelText("Ufficio")).toBeInTheDocument();
+  });
+
+  it("col filtro per sede evidenzia i giorni con quella sede", () => {
+    render(
+      <MonthGrid
+        date={DATE}
+        locations={{ "2026-06-15": "office", "2026-06-16": "remote" }}
+        highlight={{ kind: "location", location: "office" }}
+      />,
+    );
+    expect(
+      screen.getByText("15").closest('[role="gridcell"]'),
+    ).toHaveAttribute("data-dimmed", "false");
+    expect(
+      screen.getByText("16").closest('[role="gridcell"]'),
+    ).toHaveAttribute("data-dimmed", "true");
+  });
+
   it("il click su un giorno chiama onOpenDay con quella data", () => {
     const onOpenDay = vi.fn();
     render(<MonthGrid date={DATE} onOpenDay={onOpenDay} />);

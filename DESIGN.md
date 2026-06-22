@@ -64,9 +64,10 @@ Vedi `index.css`.
   (azioni, nav, oggi) resta a voce unica cobalto: il colore categoriale vive solo
   dentro i blocchi del calendario.
 - Nel **Mese** ogni giorno mostra una **barra segmentata** per colore (larga in
-  proporzione alle ore) e i **nomi** delle attività (max 3 + "+N"); la cella espone
-  il conteggio in `aria-label` → il colore non è mai l'unico veicolo. Con un filtro
-  del Riepilogo attivo, i segmenti/nomi corrispondenti spiccano e gli altri sfumano.
+  proporzione alle ore), i **nomi** delle attività (max 3 + "+N") e un'**icona
+  della sede** (remoto/ufficio/cliente); la cella espone il conteggio in
+  `aria-label` → il colore non è mai l'unico veicolo. Con un filtro del Riepilogo
+  attivo (cliente, tipo o sede) i giorni corrispondenti spiccano e gli altri sfumano.
 - Il colore non è mai l'unico veicolo di significato: i blocchi portano sempre
   **titolo** accanto al colore (leggibili anche in daltonismo).
 

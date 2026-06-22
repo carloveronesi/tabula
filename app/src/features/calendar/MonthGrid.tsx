@@ -1,9 +1,17 @@
-import type { Entry } from "@/data/types";
+import type { Entry, Location } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
 import { durationMinutes } from "@/domain/time";
+import { LOCATION_LABEL } from "@/domain/presence";
 import { isoDate, monthGridDates, dowMon0, isPatronDay } from "@/domain/calendarNav";
+import { IconHome, IconBuilding, IconBriefcase } from "@/ui/icons";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+
+const LOCATION_ICON: Record<Location, typeof IconHome> = {
+  remote: IconHome,
+  office: IconBuilding,
+  client: IconBriefcase,
+};
 
 interface MonthGridProps {
   date: Date;
@@ -15,6 +23,8 @@ interface MonthGridProps {
   patronDay?: string;
   /** Filtro di evidenziazione dal riepilogo: i giorni senza match sfumano. */
   highlight?: SummaryFilter | null;
+  /** Sede per data: mostra un'icona (remoto/ufficio/cliente) sul giorno. */
+  locations?: Record<string, Location>;
 }
 
 /** Massimo di nomi di attività mostrati in una cella prima del "+N". */
@@ -35,6 +45,7 @@ export function MonthGrid({
   colorOf,
   patronDay = "",
   highlight = null,
+  locations = {},
 }: MonthGridProps) {
   const month = date.getMonth();
   const cells = monthGridDates(date);
@@ -75,12 +86,19 @@ export function MonthGrid({
           const outside = d.getMonth() !== month;
           const weekend = dowMon0(d) >= 5 || isPatronDay(d, patronDay);
           const today = isoDate(d) === todayKey;
-          const dayEntries = byDay.get(isoDate(d)) ?? [];
+          const dayKey = isoDate(d);
+          const dayEntries = byDay.get(dayKey) ?? [];
           const count = dayEntries.length;
           const totalMin = dayEntries.reduce((s, e) => s + durationMinutes(e), 0);
+          const dayLoc = locations[dayKey] ?? null;
+          // Il filtro per sede è una proprietà del giorno; gli altri delle entry.
           const matches =
-            !highlight || dayEntries.some((e) => entryMatchesFilter(e, highlight));
+            !highlight ||
+            (highlight.kind === "location"
+              ? dayLoc === highlight.location
+              : dayEntries.some((e) => entryMatchesFilter(e, highlight)));
           const dimmed = !!highlight && !matches;
+          const LocIcon = dayLoc ? LOCATION_ICON[dayLoc] : null;
           return (
             <button
               key={d.toISOString()}
@@ -101,21 +119,35 @@ export function MonthGrid({
                 dimmed ? "opacity-40" : matches && highlight ? "ring-1 ring-inset ring-accent/50" : ""
               }`}
             >
-              <span
-                className={
-                  today
-                    ? "grid h-6 w-6 place-items-center rounded-pill bg-primary font-semibold text-primary-ink shadow-sm"
-                    : "grid h-6 w-6 place-items-center font-medium"
-                }
-              >
-                {d.getDate()}
-              </span>
+              <div className="flex w-full items-center justify-between">
+                <span
+                  className={
+                    today
+                      ? "grid h-6 w-6 place-items-center rounded-pill bg-primary font-semibold text-primary-ink shadow-sm"
+                      : "grid h-6 w-6 place-items-center font-medium"
+                  }
+                >
+                  {d.getDate()}
+                </span>
+                {LocIcon && !outside && (
+                  <span
+                    aria-label={LOCATION_LABEL[dayLoc!]}
+                    title={LOCATION_LABEL[dayLoc!]}
+                    className="text-muted"
+                  >
+                    <LocIcon size={13} />
+                  </span>
+                )}
+              </div>
               {count > 0 && (
                 <div className="mt-auto flex w-full flex-col gap-1">
                   <div className="flex h-1 w-full gap-px overflow-hidden rounded-pill">
                     {dayEntries.map((e) => {
                       const color = colorOf?.(e) ?? null;
-                      const match = !highlight || entryMatchesFilter(e, highlight);
+                      const match =
+                        !highlight ||
+                        highlight.kind === "location" ||
+                        entryMatchesFilter(e, highlight);
                       const width =
                         totalMin > 0
                           ? (durationMinutes(e) / totalMin) * 100
@@ -135,7 +167,10 @@ export function MonthGrid({
                   <ul className="flex w-full flex-col gap-px">
                     {dayEntries.slice(0, MAX_NAMES).map((e) => {
                       const color = colorOf?.(e) ?? null;
-                      const match = !highlight || entryMatchesFilter(e, highlight);
+                      const match =
+                        !highlight ||
+                        highlight.kind === "location" ||
+                        entryMatchesFilter(e, highlight);
                       return (
                         <li
                           key={e.id}

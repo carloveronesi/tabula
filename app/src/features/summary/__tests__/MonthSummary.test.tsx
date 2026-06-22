@@ -70,6 +70,22 @@ describe("MonthSummary", () => {
     expect(screen.getByText(/su 1 giorno/)).toBeInTheDocument();
   });
 
+  it("click su una riga presenza fissa il filtro per sede", () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        presenceTracking: { ...DEFAULT_SETTINGS.presenceTracking, enabled: true },
+      },
+    });
+    usePresenceStore.setState({ metas: { "2026-06-15": "office" } });
+    const onFix = vi.fn();
+    render(
+      <MonthSummary variant="sidebar" onHoverFilter={() => {}} onFixFilter={onFix} />,
+    );
+    fireEvent.click(screen.getByText("Ufficio"));
+    expect(onFix).toHaveBeenCalledWith({ kind: "location", location: "office" });
+  });
+
   it("click su una card cliente fissa il filtro corrispondente", () => {
     const onFix = vi.fn();
     render(
