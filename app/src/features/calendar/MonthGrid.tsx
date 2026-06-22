@@ -1,5 +1,6 @@
 import type { Entry } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
+import { durationMinutes } from "@/domain/time";
 import { isoDate, monthGridDates, dowMon0, isPatronDay } from "@/domain/calendarNav";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
@@ -16,14 +17,16 @@ interface MonthGridProps {
   highlight?: SummaryFilter | null;
 }
 
-/** Massimo di puntini mostrati in una cella prima del "+N". */
-const MAX_DOTS = 5;
+/** Massimo di nomi di attività mostrati in una cella prima del "+N". */
+const MAX_NAMES = 3;
 
 /**
  * Vista Mese: griglia 6×7. Le celle fuori dal mese corrente sono marcate
- * (`data-outside`). Ogni giorno con attività mostra un puntino colorato per
- * attività (colore cliente/sottotipo), col titolo nel tooltip; il click apre
- * quel giorno nella vista Giorno.
+ * (`data-outside`). Ogni giorno con attività mostra una barra segmentata per
+ * colore (cliente/sottotipo), larga in proporzione alle ore, e i nomi delle
+ * attività (max `MAX_NAMES` + "+N"); il click apre quel giorno nella vista
+ * Giorno. Con un filtro attivo i segmenti/nomi corrispondenti spiccano e gli
+ * altri sfumano (i giorni senza match si attenuano del tutto).
  */
 export function MonthGrid({
   date,
@@ -74,6 +77,7 @@ export function MonthGrid({
           const today = isoDate(d) === todayKey;
           const dayEntries = byDay.get(isoDate(d)) ?? [];
           const count = dayEntries.length;
+          const totalMin = dayEntries.reduce((s, e) => s + durationMinutes(e), 0);
           const matches =
             !highlight || dayEntries.some((e) => entryMatchesFilter(e, highlight));
           const dimmed = !!highlight && !matches;
@@ -107,24 +111,56 @@ export function MonthGrid({
                 {d.getDate()}
               </span>
               {count > 0 && (
-                <span className="mt-auto flex flex-wrap items-center gap-1">
-                  {dayEntries.slice(0, MAX_DOTS).map((e) => {
-                    const color = colorOf?.(e) ?? null;
-                    return (
-                      <span
-                        key={e.id}
-                        title={e.title}
-                        style={{ backgroundColor: color ?? undefined }}
-                        className={`h-1.5 w-1.5 rounded-pill ${color ? "" : "bg-accent"}`}
-                      />
-                    );
-                  })}
-                  {count > MAX_DOTS && (
-                    <span className="text-[10px] font-semibold text-muted">
-                      +{count - MAX_DOTS}
-                    </span>
-                  )}
-                </span>
+                <div className="mt-auto flex w-full flex-col gap-1">
+                  <div className="flex h-1 w-full gap-px overflow-hidden rounded-pill">
+                    {dayEntries.map((e) => {
+                      const color = colorOf?.(e) ?? null;
+                      const match = !highlight || entryMatchesFilter(e, highlight);
+                      const width =
+                        totalMin > 0
+                          ? (durationMinutes(e) / totalMin) * 100
+                          : 100 / count;
+                      return (
+                        <span
+                          key={e.id}
+                          title={e.title}
+                          style={{ width: `${width}%`, backgroundColor: color ?? undefined }}
+                          className={`h-full ${color ? "" : "bg-accent"} ${
+                            match ? "" : "opacity-25"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <ul className="flex w-full flex-col gap-px">
+                    {dayEntries.slice(0, MAX_NAMES).map((e) => {
+                      const color = colorOf?.(e) ?? null;
+                      const match = !highlight || entryMatchesFilter(e, highlight);
+                      return (
+                        <li
+                          key={e.id}
+                          className={`flex items-center gap-1 ${match ? "" : "opacity-40"}`}
+                        >
+                          <span
+                            aria-hidden
+                            style={{ backgroundColor: color ?? undefined }}
+                            className={`h-1.5 w-1.5 flex-none rounded-[2px] ${
+                              color ? "" : "bg-accent"
+                            }`}
+                          />
+                          <span className="truncate text-[10px] leading-tight text-ink/80">
+                            {e.title}
+                          </span>
+                        </li>
+                      );
+                    })}
+                    {count > MAX_NAMES && (
+                      <li className="pl-2.5 text-[9px] font-semibold text-muted">
+                        +{count - MAX_NAMES}
+                      </li>
+                    )}
+                  </ul>
+                </div>
               )}
             </button>
           );

@@ -60,6 +60,18 @@ describe("MonthGrid", () => {
     expect(screen.getByLabelText("15: 2 attività")).toBeInTheDocument();
   });
 
+  it("elenca i nomi delle attività del giorno (fino al massimo, poi +N)", () => {
+    const entries = Array.from({ length: 4 }, (_, i) =>
+      entry(`Task ${i}`, `2026-06-15T${String(9 + i).padStart(2, "0")}:00:00`),
+    );
+    render(<MonthGrid date={DATE} entries={entries} />);
+    expect(screen.getByText("Task 0")).toBeInTheDocument();
+    expect(screen.getByText("Task 2")).toBeInTheDocument();
+    // il quarto eccede MAX_NAMES (3): non c'è il nome, ma il contatore "+1"
+    expect(screen.queryByText("Task 3")).not.toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+  });
+
   it("colora i puntini secondo colorOf", () => {
     const entries = [entry("a", "2026-06-15T09:00:00")];
     render(
