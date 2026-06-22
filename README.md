@@ -53,7 +53,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 - **Linea "ora corrente"** in stile calendario, aggiornata al minuto.
 - **Vista Mese con sidebar di riepilogo**: la griglia mensile affiancata da ore,
   copertura, presenze e ripartizione per cliente; passando o cliccando su un
-  cliente/tipo nella sidebar, i giorni corrispondenti spiccano nella griglia.
+  cliente/tipo/sede nella sidebar, i giorni corrispondenti spiccano nella griglia.
+  Ogni giorno mostra anche un'**icona della sede** (remoto/ufficio/cliente).
 - **Quattro tipi di voce**: lavoro su *cliente*, attività *interna*, *ferie*,
   *evento*. Ogni blocco porta titolo, note (Markdown), blocchi/problemi incontrati,
   prossimi passi, collaboratori, contatti, link e milestone.
@@ -85,6 +86,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 - Traccia la **sede del giorno** (da remoto / ufficio / cliente) e monitora il
   rispetto di obiettivi percentuali (es. % minima in ufficio o dal cliente).
+- Nel **Mese** ogni giorno porta l'icona della sede e la sidebar permette di
+  **filtrare per sede** per vedere a colpo d'occhio dove hai lavorato.
 
 ### 📊 Riepilogo
 

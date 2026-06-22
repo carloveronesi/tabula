@@ -1,4 +1,4 @@
-import type { Entry, EntryType, Id, ISODate } from "@/data/types";
+import type { Entry, EntryType, Id, ISODate, Location } from "@/data/types";
 import { durationMinutes } from "@/domain/time";
 import { minutesOfDay, buildSlots, type WorkHours } from "@/domain/slots";
 
@@ -50,14 +50,21 @@ export interface MonthlyReport {
   byOtherType: TypeSlice[];
 }
 
-/** Filtro di evidenziazione pilotato dal riepilogo: per cliente o per tipo. */
+/** Filtro di evidenziazione pilotato dal riepilogo: per cliente, tipo o sede. */
 export type SummaryFilter =
   | { kind: "client"; clientId: Id }
-  | { kind: "type"; type: EntryType };
+  | { kind: "type"; type: EntryType }
+  | { kind: "location"; location: Location };
 
-/** Vero se l'entry rientra nel filtro di evidenziazione corrente. */
+/**
+ * Vero se l'entry rientra nel filtro corrente. Il filtro per sede è una
+ * proprietà del giorno (non dell'entry): qui restituisce sempre `false` e va
+ * gestito da chi conosce la sede del giorno.
+ */
 export function entryMatchesFilter(e: Entry, f: SummaryFilter): boolean {
-  return f.kind === "client" ? e.clientId === f.clientId : e.type === f.type;
+  if (f.kind === "client") return e.clientId === f.clientId;
+  if (f.kind === "type") return e.type === f.type;
+  return false;
 }
 
 /** Durata della giornata lavorativa in minuti (mattino + pomeriggio). */

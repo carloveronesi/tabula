@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import type { EntryType, Id } from "@/data/types";
+import type { EntryType, Id, Location } from "@/data/types";
 import {
   monthlyReport,
   type SummaryFilter,
@@ -32,9 +32,9 @@ const TYPE_DOT: Record<Exclude<EntryType, "client">, string> = {
 
 function sameFilter(a: SummaryFilter | null, b: SummaryFilter | null): boolean {
   if (!a || !b || a.kind !== b.kind) return false;
-  return a.kind === "client"
-    ? a.clientId === (b as { clientId: Id }).clientId
-    : a.type === (b as { type: EntryType }).type;
+  if (a.kind === "client") return a.clientId === (b as { clientId: Id }).clientId;
+  if (a.kind === "type") return a.type === (b as { type: EntryType }).type;
+  return a.location === (b as { location: Location }).location;
 }
 
 interface MonthSummaryProps {
@@ -258,35 +258,54 @@ export function MonthSummary({
       {showPresence && presence.workingDays > 0 && (
         <div>
           <Eyebrow>Presenze</Eyebrow>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-2 space-y-1">
             {presence.rows
               .filter((r) => r.days > 0 || r.targetPct !== null)
               .map((r) => {
                 const reached = r.targetPct !== null && r.pct >= r.targetPct;
+                const filter: SummaryFilter = { kind: "location", location: r.location };
+                const active = sameFilter(activeFilter, filter);
+                const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
                 return (
-                  <li key={r.location} className="flex items-baseline gap-2 text-[12.5px]">
-                    <span className="w-14 shrink-0 text-muted">{LOCATION_LABEL[r.location]}</span>
-                    <span className="tnum font-semibold text-ink">
-                      {r.days}
-                      <span className="text-faint">g</span>
-                    </span>
-                    <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-pill bg-accent"
-                        style={{ width: `${r.pct}%` }}
-                      />
-                    </div>
-                    <span className="tnum shrink-0 text-muted">{r.pct}%</span>
-                    {r.targetPct !== null && (
-                      <span
-                        className={cn(
-                          "tnum w-10 shrink-0 text-right text-[11px] font-semibold",
-                          reached ? "text-accent" : "text-faint",
-                        )}
-                      >
-                        {reached ? "✓" : `${r.targetPct}%`}
+                  <li
+                    key={r.location}
+                    className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
+                  >
+                    <button
+                      type="button"
+                      disabled={!interactive}
+                      onMouseEnter={interactive ? () => onHover(filter) : undefined}
+                      onMouseLeave={interactive ? () => onHover(null) : undefined}
+                      onClick={interactive ? () => onFix(active ? null : filter) : undefined}
+                      className={cn(
+                        "flex w-full items-baseline gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
+                        interactive && "cursor-pointer hover:bg-raised",
+                        active && "bg-primary-wash",
+                      )}
+                    >
+                      <span className="w-14 shrink-0 text-muted">{LOCATION_LABEL[r.location]}</span>
+                      <span className="tnum font-semibold text-ink">
+                        {r.days}
+                        <span className="text-faint">g</span>
                       </span>
-                    )}
+                      <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-pill bg-accent"
+                          style={{ width: `${r.pct}%` }}
+                        />
+                      </div>
+                      <span className="tnum shrink-0 text-muted">{r.pct}%</span>
+                      {r.targetPct !== null && (
+                        <span
+                          className={cn(
+                            "tnum w-10 shrink-0 text-right text-[11px] font-semibold",
+                            reached ? "text-accent" : "text-faint",
+                          )}
+                        >
+                          {reached ? "✓" : `${r.targetPct}%`}
+                        </span>
+                      )}
+                    </button>
                   </li>
                 );
               })}
