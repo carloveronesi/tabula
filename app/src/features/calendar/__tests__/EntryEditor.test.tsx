@@ -449,7 +449,27 @@ fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
     );
   });
 
-  it("elimina: rimuove la entry in modifica", async () => {
+  it("elimina: serve la conferma a due passi prima di rimuovere", async () => {
+    const e = entry();
+    await db.entries.put(e);
+    useCalendarStore.setState({ entries: [e] });
+    useEditorStore.getState().openEdit(e);
+    render(<EntryEditor />);
+
+    // 1° clic: chiede conferma, non elimina ancora
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+    expect(screen.getByText("Eliminare?")).toBeInTheDocument();
+    expect(useCalendarStore.getState().entries).toHaveLength(1);
+
+    // 2° clic sul "Elimina" di conferma: rimuove davvero
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(0),
+    );
+    expect(await db.entries.get("e1")).toBeUndefined();
+  });
+
+  it("eliminazione: 'No' nella conferma non rimuove la entry", async () => {
     const e = entry();
     await db.entries.put(e);
     useCalendarStore.setState({ entries: [e] });
@@ -457,11 +477,10 @@ fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
     render(<EntryEditor />);
 
     fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+    fireEvent.click(screen.getByRole("button", { name: "No" }));
 
-    await waitFor(() =>
-      expect(useCalendarStore.getState().entries).toHaveLength(0),
-    );
-    expect(await db.entries.get("e1")).toBeUndefined();
+    expect(screen.queryByText("Eliminare?")).not.toBeInTheDocument();
+    expect(useCalendarStore.getState().entries).toHaveLength(1);
   });
 
   it("eliminando si crea un toast la cui azione Annulla ripristina la entry", async () => {
@@ -471,7 +490,8 @@ fireEvent.click(screen.getByRole("button", { name: "Aggiungi link" }));
     useEditorStore.getState().openEdit(e);
     render(<EntryEditor />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" })); // chiede conferma
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" })); // conferma
 
     await waitFor(() =>
       expect(useToastStore.getState().toasts).toHaveLength(1),
