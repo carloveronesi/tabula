@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { newProject } from "@/domain/projectDraft";
+import {
+  newProject,
+  projectEditableEqual,
+  type ProjectEditable,
+} from "@/domain/projectDraft";
+
+const editable = (over: Partial<ProjectEditable> = {}): ProjectEditable => ({
+  name: "Sito",
+  clientId: "c1",
+  status: "active",
+  description: "",
+  objectives: "",
+  estimatedHours: 0,
+  startDate: "",
+  endDate: "",
+  teamIds: ["u1", "u2"],
+  contactIds: [],
+  subtaskDefs: [{ id: "s1", label: "Analisi" }],
+  ...over,
+});
 
 describe("newProject", () => {
   it("progetto interno (senza cliente) con default sani", () => {
@@ -22,5 +41,24 @@ describe("newProject", () => {
     const p = newProject({ name: "Sito", clientId: "c1" }, "p2");
     expect(p.kind).toBe("client");
     expect(p.clientId).toBe("c1");
+  });
+});
+
+describe("projectEditableEqual", () => {
+  it("uguali quando tutti i campi coincidono", () => {
+    expect(projectEditableEqual(editable(), editable())).toBe(true);
+  });
+
+  it("diverso su uno scalare (ore stimate, date, stato…)", () => {
+    expect(projectEditableEqual(editable(), editable({ estimatedHours: 8 }))).toBe(false);
+    expect(projectEditableEqual(editable(), editable({ startDate: "2026-01-01" }))).toBe(false);
+  });
+
+  it("diverso su team/referenti (id) e su sotto-attività", () => {
+    expect(projectEditableEqual(editable(), editable({ teamIds: ["u1"] }))).toBe(false);
+    expect(projectEditableEqual(editable(), editable({ contactIds: ["k1"] }))).toBe(false);
+    expect(
+      projectEditableEqual(editable(), editable({ subtaskDefs: [{ id: "s1", label: "Altro" }] })),
+    ).toBe(false);
   });
 });
