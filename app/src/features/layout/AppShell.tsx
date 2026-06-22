@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Entry } from "@/data/types";
+import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
 import { entryColor } from "@/domain/colors";
 import { isoDate } from "@/domain/calendarNav";
@@ -21,7 +22,7 @@ import { MonthGrid } from "@/features/calendar/MonthGrid";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { SettingsView } from "@/features/settings/SettingsView";
-import { SummaryView } from "@/features/summary/SummaryView";
+import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
 import { TodoView } from "@/features/todo/TodoView";
 import { SearchView } from "@/features/search/SearchView";
@@ -57,6 +58,11 @@ export function AppShell() {
   const canPaste = clipboard !== null;
   const pasteAt = (dateISO: string, startMin: number) =>
     void pasteEntry({ date: dateISO, startMin });
+
+  // Filtro di evidenziazione del Riepilogo: hover transitorio o click "fissato".
+  const [hoverFilter, setHoverFilter] = useState<SummaryFilter | null>(null);
+  const [fixedFilter, setFixedFilter] = useState<SummaryFilter | null>(null);
+  const monthFilter = hoverFilter ?? fixedFilter;
 
   const openDay = (date: Date) => {
     setActiveDate(date);
@@ -129,7 +135,7 @@ export function AppShell() {
         <main
           data-testid={`view-${view}`}
           className={`mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5 ${
-            view === "day" ? "max-w-6xl" : "max-w-5xl"
+            view === "day" || view === "month" ? "max-w-6xl" : "max-w-5xl"
           }`}
         >
           {view === "day" ? (
@@ -160,6 +166,26 @@ export function AppShell() {
                 suggestedLocation={settings.defaultLocation}
               />
             </div>
+          ) : view === "month" ? (
+            <div className="flex min-h-0 flex-1 gap-4">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface p-3 shadow-card sm:p-4">
+                <MonthGrid
+                  date={activeDate}
+                  entries={entries}
+                  onOpenDay={openDay}
+                  colorOf={colorOf}
+                  patronDay={settings.patronDay}
+                  highlight={monthFilter}
+                />
+              </div>
+              <MonthSummary
+                variant="sidebar"
+                activeFilter={monthFilter}
+                fixedFilter={fixedFilter}
+                onHoverFilter={setHoverFilter}
+                onFixFilter={setFixedFilter}
+              />
+            </div>
           ) : (
           <div
             className={`flex min-h-0 flex-1 flex-col rounded-xl border border-line bg-surface shadow-card ${
@@ -186,16 +212,7 @@ export function AppShell() {
             patronDay={settings.patronDay}
           />
         )}
-        {view === "month" && (
-          <MonthGrid
-            date={activeDate}
-            entries={entries}
-            onOpenDay={openDay}
-            colorOf={colorOf}
-            patronDay={settings.patronDay}
-          />
-        )}
-            {view === "riepilogo" && <SummaryView />}
+            {view === "riepilogo" && <MonthSummary variant="page" />}
             {view === "projects" && <ProjectsView />}
             {view === "search" && <SearchView />}
             {view === "settings" && <SettingsView />}

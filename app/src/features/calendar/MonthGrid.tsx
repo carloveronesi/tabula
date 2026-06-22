@@ -1,4 +1,5 @@
 import type { Entry } from "@/data/types";
+import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
 import { isoDate, monthGridDates, dowMon0, isPatronDay } from "@/domain/calendarNav";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
@@ -11,6 +12,8 @@ interface MonthGridProps {
   colorOf?: (entry: Entry) => string | null;
   /** Giorno del patrono ("MM-GG"): reso come festivo. */
   patronDay?: string;
+  /** Filtro di evidenziazione dal riepilogo: i giorni senza match sfumano. */
+  highlight?: SummaryFilter | null;
 }
 
 /** Massimo di puntini mostrati in una cella prima del "+N". */
@@ -28,6 +31,7 @@ export function MonthGrid({
   onOpenDay,
   colorOf,
   patronDay = "",
+  highlight = null,
 }: MonthGridProps) {
   const month = date.getMonth();
   const cells = monthGridDates(date);
@@ -70,6 +74,9 @@ export function MonthGrid({
           const today = isoDate(d) === todayKey;
           const dayEntries = byDay.get(isoDate(d)) ?? [];
           const count = dayEntries.length;
+          const matches =
+            !highlight || dayEntries.some((e) => entryMatchesFilter(e, highlight));
+          const dimmed = !!highlight && !matches;
           return (
             <button
               key={d.toISOString()}
@@ -77,15 +84,18 @@ export function MonthGrid({
               role="gridcell"
               data-outside={outside}
               data-today={today}
+              data-dimmed={dimmed}
               aria-label={
                 count > 0
                   ? `${d.getDate()}: ${count} ${count === 1 ? "attività" : "attività"}`
                   : undefined
               }
               onClick={() => onOpenDay?.(d)}
-              className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised ${
+              className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
                 weekend ? "bg-weekend" : "bg-surface"
-              } ${outside ? "text-faint" : "text-ink"}`}
+              } ${outside ? "text-faint" : "text-ink"} ${
+                dimmed ? "opacity-40" : matches && highlight ? "ring-1 ring-inset ring-accent/50" : ""
+              }`}
             >
               <span
                 className={
