@@ -63,9 +63,10 @@ Vedi `index.css`.
   Ferie/evento senza cliente → accento cobalto di default. Tutto il *cromo* dell'UI
   (azioni, nav, oggi) resta a voce unica cobalto: il colore categoriale vive solo
   dentro i blocchi del calendario.
-- Nel **Mese** ogni attività è un **puntino** dello stesso colore (max 5 + "+N"),
-  col titolo nel tooltip; la cella espone il conteggio in `aria-label` → il colore
-  non è mai l'unico veicolo.
+- Nel **Mese** ogni giorno mostra una **barra segmentata** per colore (larga in
+  proporzione alle ore) e i **nomi** delle attività (max 3 + "+N"); la cella espone
+  il conteggio in `aria-label` → il colore non è mai l'unico veicolo. Con un filtro
+  del Riepilogo attivo, i segmenti/nomi corrispondenti spiccano e gli altri sfumano.
 - Il colore non è mai l'unico veicolo di significato: i blocchi portano sempre
   **titolo** accanto al colore (leggibili anche in daltonismo).
 
