@@ -21,7 +21,6 @@ const CALENDAR_VIEWS: SegmentedOption<ViewMode>[] = [
 ];
 
 const SECTION_LABEL: Partial<Record<ViewMode, string>> = {
-  riepilogo: "Riepilogo",
   projects: "Progetti",
   todo: "Todo",
   search: "Ricerca",

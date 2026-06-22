@@ -35,9 +35,6 @@ export function formatPeriod(date: Date, view: ViewMode): string {
     case "month":
       return cap(fmt(date, { month: "long", year: "numeric" }));
 
-    case "riepilogo":
-      return `Riepilogo · ${cap(fmt(date, { month: "long", year: "numeric" }))}`;
-
     case "search":
       return "Ricerca";
 

@@ -52,7 +52,7 @@ beforeEach(() => {
 
 describe("MonthSummary", () => {
   it("mostra totale, sezione clienti e nome cliente", () => {
-    render(<MonthSummary variant="page" />);
+    render(<MonthSummary />);
     expect(screen.getByText("Ore nel mese")).toBeInTheDocument();
     expect(screen.getByText("Clienti")).toBeInTheDocument();
     expect(screen.getByText("Acme")).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("MonthSummary", () => {
         entry({ id: "old", startsAt: "2026-05-20T09:00:00", endsAt: "2026-05-20T18:00:00", clientId: "c1" }),
       ],
     });
-    render(<MonthSummary variant="page" />);
+    render(<MonthSummary />);
     // un solo giorno attivo a giugno (15), l'entry di maggio è esclusa
     expect(screen.getByText(/su 1 giorno/)).toBeInTheDocument();
   });
@@ -74,13 +74,18 @@ describe("MonthSummary", () => {
     useSettingsStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
-        presenceTracking: { ...DEFAULT_SETTINGS.presenceTracking, enabled: true },
+        // target > 0 → la riga Ufficio è sempre presente, a prescindere dalla data
+        presenceTracking: {
+          ...DEFAULT_SETTINGS.presenceTracking,
+          enabled: true,
+          officeTargetPct: 50,
+        },
       },
     });
     usePresenceStore.setState({ metas: { "2026-06-15": "office" } });
     const onFix = vi.fn();
     render(
-      <MonthSummary variant="sidebar" onHoverFilter={() => {}} onFixFilter={onFix} />,
+      <MonthSummary onHoverFilter={() => {}} onFixFilter={onFix} />,
     );
     fireEvent.click(screen.getByText("Ufficio"));
     expect(onFix).toHaveBeenCalledWith({ kind: "location", location: "office" });
@@ -89,11 +94,7 @@ describe("MonthSummary", () => {
   it("click su una card cliente fissa il filtro corrispondente", () => {
     const onFix = vi.fn();
     render(
-      <MonthSummary
-        variant="sidebar"
-        onHoverFilter={() => {}}
-        onFixFilter={onFix}
-      />,
+      <MonthSummary onHoverFilter={() => {}} onFixFilter={onFix} />,
     );
     fireEvent.click(screen.getByText("Acme"));
     expect(onFix).toHaveBeenCalledWith({ kind: "client", clientId: "c1" });
@@ -101,7 +102,7 @@ describe("MonthSummary", () => {
 
   it("senza callback le righe non sono interattive (nessun filtro fissato)", () => {
     const onFix = vi.fn();
-    render(<MonthSummary variant="page" />);
+    render(<MonthSummary />);
     fireEvent.click(screen.getByText("Acme"));
     expect(onFix).not.toHaveBeenCalled();
   });

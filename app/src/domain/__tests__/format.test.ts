@@ -31,12 +31,6 @@ describe("formatPeriod", () => {
     expect(formatPeriod(D(2026, 6, 1), "week")).toBe("29 giu – 5 lug 2026");
   });
 
-  it("riepilogo → etichetta con il mese", () => {
-    expect(formatPeriod(D(2026, 5, 13), "riepilogo")).toBe(
-      "Riepilogo · Giugno 2026",
-    );
-  });
-
   it("projects/todo → stringa vuota (nessun periodo)", () => {
     expect(formatPeriod(D(2026, 5, 13), "projects")).toBe("");
     expect(formatPeriod(D(2026, 5, 13), "todo")).toBe("");

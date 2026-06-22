@@ -20,8 +20,8 @@ type Dest = {
 };
 
 const PRIMARY: Dest[] = [
-  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week", "month"] },
-  { label: "Riepilogo", icon: IconSummary, target: "riepilogo" },
+  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week"] },
+  { label: "Riepilogo", icon: IconSummary, target: "month", match: ["month"] },
   { label: "Progetti", icon: IconProjects, target: "projects" },
   { label: "Todo", icon: IconTodo, target: "todo" },
 ];
