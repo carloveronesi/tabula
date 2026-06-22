@@ -22,12 +22,15 @@ interface EditorState {
   seed: EditorSeed;
   /** Entry mostrata nel pannello dettaglio; `null` = chiuso. */
   detail: Entry | null;
+  /** Entry copiata negli appunti, pronta da incollare; `null` = vuoto. */
+  clipboard: Entry | null;
 
   openCreate: (seed: EditorSeed) => void;
   openEdit: (entry: Entry) => void;
   close: () => void;
   showDetail: (entry: Entry) => void;
   hideDetail: () => void;
+  copyEntry: (entry: Entry) => void;
 }
 
 /**
@@ -39,10 +42,12 @@ export const useEditorStore = create<EditorState>((set) => ({
   base: null,
   seed: DEFAULT_SEED,
   detail: null,
+  clipboard: null,
 
   openCreate: (seed) => set({ open: true, base: null, seed, detail: null }),
   openEdit: (entry) => set({ open: true, base: entry, detail: null }),
   close: () => set({ open: false, base: null }),
   showDetail: (entry) => set({ detail: entry }),
   hideDetail: () => set({ detail: null }),
+  copyEntry: (entry) => set({ clipboard: entry }),
 }));

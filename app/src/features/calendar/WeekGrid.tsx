@@ -1,5 +1,11 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import type { Entry, Location } from "@/data/types";
+import { ContextMenu } from "@/ui";
 import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 import { workWeekDays, dowMon0, isoDate, isPatronDay } from "@/domain/calendarNav";
 import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
@@ -42,6 +48,10 @@ interface WeekGridProps {
     startMin: number,
     endMin: number,
   ) => void;
+  /** Appunti pieni: abilita il menu "Incolla qui" sull'area vuota. */
+  canPaste?: boolean;
+  /** Incolla nel giorno/slot indicato (click destro su area vuota). */
+  onPasteAt?: (dateISO: string, startMin: number) => void;
   /** Mostra il selettore sede nelle intestazioni (presenze attive). */
   presenceEnabled?: boolean;
   /** Sede per data (giorni con sede registrata). */
@@ -103,6 +113,8 @@ export function WeekGrid({
   colorOf,
   onCreateRange,
   onUpdateEntry,
+  canPaste = false,
+  onPasteAt,
   presenceEnabled = false,
   locations,
   onSetLocation,
@@ -118,6 +130,12 @@ export function WeekGrid({
   const colsRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [menuAt, setMenuAt] = useState<{
+    x: number;
+    y: number;
+    date: string;
+    startMin: number;
+  } | null>(null);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
 
   const colsRect = () => colsRef.current?.getBoundingClientRect();
@@ -133,6 +151,15 @@ export function WeekGrid({
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
     const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
     begin(e, { kind: "create", col, anchorRow: row, row });
+  }
+
+  function onColumnContextMenu(e: ReactMouseEvent, col: number) {
+    // Solo su area vuota e con qualcosa da incollare; altrimenti menu nativo.
+    if (e.target !== e.currentTarget || !canPaste || !onPasteAt) return;
+    e.preventDefault();
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const { startMin } = rowsToRange(row, 1, slots, slotMinutes);
+    setMenuAt({ x: e.clientX, y: e.clientY, date: isoDate(days[col]), startMin });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
@@ -272,6 +299,7 @@ export function WeekGrid({
               key={d.toISOString()}
               data-testid={`week-col-${col}`}
               onPointerDown={(e) => onColumnPointerDown(e, col)}
+              onContextMenu={(e) => onColumnContextMenu(e, col)}
               className={`relative flex flex-1 flex-col border-l border-line ${
                 isoDate(d) === todayKey
                   ? "bg-primary-wash"
@@ -391,6 +419,19 @@ export function WeekGrid({
           )}
         </div>
       </div>
+
+      <ContextMenu
+        at={menuAt ? { x: menuAt.x, y: menuAt.y } : null}
+        onClose={() => setMenuAt(null)}
+        items={[
+          {
+            label: "Incolla qui",
+            onSelect: () => {
+              if (menuAt) onPasteAt?.(menuAt.date, menuAt.startMin);
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

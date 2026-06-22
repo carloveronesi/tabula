@@ -155,6 +155,10 @@ In `app/src/ui/`. Senza dipendenze esterne; accessibili da tastiera; focus visib
 - **Modal** — su `<dialog>` nativo (no clipping, focus-trap nativo, Esc), backdrop
   su `--z-backdrop`, pannello `--surface` + `--shadow-lg`.
 - **Popover** — ancorato, `position: fixed` (niente clipping), Esc/blur per chiudere.
+- **ContextMenu** — menu contestuale ancorato a un punto (click destro sulla
+  griglia), reso in **portale** con `position: fixed` clampata ai bordi: niente
+  clipping né overflow del contenitore. Chiude con Esc / click fuori / scroll /
+  resize; focus sulla prima voce; `role="menu"`/`menuitem`.
 - **Combobox** — input filtrabile + lista navigabile da tastiera (↑/↓/Invio/Esc),
   `role="combobox"`/`listbox`/`option`; base per la cascata cliente→progetto.
 

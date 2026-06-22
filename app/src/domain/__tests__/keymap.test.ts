@@ -35,6 +35,16 @@ describe("keymap (scorciatoie pure)", () => {
     expect(r.action).toEqual({ type: "view", view: "search" });
   });
 
+  it("Ctrl+C → copia", () => {
+    const r = resolveKey(initialKeyState, key("c", { ctrlKey: true }));
+    expect(r.action).toEqual({ type: "copy" });
+  });
+
+  it("Cmd+V → incolla", () => {
+    const r = resolveKey(initialKeyState, key("v", { metaKey: true }));
+    expect(r.action).toEqual({ type: "paste" });
+  });
+
   it("n → nuova attività", () => {
     const r = resolveKey(initialKeyState, key("n"));
     expect(r.action).toEqual({ type: "new" });

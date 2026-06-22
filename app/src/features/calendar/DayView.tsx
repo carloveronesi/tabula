@@ -1,5 +1,11 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import type { Entry } from "@/data/types";
+import { ContextMenu } from "@/ui";
 import { buildSlots, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
@@ -35,6 +41,10 @@ interface DayViewProps {
     startMin: number,
     endMin: number,
   ) => void;
+  /** Appunti pieni: abilita il menu "Incolla qui" sull'area vuota. */
+  canPaste?: boolean;
+  /** Incolla nello slot indicato (click destro su area vuota). */
+  onPasteAt?: (dateISO: string, startMin: number) => void;
 }
 
 type Drag =
@@ -80,6 +90,8 @@ export function DayView({
   colorOf,
   onCreateRange,
   onUpdateEntry,
+  canPaste = false,
+  onPasteAt,
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
@@ -89,6 +101,7 @@ export function DayView({
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag>(null);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; startMin: number } | null>(null);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
 
   const offsetY = (clientY: number) =>
@@ -105,6 +118,15 @@ export function DayView({
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
     const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
     beginDrag(e, { kind: "create", anchorRow: row, row });
+  }
+
+  function onAreaContextMenu(e: ReactMouseEvent) {
+    // Solo su area vuota e con qualcosa da incollare; altrimenti menu nativo.
+    if (e.target !== e.currentTarget || !canPaste || !onPasteAt) return;
+    e.preventDefault();
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const { startMin } = rowsToRange(row, 1, slots, slotMinutes);
+    setMenuAt({ x: e.clientX, y: e.clientY, startMin });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
@@ -162,6 +184,7 @@ export function DayView({
         onPointerDown={onAreaPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onContextMenu={onAreaContextMenu}
         className="absolute inset-y-0 right-0 touch-none"
         style={{ left: TIME_GUTTER }}
       >
@@ -283,6 +306,19 @@ export function DayView({
           );
         })}
       </div>
+
+      <ContextMenu
+        at={menuAt ? { x: menuAt.x, y: menuAt.y } : null}
+        onClose={() => setMenuAt(null)}
+        items={[
+          {
+            label: "Incolla qui",
+            onSelect: () => {
+              if (menuAt) onPasteAt?.(dayKey, menuAt.startMin);
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

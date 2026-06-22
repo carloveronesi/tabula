@@ -11,7 +11,9 @@ export type ShortcutAction =
   | { type: "redo" }
   | { type: "view"; view: ViewMode }
   | { type: "new" }
-  | { type: "timer" };
+  | { type: "timer" }
+  | { type: "copy" }
+  | { type: "paste" };
 
 export interface KeyState {
   /** Prefisso di una sequenza in atteso del secondo tasto. */
@@ -50,6 +52,8 @@ export function resolveKey(
     if (k === "z") return cleared(e.shiftKey ? { type: "redo" } : { type: "undo" });
     if (k === "y") return cleared({ type: "redo" });
     if (k === "k") return cleared({ type: "view", view: "search" });
+    if (k === "c") return cleared({ type: "copy" });
+    if (k === "v") return cleared({ type: "paste" });
     return cleared(null);
   }
 

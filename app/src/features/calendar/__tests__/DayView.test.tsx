@@ -154,6 +154,38 @@ describe("DayView", () => {
     expect(onUpdateEntry).not.toHaveBeenCalled();
   });
 
+  it("click destro su area vuota con appunti pieni → 'Incolla qui' chiama onPasteAt", () => {
+    const onPasteAt = vi.fn();
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[]}
+        workHours={WH}
+        slotMinutes={30}
+        canPaste
+        onPasteAt={onPasteAt}
+      />,
+    );
+    const area = screen.getByTestId("day-area");
+    fireEvent.contextMenu(area, { clientX: 10, clientY: 0 }); // riga 0 → 09:00
+    fireEvent.click(screen.getByRole("menuitem", { name: "Incolla qui" }));
+    expect(onPasteAt).toHaveBeenCalledWith("2026-06-10", 540);
+  });
+
+  it("senza appunti il click destro non apre il menu", () => {
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[]}
+        workHours={WH}
+        slotMinutes={30}
+        onPasteAt={vi.fn()}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByTestId("day-area"), { clientX: 10, clientY: 0 });
+    expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+  });
+
   it("resize dal bordo inferiore → onUpdateEntry con durata maggiore", () => {
     const onUpdateEntry = vi.fn();
     const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");

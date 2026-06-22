@@ -4,7 +4,9 @@ import { isoDate } from "@/domain/calendarNav";
 import { useUiStore } from "@/store";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
+import { useToastStore } from "@/store/toast";
 import { toggleTimer } from "@/features/layout/timerActions";
+import { pasteEntry } from "@/features/layout/clipboardActions";
 
 /** Il bersaglio dell'evento è un campo editabile (lì vince il comportamento nativo). */
 function isEditable(target: EventTarget | null): boolean {
@@ -38,6 +40,23 @@ export function useKeyboardShortcuts(): void {
       const { state, action } = resolveKey(keyState.current, e);
       keyState.current = state;
       if (!action) return;
+
+      // Copia: solo se un dettaglio è aperto e non c'è testo selezionato,
+      // altrimenti lascia vincere la copia nativa del browser.
+      if (action.type === "copy") {
+        const detail = useEditorStore.getState().detail;
+        const hasSelection = (window.getSelection()?.toString() ?? "") !== "";
+        if (!detail || hasSelection) return;
+        e.preventDefault();
+        useEditorStore.getState().copyEntry(detail);
+        useToastStore.getState().notify("Attività copiata");
+        return;
+      }
+      if (action.type === "paste") {
+        e.preventDefault();
+        void pasteEntry();
+        return;
+      }
 
       e.preventDefault();
       const ui = useUiStore.getState();

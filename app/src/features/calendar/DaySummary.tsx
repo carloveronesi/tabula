@@ -8,6 +8,8 @@ interface DaySummaryProps {
   breakdown: DayBreakdown;
   /** Nuova attività in questa giornata. */
   onAdd: () => void;
+  /** Incolla l'attività copiata in questa giornata; assente se appunti vuoti. */
+  onPaste?: () => void;
   /** Mostra il selettore della sede (tracciamento presenze attivo). */
   presenceEnabled?: boolean;
   location?: Location | null;
@@ -26,6 +28,7 @@ interface DaySummaryProps {
 export function DaySummary({
   breakdown,
   onAdd,
+  onPaste,
   presenceEnabled = false,
   location = null,
   onSetLocation,
@@ -98,6 +101,16 @@ export function DaySummary({
         <IconPlus size={15} />
         Aggiungi attività
       </button>
+
+      {onPaste && (
+        <button
+          type="button"
+          onClick={onPaste}
+          className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
+        >
+          Incolla attività
+        </button>
+      )}
     </aside>
   );
 }

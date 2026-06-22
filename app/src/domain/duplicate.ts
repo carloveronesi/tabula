@@ -34,6 +34,31 @@ export function firstFreeRange(
 }
 
 /**
+ * Dove incollare una copia in `date`: prova a conservare l'orario originale
+ * (`preferredStartMin`) se rientra nella giornata lavorativa ed è libero;
+ * altrimenti ripiega sul primo intervallo libero. `null` se non c'è spazio.
+ * Pura.
+ */
+export function pastePlacement(
+  entries: Entry[],
+  date: ISODate,
+  durationMin: number,
+  preferredStartMin: number,
+  bounds: DayBounds,
+  slotMinutes: number,
+): { startMin: number; endMin: number } | null {
+  const end = preferredStartMin + durationMin;
+  if (
+    preferredStartMin >= bounds.startMin &&
+    end <= bounds.endMin &&
+    !conflictsOnDay(date, preferredStartMin, end, entries, null)
+  ) {
+    return { startMin: preferredStartMin, endMin: end };
+  }
+  return firstFreeRange(entries, date, durationMin, bounds, slotMinutes);
+}
+
+/**
  * Copia di una entry posizionata in `date`/`startMin`–`endMin`, con nuovo `id`
  * e timestamp `now`. Mantiene contenuto e classificazione dell'originale. Pura.
  */

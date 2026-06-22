@@ -46,6 +46,10 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   oggi / successivo) e annulla/ripeti delle modifiche.
 - **Blocchi-evento** creabili e spostabili con un gesto: trascina per creare,
   sposta e ridimensiona sulla griglia oraria con snapping a 15 o 30 minuti.
+- **Copia / incolla dei blocchi** — `⌘C`/`⌘V` (o tasto destro sulla griglia →
+  «Incolla qui», più il bottone *Incolla* nel pannello giornata): riporta
+  un'attività su un altro giorno/orario conservandone classificazione e contenuti,
+  con annulla immediato. Esiste anche **Duplica** (stesso giorno, primo slot libero).
 - **Linea "ora corrente"** in stile calendario, aggiornata al minuto.
 - **Quattro tipi di voce**: lavoro su *cliente*, attività *interna*, *ferie*,
   *evento*. Ogni blocco porta titolo, note (Markdown), blocchi/problemi incontrati,
