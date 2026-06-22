@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
-import type { Client, Entry, ISODateTime, Project } from "@/data/types";
+import type { Client, Contact, Entry, ISODateTime, Person, Project } from "@/data/types";
 import { useInventoryStore } from "@/store/inventory";
 import { ProjectsView } from "@/features/projects/ProjectsView";
 
@@ -134,6 +134,39 @@ describe("ProjectsView", () => {
     expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe(
       "Nuovo progetto",
     );
+  });
+
+  it("mostra il team (colleghi) e i referenti del progetto", () => {
+    useInventoryStore.setState({
+      clients: [{ id: "c1", name: "Acme" } as Client],
+      projects: [
+        { ...project("p1", "c1", "Sito"), teamIds: ["u1"], contactIds: ["k1"] },
+      ],
+      people: [{ id: "u1", name: "Mario Rossi" } as Person],
+      contacts: [{ id: "k1", clientId: "c1", name: "Lucia Bianchi" } as Contact],
+    });
+    render(<ProjectsView />);
+    expect(screen.getByText("Mario Rossi")).toBeInTheDocument();
+    expect(screen.getByText("Lucia Bianchi")).toBeInTheDocument();
+  });
+
+  it("aggiunge una sotto-attività e la salva nel progetto", async () => {
+    render(<ProjectsView />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /aggiungi sotto-attività/i }),
+    );
+    fireEvent.change(screen.getByLabelText("Sotto-attività"), {
+      target: { value: "Analisi" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() => {
+      const p = useInventoryStore.getState().projects.find((x) => x.id === "p1");
+      expect(p?.subtaskDefs).toEqual([
+        expect.objectContaining({ label: "Analisi" }),
+      ]);
+    });
   });
 
   it("assegna un cliente a un progetto interno", async () => {
