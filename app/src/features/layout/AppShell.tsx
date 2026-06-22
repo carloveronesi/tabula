@@ -25,6 +25,7 @@ import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
 import { TodoView } from "@/features/todo/TodoView";
+import { DayTodoWidget } from "@/features/todo/DayTodoWidget";
 import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
@@ -164,7 +165,9 @@ export function AppShell() {
                 location={locations[dayKey] ?? null}
                 onSetLocation={(loc) => void setLocation(dayKey, loc)}
                 suggestedLocation={settings.defaultLocation}
-              />
+              >
+                <DayTodoWidget onOpenTodo={() => setView("todo")} />
+              </DaySummary>
             </div>
           ) : view === "month" ? (
             <div className="flex min-h-0 flex-1 gap-4">
