@@ -53,6 +53,21 @@ describe("aggregateByProject", () => {
     expect(m.size).toBe(2); // le entry senza projectId sono ignorate
   });
 
+  it("ricava primo/ultimo giorno anche con entry fuori ordine cronologico", () => {
+    const m = aggregateByProject([
+      entry("a", "p1", "2026-05-20T09:00:00", "2026-05-20T10:00:00"),
+      entry("b", "p1", "2026-02-01T09:00:00", "2026-02-01T10:00:00"), // più vecchia, ma dopo
+      entry("c", "p1", "2026-08-15T09:00:00", "2026-08-15T10:00:00"), // più recente, in mezzo
+      entry("d", "p1", "2026-03-10T09:00:00", "2026-03-10T10:00:00"),
+    ]);
+
+    expect(m.get("p1")).toMatchObject({
+      firstDate: "2026-02-01",
+      lastDate: "2026-08-15",
+      count: 4,
+    });
+  });
+
   it("vuoto → mappa vuota", () => {
     expect(aggregateByProject([]).size).toBe(0);
   });

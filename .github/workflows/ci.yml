@@ -1,0 +1,35 @@
+name: CI
+
+# Guardia di qualità: esegue typecheck e test su ogni PR e su push a main.
+# Non pubblica nulla (il deploy è in deploy.yml); fa solo da check verde/rosso.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Una sola esecuzione per ref: i push successivi annullano quella in corso.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
