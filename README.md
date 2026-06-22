@@ -94,8 +94,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 - Sintesi del mese: **ore totali** e media, **giorni compilati** (copertura della
   giornata lavorativa) con ore registrate vs. attese, **presenze** rispetto agli
   obiettivi, e ripartizione **per cliente** con scomposizione per sottotipo.
-- Disponibile sia come **sidebar della vista Mese** (con evidenziazione della
-  griglia) sia come **pagina dedicata** a tutta larghezza.
+- Vive nella **sidebar della vista Mese** (con evidenziazione della griglia al
+  passaggio sui filtri); la voce **«Riepilogo»** del menu porta direttamente lì.
 
 ### 🔍 Ricerca
 

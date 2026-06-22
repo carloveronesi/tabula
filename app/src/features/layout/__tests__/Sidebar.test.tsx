@@ -22,15 +22,26 @@ describe("Sidebar", () => {
     expect(useUiStore.getState().view).toBe("projects");
   });
 
-  it("Calendario porta alla vista Giorno e resta attivo per giorno/settimana/mese", () => {
+  it("Calendario è attivo per giorno/settimana e porta al Giorno", () => {
+    useUiStore.setState({ view: "week" });
     render(<Sidebar />);
-    // attiva in vista mese (gruppo calendario)
     expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     fireEvent.click(screen.getByRole("button", { name: "Calendario" }));
     expect(useUiStore.getState().view).toBe("day");
+  });
+
+  it("Riepilogo è attivo nel Mese e ci porta direttamente", () => {
+    useUiStore.setState({ view: "todo" });
+    render(<Sidebar />);
+    expect(screen.getByRole("button", { name: "Riepilogo" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Riepilogo" }));
+    expect(useUiStore.getState().view).toBe("month");
   });
 
   it("marca la sezione attiva con aria-pressed", () => {

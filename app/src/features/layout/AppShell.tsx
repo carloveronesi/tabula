@@ -69,13 +69,15 @@ export function AppShell() {
   // ("casa salvo eccezioni"); le sedi registrate hanno la precedenza.
   const monthLocations = useMemo<Record<string, Location>>(() => {
     if (!settings.presenceTracking.enabled) return locations;
+    const todayISO = isoDate(new Date());
     const out: Record<string, Location> = {};
     for (const d of workingDatesOfMonth(
       activeDate,
       settings.workingDays,
       settings.patronDay,
     )) {
-      out[d] = settings.defaultLocation;
+      // Solo i feriali già trascorsi prendono la predefinita; i futuri no.
+      if (d <= todayISO) out[d] = settings.defaultLocation;
     }
     return { ...out, ...locations };
   }, [
@@ -205,7 +207,6 @@ export function AppShell() {
                 />
               </div>
               <MonthSummary
-                variant="sidebar"
                 activeFilter={monthFilter}
                 fixedFilter={fixedFilter}
                 onHoverFilter={setHoverFilter}
@@ -238,7 +239,6 @@ export function AppShell() {
             patronDay={settings.patronDay}
           />
         )}
-            {view === "riepilogo" && <MonthSummary variant="page" />}
             {view === "projects" && <ProjectsView />}
             {view === "search" && <SearchView />}
             {view === "settings" && <SettingsView />}

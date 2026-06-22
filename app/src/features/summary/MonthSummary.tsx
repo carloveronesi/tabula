@@ -38,7 +38,6 @@ function sameFilter(a: SummaryFilter | null, b: SummaryFilter | null): boolean {
 }
 
 interface MonthSummaryProps {
-  variant?: "sidebar" | "page";
   activeFilter?: SummaryFilter | null;
   fixedFilter?: SummaryFilter | null;
   onHoverFilter?: (f: SummaryFilter | null) => void;
@@ -165,7 +164,6 @@ function FilterCard({
  * (quando il chiamante passa `onHoverFilter`/`onFixFilter`). Connesso agli store.
  */
 export function MonthSummary({
-  variant = "sidebar",
   activeFilter = null,
   fixedFilter = null,
   onHoverFilter,
@@ -183,30 +181,28 @@ export function MonthSummary({
 
   const monthKey = isoDate(activeDate).slice(0, 7);
 
-  const report = useMemo(() => {
-    const monthEntries = entries.filter((e) => e.startsAt.slice(0, 7) === monthKey);
+  // Feriali del mese già trascorsi (≤ oggi): base condivisa per copertura e
+  // presenze, così il mese corrente non conta i giorni feriali futuri.
+  const workingElapsed = useMemo(() => {
     const working = workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay);
     const todayISO = isoDate(new Date());
-    const elapsed = working.filter((d) => d <= todayISO);
-    return monthlyReport(monthEntries, elapsed, settings.workHours, settings.slotMinutes);
-  }, [entries, monthKey, activeDate, settings.workingDays, settings.patronDay, settings.workHours, settings.slotMinutes]);
+    return working.filter((d) => d <= todayISO);
+  }, [activeDate, settings.workingDays, settings.patronDay]);
+
+  const report = useMemo(() => {
+    const monthEntries = entries.filter((e) => e.startsAt.slice(0, 7) === monthKey);
+    return monthlyReport(monthEntries, workingElapsed, settings.workHours, settings.slotMinutes);
+  }, [entries, monthKey, workingElapsed, settings.workHours, settings.slotMinutes]);
 
   const presence = useMemo(
     () =>
       presenceBreakdown(
-        workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay),
+        workingElapsed,
         metas,
         settings.presenceTracking,
         settings.defaultLocation,
       ),
-    [
-      activeDate,
-      settings.workingDays,
-      settings.patronDay,
-      metas,
-      settings.presenceTracking,
-      settings.defaultLocation,
-    ],
+    [workingElapsed, metas, settings.presenceTracking, settings.defaultLocation],
   );
   const showPresence = settings.presenceTracking.enabled;
 
@@ -379,20 +375,6 @@ export function MonthSummary({
       )}
     </>
   );
-
-  if (variant === "page") {
-    return (
-      <div className="mx-auto w-full max-w-2xl">
-        {empty ? (
-          <p className="py-12 text-center text-sm text-muted">
-            Nessuna attività registrata in questo mese.
-          </p>
-        ) : (
-          <div className="space-y-7">{sections}</div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <aside
