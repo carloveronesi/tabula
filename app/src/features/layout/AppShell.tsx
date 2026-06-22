@@ -28,6 +28,7 @@ import { SearchView } from "@/features/search/SearchView";
 import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 import { useKeyboardShortcuts } from "@/features/layout/useKeyboardShortcuts";
+import { pasteEntry } from "@/features/layout/clipboardActions";
 
 /**
  * Shell dell'app: barra superiore + area contenuto instradata sulla vista.
@@ -51,6 +52,11 @@ export function AppShell() {
   const notify = useToastStore((s) => s.notify);
   const showDetail = useEditorStore((s) => s.showDetail);
   const openCreate = useEditorStore((s) => s.openCreate);
+  const clipboard = useEditorStore((s) => s.clipboard);
+
+  const canPaste = clipboard !== null;
+  const pasteAt = (dateISO: string, startMin: number) =>
+    void pasteEntry({ date: dateISO, startMin });
 
   const openDay = (date: Date) => {
     setActiveDate(date);
@@ -138,6 +144,8 @@ export function AppShell() {
                   colorOf={colorOf}
                   onCreateRange={createRange}
                   onUpdateEntry={updateEntryRange}
+                  canPaste={canPaste}
+                  onPasteAt={pasteAt}
                 />
               </div>
               <DaySummary
@@ -145,6 +153,7 @@ export function AppShell() {
                 onAdd={() =>
                   openCreate({ date: dayKey, startMin: 540, endMin: 600 })
                 }
+                onPaste={canPaste ? () => void pasteEntry() : undefined}
                 presenceEnabled={settings.presenceTracking.enabled}
                 location={locations[dayKey] ?? null}
                 onSetLocation={(loc) => void setLocation(dayKey, loc)}
@@ -168,6 +177,8 @@ export function AppShell() {
             colorOf={colorOf}
             onCreateRange={createRange}
             onUpdateEntry={updateEntryRange}
+            canPaste={canPaste}
+            onPasteAt={pasteAt}
             presenceEnabled={settings.presenceTracking.enabled}
             locations={locations}
             onSetLocation={(date, loc) => void setLocation(date, loc)}

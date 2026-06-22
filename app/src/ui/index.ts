@@ -11,6 +11,10 @@ export {
   type SegmentedProps,
 } from "@/ui/Segmented";
 export { Modal, type ModalProps } from "@/ui/Modal";
+export {
+  ContextMenu,
+  type ContextMenuItem,
+} from "@/ui/ContextMenu";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "@/ui/Combobox";
 export { Input } from "@/ui/Input";
 export { Textarea } from "@/ui/Textarea";

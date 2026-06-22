@@ -50,6 +50,7 @@ export function EntryDetail() {
   const e = useEditorStore((s) => s.detail);
   const hide = useEditorStore((s) => s.hideDetail);
   const openEdit = useEditorStore((s) => s.openEdit);
+  const copyEntry = useEditorStore((s) => s.copyEntry);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
   const people = useInventoryStore((s) => s.people);
@@ -114,6 +115,12 @@ export function EntryDetail() {
     hide();
   };
 
+  const copy = () => {
+    if (!e) return;
+    copyEntry(e);
+    notify("Attività copiata — incolla con ⌘V o tasto destro sul giorno");
+  };
+
   return (
     <Modal
       open={e !== null}
@@ -125,6 +132,9 @@ export function EntryDetail() {
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={hide}>
               Chiudi
+            </Button>
+            <Button variant="subtle" onClick={copy}>
+              Copia
             </Button>
             <Button variant="subtle" onClick={() => void duplicate()}>
               Duplica

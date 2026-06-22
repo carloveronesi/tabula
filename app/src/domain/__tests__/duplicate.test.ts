@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { firstFreeRange, duplicateEntry } from "@/domain/duplicate";
+import {
+  firstFreeRange,
+  duplicateEntry,
+  pastePlacement,
+} from "@/domain/duplicate";
 import type { Entry } from "@/data/types";
 
 function entry(id: string, date: string, startMin: number, endMin: number): Entry {
@@ -56,6 +60,37 @@ describe("firstFreeRange", () => {
     // tutta la giornata occupata
     const full = entry("a", "2026-06-15", 540, 1080);
     expect(firstFreeRange([full], "2026-06-15", 60, bounds, 30)).toBeNull();
+  });
+});
+
+describe("pastePlacement", () => {
+  it("conserva l'orario originale se la fascia è libera", () => {
+    // giorno vuoto: incolla a 09:00–10:00 come l'originale
+    const r = pastePlacement([], "2026-06-15", 60, 540, bounds, 30);
+    expect(r).toEqual({ startMin: 540, endMin: 600 });
+  });
+
+  it("ripiega sul primo slot libero se l'orario originale è occupato", () => {
+    const r = pastePlacement(
+      [entry("a", "2026-06-15", 540, 600)],
+      "2026-06-15",
+      60,
+      540,
+      bounds,
+      30,
+    );
+    expect(r).toEqual({ startMin: 600, endMin: 660 });
+  });
+
+  it("ripiega se l'orario originale esce dalla giornata lavorativa", () => {
+    // originale alle 19:00 (1140), fuori da 09:00–18:00 → primo slot libero
+    const r = pastePlacement([], "2026-06-15", 60, 1140, bounds, 30);
+    expect(r).toEqual({ startMin: 540, endMin: 600 });
+  });
+
+  it("null se non c'è spazio", () => {
+    const full = entry("a", "2026-06-15", 540, 1080);
+    expect(pastePlacement([full], "2026-06-15", 60, 540, bounds, 30)).toBeNull();
   });
 });
 

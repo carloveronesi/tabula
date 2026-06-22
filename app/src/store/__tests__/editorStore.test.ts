@@ -26,7 +26,12 @@ function entry(over: Partial<Entry> = {}): Entry {
 }
 
 beforeEach(() => {
-  useEditorStore.setState({ open: false, base: null, detail: null });
+  useEditorStore.setState({
+    open: false,
+    base: null,
+    detail: null,
+    clipboard: null,
+  });
 });
 
 describe("useEditorStore", () => {
@@ -64,5 +69,11 @@ describe("useEditorStore", () => {
     expect(useEditorStore.getState().detail).toBe(e);
     useEditorStore.getState().hideDetail();
     expect(useEditorStore.getState().detail).toBeNull();
+  });
+
+  it("copyEntry mette la entry negli appunti", () => {
+    const e = entry();
+    useEditorStore.getState().copyEntry(e);
+    expect(useEditorStore.getState().clipboard).toBe(e);
   });
 });
