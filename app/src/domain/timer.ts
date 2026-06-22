@@ -47,14 +47,13 @@ export function timerSeed(
   const date = isoDate(start);
 
   const rawStartMin = start.getHours() * 60 + start.getMinutes();
-  let startMin = Math.min(roundToSlot(rawStartMin, slotMinutes), MIN_PER_DAY - slotMinutes);
+  // L'inizio è limitato in modo da lasciare spazio ad almeno uno slot prima di
+  // fine giornata: così la fine (≥ uno slot) resta sempre dopo l'inizio.
+  const startMin = Math.min(roundToSlot(rawStartMin, slotMinutes), MIN_PER_DAY - slotMinutes);
 
   const elapsedMin = Math.max(0, (stoppedAt - startedAt) / 60000);
   const slots = Math.max(1, Math.round(elapsedMin / slotMinutes));
   const endMin = Math.min(startMin + slots * slotMinutes, MIN_PER_DAY);
-
-  // Difesa: garantisci almeno uno slot di durata.
-  if (endMin <= startMin) startMin = endMin - slotMinutes;
 
   return { date, startMin, endMin };
 }
