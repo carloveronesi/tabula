@@ -42,20 +42,25 @@ export interface PresenceBreakdown {
  * dei `workingDates` legge la sede da `metas` e calcola le quote sul totale dei
  * feriali (così le percentuali sono confrontabili con gli obiettivi mensili).
  * Le sedi su giorni non feriali sono ignorate. Un target a 0 vale "non impostato".
+ *
+ * Se `defaultLocation` è valorizzato, i giorni feriali **senza** sede registrata
+ * contano come quella sede ("predefinita salvo eccezioni"): in tal caso non
+ * restano giorni non tracciati.
  */
 export function presenceBreakdown(
   workingDates: ISODate[],
   metas: Record<ISODate, Location>,
   targets: PresenceTargets,
+  defaultLocation: Location | null = null,
 ): PresenceBreakdown {
   const workingDays = workingDates.length;
   const counts: Record<Location, number> = { remote: 0, office: 0, client: 0 };
   let tracked = 0;
   for (const date of workingDates) {
-    const loc = metas[date];
+    const loc = metas[date] ?? defaultLocation;
     if (loc) {
       counts[loc] += 1;
-      tracked += 1;
+      if (metas[date]) tracked += 1;
     }
   }
   const target: Record<Location, number | null> = {

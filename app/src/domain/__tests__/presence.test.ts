@@ -40,6 +40,21 @@ describe("presenceBreakdown", () => {
     expect(b.rows.every((r) => r.pct === 0 && r.days === 0)).toBe(true);
   });
 
+  it("con defaultLocation i feriali non compilati contano come predefinita", () => {
+    // 4 feriali, 1 esplicito (cliente), default = ufficio → ufficio 3/4, cliente 1/4
+    const b = presenceBreakdown(
+      ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"],
+      { "2026-06-02": "client" },
+      noTargets,
+      "office",
+    );
+    expect(row(b, "office").days).toBe(3);
+    expect(row(b, "office").pct).toBe(75);
+    expect(row(b, "client").days).toBe(1);
+    expect(b.tracked).toBe(1); // solo quello esplicito resta "registrato"
+    expect(b.untracked).toBe(3);
+  });
+
   it("espone i target di ufficio/cliente; remoto non ne ha; 0 = non impostato", () => {
     const b = presenceBreakdown(["2026-06-01"], {}, {
       officeTargetPct: 50,

@@ -197,8 +197,16 @@ export function MonthSummary({
         workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay),
         metas,
         settings.presenceTracking,
+        settings.defaultLocation,
       ),
-    [activeDate, settings.workingDays, settings.patronDay, metas, settings.presenceTracking],
+    [
+      activeDate,
+      settings.workingDays,
+      settings.patronDay,
+      metas,
+      settings.presenceTracking,
+      settings.defaultLocation,
+    ],
   );
   const showPresence = settings.presenceTracking.enabled;
 
