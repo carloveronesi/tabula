@@ -87,6 +87,8 @@ export function EntryEditor() {
   const [draft, setDraft] = useState<EntryDraft>(() =>
     emptyDraft(seed.date, seed.startMin, seed.endMin),
   );
+  // Conferma "a due passi" dell'eliminazione (resa nel footer).
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Re-inizializza la bozza ad ogni apertura (nuova o da entry esistente).
   useEffect(() => {
@@ -96,6 +98,7 @@ export function EntryEditor() {
         ? draftFromEntry(base)
         : emptyDraft(seed.date, seed.startMin, seed.endMin),
     );
+    setConfirmingDelete(false);
   }, [open, base, seed]);
 
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
@@ -302,11 +305,28 @@ export function EntryEditor() {
           )}
           <div className="flex items-center justify-between gap-3">
             <div>
-              {base && (
-                <Button variant="danger" onClick={onDelete}>
-                  Elimina
-                </Button>
-              )}
+              {base &&
+                (confirmingDelete ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted">Eliminare?</span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setConfirmingDelete(false)}
+                    >
+                      No
+                    </Button>
+                    <Button variant="danger" onClick={onDelete}>
+                      Elimina
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="danger"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    Elimina
+                  </Button>
+                ))}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" onClick={close}>
