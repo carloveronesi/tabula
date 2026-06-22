@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { DayBreakdown } from "@/domain/dayBreakdown";
 import type { Location } from "@/data/types";
 import { formatHours } from "@/domain/format";
@@ -16,6 +17,8 @@ interface DaySummaryProps {
   onSetLocation?: (location: Location | null) => void;
   /** Sede predefinita, suggerita quando il giorno non ha sede. */
   suggestedLocation?: Location | null;
+  /** Contenuto extra in coda alla sidebar (es. widget Da fare). */
+  children?: ReactNode;
 }
 
 /**
@@ -33,11 +36,12 @@ export function DaySummary({
   location = null,
   onSetLocation,
   suggestedLocation = null,
+  children,
 }: DaySummaryProps) {
   const { totalMin, count, rows } = breakdown;
 
   return (
-    <aside className="hidden w-64 flex-none flex-col gap-3.5 lg:flex">
+    <aside className="hidden w-64 min-h-0 flex-none flex-col gap-3.5 overflow-y-auto lg:flex">
       <div className="rounded-lg border border-line bg-surface p-[18px] shadow-card">
         <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
           Oggi registrato
@@ -111,6 +115,8 @@ export function DaySummary({
           Incolla attività
         </button>
       )}
+
+      {children}
     </aside>
   );
 }

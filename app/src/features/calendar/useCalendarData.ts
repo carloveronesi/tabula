@@ -5,6 +5,7 @@ import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useTimerStore } from "@/store/timer";
 import { usePresenceStore } from "@/store/presence";
+import { useTodoStore } from "@/store/todo";
 import { viewRange } from "@/domain/calendarNav";
 
 /**
@@ -20,6 +21,7 @@ export function useCalendarData(): void {
   const loadTimer = useTimerStore((s) => s.load);
   const loadRange = useCalendarStore((s) => s.loadRange);
   const loadPresence = usePresenceStore((s) => s.loadRange);
+  const loadTodos = useTodoStore((s) => s.loadTodos);
 
   const { from, to } = viewRange(activeDate, view);
 
@@ -27,7 +29,8 @@ export function useCalendarData(): void {
     void loadSettings();
     void loadInventory();
     void loadTimer();
-  }, [loadSettings, loadInventory, loadTimer]);
+    void loadTodos();
+  }, [loadSettings, loadInventory, loadTimer, loadTodos]);
 
   useEffect(() => {
     void loadRange(from, to);

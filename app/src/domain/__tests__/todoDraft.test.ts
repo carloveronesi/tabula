@@ -3,6 +3,7 @@ import {
   newTodo,
   sortTodos,
   isOverdue,
+  widgetTodos,
   addSubtask,
   toggleSubtask,
   removeSubtask,
@@ -10,7 +11,7 @@ import {
   addTag,
   removeTag,
 } from "@/domain/todoDraft";
-import type { Todo } from "@/data/types";
+import type { ISODate, Todo } from "@/data/types";
 
 function todo(id: string, title: string, done: boolean, createdAt: number): Todo {
   return {
@@ -24,6 +25,37 @@ function todo(id: string, title: string, done: boolean, createdAt: number): Todo
     createdAt,
   };
 }
+
+function due(t: Todo, dueDate: ISODate | null): Todo {
+  return { ...t, dueDate };
+}
+
+describe("widgetTodos", () => {
+  const today: ISODate = "2026-06-22";
+
+  it("esclude i completati", () => {
+    const list = widgetTodos([todo("a", "A", true, 1), todo("b", "B", false, 1)], today);
+    expect(list.map((t) => t.id)).toEqual(["b"]);
+  });
+
+  it("ordina scaduti → oggi → futuri → senza scadenza", () => {
+    const overdue = due(todo("over", "", false, 1), "2026-06-20");
+    const todayT = due(todo("today", "", false, 1), today);
+    const future = due(todo("fut", "", false, 1), "2026-06-30");
+    const none = todo("none", "", false, 1);
+    const list = widgetTodos([none, future, todayT, overdue], today);
+    expect(list.map((t) => t.id)).toEqual(["over", "today", "fut", "none"]);
+  });
+
+  it("a parità di gruppo: per data crescente, e i senza-data per createdAt desc", () => {
+    const f1 = due(todo("f1", "", false, 1), "2026-07-05");
+    const f2 = due(todo("f2", "", false, 1), "2026-07-01");
+    const n1 = todo("n1", "", false, 10);
+    const n2 = todo("n2", "", false, 20);
+    const list = widgetTodos([f1, f2, n1, n2], today);
+    expect(list.map((t) => t.id)).toEqual(["f2", "f1", "n2", "n1"]);
+  });
+});
 
 describe("newTodo", () => {
   it("crea un todo con default sani (title trim, non fatto)", () => {

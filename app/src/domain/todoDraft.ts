@@ -43,6 +43,32 @@ export function isOverdue(todo: Todo, today: ISODate): boolean {
   return !todo.done && todo.dueDate !== null && todo.dueDate < today;
 }
 
+/**
+ * Todo da mostrare nel widget della vista Giorno: solo i non completati,
+ * ordinati per rilevanza — prima gli scaduti, poi in scadenza oggi, poi con
+ * scadenza futura (per data crescente), infine senza scadenza (più recenti in
+ * alto). `today` iniettato per restare puro.
+ */
+export function widgetTodos(todos: Todo[], today: ISODate): Todo[] {
+  const rank = (t: Todo): number => {
+    if (t.dueDate === null) return 3;
+    if (t.dueDate < today) return 0;
+    if (t.dueDate === today) return 1;
+    return 2;
+  };
+  return todos
+    .filter((t) => !t.done)
+    .sort((a, b) => {
+      const ra = rank(a);
+      const rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
+        return a.dueDate < b.dueDate ? -1 : 1;
+      }
+      return b.createdAt - a.createdAt;
+    });
+}
+
 /** Aggiunge un sottotask (titolo trimmato, non fatto). `id` iniettato. Puro. */
 export function addSubtask(todo: Todo, title: string, id: Id): Todo {
   const trimmed = title.trim();

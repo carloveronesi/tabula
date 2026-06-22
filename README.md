@@ -73,6 +73,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 - Lista di cose da fare con **sotto-attività**, tag, scadenza e collegamento a un
   progetto.
+- Widget **«Da fare»** nella sidebar del Giorno: i todo non completati (scaduti e
+  in scadenza in cima), con spunta per completare e scorciatoia alla lista.
 
 ### ⏱️ Timer
 
