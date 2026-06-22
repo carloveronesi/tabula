@@ -111,6 +111,42 @@ describe("EntryEditor", () => {
     expect(useEditorStore.getState().open).toBe(false);
   });
 
+  it("la scorciatoia 'Giornata' imposta l'intera giornata lavorativa", async () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "Ferie" } });
+    fireEvent.click(screen.getByRole("button", { name: "Giornata" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    expect(saved.startsAt).toBe("2026-06-12T09:00:00"); // morningStart
+    expect(saved.endsAt).toBe("2026-06-12T18:00:00"); // afternoonEnd
+  });
+
+  it("la scorciatoia 'Pomeriggio' imposta la mezza giornata pomeridiana", async () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "Mezza" } });
+    fireEvent.click(screen.getByRole("button", { name: "Pomeriggio" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    expect(saved.startsAt).toBe("2026-06-12T14:00:00"); // afternoonStart
+    expect(saved.endsAt).toBe("2026-06-12T18:00:00"); // afternoonEnd
+  });
+
   it("blocca il salvataggio se l'orario si sovrappone a un'altra attività", () => {
     const occupied = entry({
       id: "x",

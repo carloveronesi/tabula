@@ -58,6 +58,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 - **Quattro tipi di voce**: lavoro su *cliente*, attività *interna*, *ferie*,
   *evento*. Ogni blocco porta titolo, note (Markdown), blocchi/problemi incontrati,
   prossimi passi, collaboratori, contatti, link e milestone.
+- **Scorciatoie di durata** nell'editor (Giornata / Mattina / Pomeriggio) per
+  impostare gli orari con un gesto — comode per ferie a giornata intera o mezza.
 - **Shell ad altezza fissa**: la giornata lavorativa sta tutta a video, senza scroll.
 
 ### 🗂️ Clienti & Progetti
