@@ -27,6 +27,26 @@ export function buildSlots(wh: WorkHours, slotMinutes: number): WorkSlots {
   return { morning, afternoon, all: [...morning, ...afternoon] };
 }
 
+export interface DayPreset {
+  id: "full" | "morning" | "afternoon";
+  label: string;
+  startMin: number;
+  endMin: number;
+}
+
+/**
+ * Scorciatoie di durata ricavate dalla giornata lavorativa: giornata intera,
+ * mattina e pomeriggio. Usate dall'editor per impostare gli orari con un gesto
+ * (es. ferie tutto il giorno o mezza giornata). Pura.
+ */
+export function dayPresets(wh: WorkHours): DayPreset[] {
+  return [
+    { id: "full", label: "Giornata", startMin: wh.morningStart, endMin: wh.afternoonEnd },
+    { id: "morning", label: "Mattina", startMin: wh.morningStart, endMin: wh.morningEnd },
+    { id: "afternoon", label: "Pomeriggio", startMin: wh.afternoonStart, endMin: wh.afternoonEnd },
+  ];
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }

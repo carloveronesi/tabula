@@ -9,6 +9,7 @@ import {
   type EntryDraft,
 } from "@/domain/entryDraft";
 import { conflictsOnDay } from "@/domain/conflict";
+import { dayPresets } from "@/domain/slots";
 import { collaboratorCandidateIds } from "@/domain/collaborators";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
@@ -83,6 +84,7 @@ export function EntryEditor() {
   const savePerson = useInventoryStore((s) => s.savePerson);
   const saveContact = useInventoryStore((s) => s.saveContact);
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
 
   const [draft, setDraft] = useState<EntryDraft>(() =>
     emptyDraft(seed.date, seed.startMin, seed.endMin),
@@ -381,6 +383,34 @@ export function EntryEditor() {
                   onChange={(endMin) => patch({ endMin })}
                 />
               </Field>
+            </div>
+
+            <div
+              role="group"
+              aria-label="Durata rapida"
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {dayPresets(workHours).map((p) => {
+                const active =
+                  draft.startMin === p.startMin && draft.endMin === p.endMin;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => patch({ startMin: p.startMin, endMin: p.endMin })}
+                    className={cn(
+                      "rounded-pill border px-2.5 py-1 text-xs font-medium",
+                      "transition-colors duration-[var(--dur-fast)] ease-out",
+                      active
+                        ? "border-primary bg-primary-wash text-accent"
+                        : "border-line text-muted hover:bg-raised hover:text-ink",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

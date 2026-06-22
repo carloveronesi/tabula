@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildSlots,
+  dayPresets,
   entryRowSpan,
   minutesOfDay,
   minutesToLabel,
@@ -13,6 +14,16 @@ const WH: WorkHours = {
   afternoonStart: 840, // 14:00
   afternoonEnd: 1080, // 18:00
 };
+
+describe("dayPresets", () => {
+  it("giornata intera, mattina e pomeriggio dalla giornata lavorativa", () => {
+    expect(dayPresets(WH)).toEqual([
+      { id: "full", label: "Giornata", startMin: 540, endMin: 1080 },
+      { id: "morning", label: "Mattina", startMin: 540, endMin: 780 },
+      { id: "afternoon", label: "Pomeriggio", startMin: 840, endMin: 1080 },
+    ]);
+  });
+});
 
 describe("buildSlots", () => {
   it("slot da 30 min: 8 al mattino, 8 al pomeriggio, 16 totali", () => {
