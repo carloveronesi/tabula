@@ -51,6 +51,9 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   un'attività su un altro giorno/orario conservandone classificazione e contenuti,
   con annulla immediato. Esiste anche **Duplica** (stesso giorno, primo slot libero).
 - **Linea "ora corrente"** in stile calendario, aggiornata al minuto.
+- **Vista Mese con sidebar di riepilogo**: la griglia mensile affiancata da ore,
+  copertura, presenze e ripartizione per cliente; passando o cliccando su un
+  cliente/tipo nella sidebar, i giorni corrispondenti spiccano nella griglia.
 - **Quattro tipi di voce**: lavoro su *cliente*, attività *interna*, *ferie*,
   *evento*. Ogni blocco porta titolo, note (Markdown), blocchi/problemi incontrati,
   prossimi passi, collaboratori, contatti, link e milestone.
@@ -83,8 +86,11 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 ### 📊 Riepilogo
 
-- Vista di sintesi del tempo per periodo: ore per cliente, progetto e tipo di
-  attività, per chiudere il consuntivo a colpo d'occhio.
+- Sintesi del mese: **ore totali** e media, **giorni compilati** (copertura della
+  giornata lavorativa) con ore registrate vs. attese, **presenze** rispetto agli
+  obiettivi, e ripartizione **per cliente** con scomposizione per sottotipo.
+- Disponibile sia come **sidebar della vista Mese** (con evidenziazione della
+  griglia) sia come **pagina dedicata** a tutta larghezza.
 
 ### 🔍 Ricerca
 

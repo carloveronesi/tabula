@@ -68,6 +68,22 @@ describe("MonthGrid", () => {
     expect(screen.getByTitle("a")).toHaveStyle({ backgroundColor: "#ff0000" });
   });
 
+  it("col filtro attivo evidenzia i giorni che corrispondono e sfuma gli altri", () => {
+    const a = { ...entry("a", "2026-06-15T09:00:00"), clientId: "c1" };
+    const b = { ...entry("b", "2026-06-16T09:00:00"), clientId: "c2" };
+    render(
+      <MonthGrid
+        date={DATE}
+        entries={[a, b]}
+        highlight={{ kind: "client", clientId: "c1" }}
+      />,
+    );
+    const cell15 = screen.getByText("15").closest('[role="gridcell"]');
+    const cell16 = screen.getByText("16").closest('[role="gridcell"]');
+    expect(cell15).toHaveAttribute("data-dimmed", "false");
+    expect(cell16).toHaveAttribute("data-dimmed", "true");
+  });
+
   it("il click su un giorno chiama onOpenDay con quella data", () => {
     const onOpenDay = vi.fn();
     render(<MonthGrid date={DATE} onOpenDay={onOpenDay} />);
