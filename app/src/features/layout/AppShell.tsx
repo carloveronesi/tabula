@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import type { Entry } from "@/data/types";
+import type { Entry, Location } from "@/data/types";
 import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
 import { entryColor } from "@/domain/colors";
-import { isoDate } from "@/domain/calendarNav";
+import { isoDate, workingDatesOfMonth } from "@/domain/calendarNav";
 import { dayBreakdown } from "@/domain/dayBreakdown";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
@@ -64,6 +64,28 @@ export function AppShell() {
   const [hoverFilter, setHoverFilter] = useState<SummaryFilter | null>(null);
   const [fixedFilter, setFixedFilter] = useState<SummaryFilter | null>(null);
   const monthFilter = hoverFilter ?? fixedFilter;
+
+  // Sede effettiva per il Mese: i feriali non compilati prendono la predefinita
+  // ("casa salvo eccezioni"); le sedi registrate hanno la precedenza.
+  const monthLocations = useMemo<Record<string, Location>>(() => {
+    if (!settings.presenceTracking.enabled) return locations;
+    const out: Record<string, Location> = {};
+    for (const d of workingDatesOfMonth(
+      activeDate,
+      settings.workingDays,
+      settings.patronDay,
+    )) {
+      out[d] = settings.defaultLocation;
+    }
+    return { ...out, ...locations };
+  }, [
+    settings.presenceTracking.enabled,
+    settings.defaultLocation,
+    settings.workingDays,
+    settings.patronDay,
+    activeDate,
+    locations,
+  ]);
 
   const openDay = (date: Date) => {
     setActiveDate(date);
@@ -179,7 +201,7 @@ export function AppShell() {
                   colorOf={colorOf}
                   patronDay={settings.patronDay}
                   highlight={monthFilter}
-                  locations={locations}
+                  locations={monthLocations}
                 />
               </div>
               <MonthSummary
