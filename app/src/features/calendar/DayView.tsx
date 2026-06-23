@@ -35,6 +35,8 @@ interface DayViewProps {
   onSelectEntry?: (entry: Entry) => void;
   /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
   colorOf?: (entry: Entry) => string | null;
+  /** Etichetta cliente/sottotipo del blocco; `null` → solo l'orario. */
+  labelOf?: (entry: Entry) => string | null;
   /** Drag su area vuota → nuova attività in quel giorno/intervallo (minuti). */
   onCreateRange?: (
     dateISO: string,
@@ -97,6 +99,7 @@ export function DayView({
   slotMinutes,
   onSelectEntry,
   colorOf,
+  labelOf,
   onCreateRange,
   onUpdateEntry,
   canPaste = false,
@@ -252,6 +255,7 @@ export function DayView({
             ? dragGeom(drag, slotCount, boundary)
             : { startRow: b.startRow, span: b.span };
           const color = colorOf?.(b.entry) ?? null;
+          const label = labelOf?.(b.entry) ?? null;
           // Top/altezza via `rowTop`: include la striscia pausa per le entry che
           // la attraversano (dati pregressi), resta `span*slotHeight` per le altre.
           const top = rowTop(live.startRow, slotHeight, boundary);
@@ -311,13 +315,23 @@ export function DayView({
               >
                 {b.entry.title}
               </span>
-              <span
-                className={`tnum truncate text-[10px] font-normal text-muted ${
-                  compact ? "shrink-0" : ""
-                }`}
-              >
-                {time}
-              </span>
+              {compact ? (
+                <span className="tnum shrink-0 truncate text-[10px] font-normal text-muted">
+                  {time}
+                </span>
+              ) : (
+                <span className="flex min-w-0 items-baseline gap-1 text-[10px] font-normal text-muted">
+                  {label && (
+                    <>
+                      <span className="min-w-0 truncate">{label}</span>
+                      <span aria-hidden className="shrink-0">
+                        ·
+                      </span>
+                    </>
+                  )}
+                  <span className="tnum shrink-0">{time}</span>
+                </span>
+              )}
               <span
                 data-testid="resize-top"
                 onPointerDown={(e) => {

@@ -32,6 +32,17 @@ export interface BreakdownNames {
 }
 
 /**
+ * Etichetta specifica di una entry per cliente/sottotipo: nome del cliente
+ * (`type=client`) o del sottotipo (`type=internal`). `null` per ferie/evento o
+ * entry non assegnate, dove un'etichetta generica sarebbe solo rumore.
+ */
+export function entryLabel(entry: Entry, names: BreakdownNames): string | null {
+  if (entry.type === "client" && entry.clientId) return names.clientName(entry.clientId);
+  if (entry.type === "internal" && entry.subtypeId) return names.subtypeLabel(entry.subtypeId);
+  return null;
+}
+
+/**
  * Ripartizione del tempo di una giornata, raggruppando le entry sulla stessa
  * dimensione-colore dei blocchi in timeline: per cliente (`type=client`), per
  * sottotipo (`type=internal`), altrimenti per tipo (ferie/evento). Logica pura:
@@ -50,17 +61,14 @@ export function dayBreakdown(
     totalMin += min;
 
     let key: string;
-    let label: string;
     if (e.type === "client" && e.clientId) {
       key = `client:${e.clientId}`;
-      label = names.clientName(e.clientId);
     } else if (e.type === "internal" && e.subtypeId) {
       key = `internal:${e.subtypeId}`;
-      label = names.subtypeLabel(e.subtypeId);
     } else {
       key = `type:${e.type}`;
-      label = TYPE_LABEL[e.type];
     }
+    const label = entryLabel(e, names) ?? TYPE_LABEL[e.type];
 
     const existing = groups.get(key);
     if (existing) {
