@@ -41,6 +41,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# todo di lavoro (solo locale, non tracciato)
+/TODO.local.md
+
 # log
 npm-debug.log*
 *.log

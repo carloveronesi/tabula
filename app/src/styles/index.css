@@ -135,6 +135,18 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Striscia pausa pranzo: superficie attenuata a tratteggio leggero → comunica
+     che la fascia non è assegnabile (non ci si mettono note). Tinta sui token,
+     segue il tema chiaro/scuro; il tratteggio è discreto, non rumore. */
+  .lunch-hatch {
+    background-color: var(--weekend);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      color-mix(in oklch, var(--line) 70%, transparent) 6px 7px
+    );
+  }
+
   /* Focus visibile e coerente su tutto ciò che è interattivo. */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--focus);

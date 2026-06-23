@@ -11,7 +11,7 @@ import {
 import { conflictsOnDay } from "@/domain/conflict";
 import { dayPresets } from "@/domain/slots";
 import { collaboratorCandidateIds } from "@/domain/collaborators";
-import { useEditorStore } from "@/store/editor";
+import { useEditorStore, type EditorSeed } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
@@ -38,6 +38,16 @@ const TYPES: SegmentedOption<EntryType>[] = [
   { id: "event", label: "Evento" },
   { id: "vacation", label: "Ferie" },
 ];
+
+/** Bozza iniziale per una nuova entry, con le pre-compilazioni del seed
+ * (titolo/cliente passati dal quick-add con "Più dettagli"). */
+function seedDraft(seed: EditorSeed): EntryDraft {
+  return {
+    ...emptyDraft(seed.date, seed.startMin, seed.endMin),
+    title: seed.title ?? "",
+    clientId: seed.clientId ?? null,
+  };
+}
 
 /** Token selezionato (con rimozione) per le multi-selezioni dell'editor. */
 function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -86,20 +96,14 @@ export function EntryEditor() {
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
   const workHours = useSettingsStore((s) => s.settings.workHours);
 
-  const [draft, setDraft] = useState<EntryDraft>(() =>
-    emptyDraft(seed.date, seed.startMin, seed.endMin),
-  );
+  const [draft, setDraft] = useState<EntryDraft>(() => seedDraft(seed));
   // Conferma "a due passi" dell'eliminazione (resa nel footer).
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Re-inizializza la bozza ad ogni apertura (nuova o da entry esistente).
   useEffect(() => {
     if (!open) return;
-    setDraft(
-      base
-        ? draftFromEntry(base)
-        : emptyDraft(seed.date, seed.startMin, seed.endMin),
-    );
+    setDraft(base ? draftFromEntry(base) : seedDraft(seed));
     setConfirmingDelete(false);
   }, [open, base, seed]);
 

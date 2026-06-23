@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   rowAtOffset,
+  rowTop,
+  LUNCH_BAND,
+  clampCreateToSide,
   columnAtOffset,
   deltaRows,
   createRange,
@@ -25,6 +28,72 @@ describe("rowAtOffset", () => {
     expect(rowAtOffset(50, 44, 16)).toBe(1);
     expect(rowAtOffset(-10, 44, 16)).toBe(0); // sopra → 0
     expect(rowAtOffset(9999, 44, 16)).toBe(15); // sotto → ultima
+  });
+});
+
+describe("pausa pranzo (boundary = 8, banda fissa)", () => {
+  // SLOTS: 16 righe, confine pausa alla riga 8 (inizio pomeriggio). slotHeight 44.
+  const B = 8;
+
+  describe("rowTop", () => {
+    it("mattino senza offset, pomeriggio spostato della banda", () => {
+      expect(rowTop(0, 44, B)).toBe(0);
+      expect(rowTop(7, 44, B)).toBe(308); // ultima riga mattino
+      expect(rowTop(8, 44, B)).toBe(8 * 44 + LUNCH_BAND); // prima riga pomeriggio
+      expect(rowTop(8, 44, null)).toBe(352); // senza pausa: nessuno spostamento
+    });
+  });
+
+  describe("rowAtOffset", () => {
+    it("dentro la banda → primo slot del pomeriggio", () => {
+      expect(rowAtOffset(360, 44, 16, B)).toBe(8); // 352..374 è la banda
+    });
+    it("oltre la banda → riga pomeriggio corretta", () => {
+      const split = B * 44; // fondo del mattino in px
+      expect(rowAtOffset(split + LUNCH_BAND + 22, 44, 16, B)).toBe(8); // metà riga 8
+      expect(rowAtOffset(split + LUNCH_BAND + 44 + 22, 44, 16, B)).toBe(9); // metà riga 9
+    });
+    it("mattino invariato", () => {
+      expect(rowAtOffset(50, 44, 16, B)).toBe(1);
+    });
+  });
+
+  describe("clampCreateToSide", () => {
+    it("ancora nel mattino: l'intervallo si ferma a fine mattino", () => {
+      const r = createRange(6, 10); // { startRow: 6, span: 5 }
+      expect(clampCreateToSide(r.startRow, r.span, 6, B)).toEqual({ startRow: 6, span: 2 });
+    });
+    it("ancora nel pomeriggio: l'intervallo parte dall'inizio pomeriggio", () => {
+      const r = createRange(10, 6); // { startRow: 6, span: 5 }
+      expect(clampCreateToSide(r.startRow, r.span, 10, B)).toEqual({ startRow: 8, span: 3 });
+    });
+    it("intervallo che non scavalca: invariato", () => {
+      expect(clampCreateToSide(2, 3, 2, B)).toEqual({ startRow: 2, span: 3 });
+    });
+    it("senza pausa (boundary null): invariato", () => {
+      expect(clampCreateToSide(6, 5, 6, null)).toEqual({ startRow: 6, span: 5 });
+    });
+  });
+
+  describe("moveBlock con confine", () => {
+    it("scavalcando verso il basso salta nel pomeriggio", () => {
+      expect(moveBlock(6, 3, 1, 16, B)).toBe(8); // 7,8,9 → 8,9,10
+    });
+    it("scavalcando verso l'alto salta nel mattino", () => {
+      expect(moveBlock(8, 3, -1, 16, B)).toBe(5); // 7,8,9 → 5,6,7
+    });
+    it("dentro una fascia: spostamento normale", () => {
+      expect(moveBlock(9, 3, 1, 16, B)).toBe(10);
+    });
+  });
+
+  describe("resize con confine", () => {
+    it("il bordo superiore non risale oltre la pausa", () => {
+      expect(resizeTop(10, 3, -5, B)).toEqual({ startRow: 8, span: 5 });
+    });
+    it("il bordo inferiore non scende oltre la pausa", () => {
+      expect(resizeBottom(6, 1, 5, 16, B)).toEqual({ startRow: 6, span: 2 });
+    });
   });
 });
 

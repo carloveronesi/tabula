@@ -27,6 +27,37 @@ export function buildSlots(wh: WorkHours, slotMinutes: number): WorkSlots {
   return { morning, afternoon, all: [...morning, ...afternoon] };
 }
 
+/**
+ * Indice di riga dove inizia il pomeriggio (= n° slot mattutini), ovvero il
+ * confine della pausa pranzo nella griglia a slot. `null` quando non c'è pausa
+ * da mostrare: pomeriggio attaccato al mattino, o una delle due fasce vuota.
+ */
+export function lunchBoundary(wh: WorkHours, slotMinutes: number): number | null {
+  if (wh.afternoonStart <= wh.morningEnd) return null;
+  const { morning, afternoon } = buildSlots(wh, slotMinutes);
+  if (morning.length === 0 || afternoon.length === 0) return null;
+  return morning.length;
+}
+
+/**
+ * Orario di *fine fascia* da etichettare sul bordo inferiore della riga `i`,
+ * oppure `null`. Le fasce finiscono su orari che non sono inizi-slot (es. 13:00 a
+ * fine mattino, 18:00 a fine giornata): senza questo la griglia non li mostrerebbe
+ * e la giornata sembrerebbe finire alle 12:30 / 17:30. `boundary` = confine pausa,
+ * `lastIdx` = indice dell'ultimo slot. Pura.
+ */
+export function fasciaEndLabel(
+  i: number,
+  slotMin: number,
+  boundary: number | null,
+  lastIdx: number,
+  wh: WorkHours,
+): number | null {
+  if (boundary !== null && i === boundary - 1) return wh.morningEnd;
+  if (i === lastIdx) return slotMin >= wh.afternoonStart ? wh.afternoonEnd : wh.morningEnd;
+  return null;
+}
+
 export interface DayPreset {
   id: "full" | "morning" | "afternoon";
   label: string;

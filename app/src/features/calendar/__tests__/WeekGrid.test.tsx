@@ -134,7 +134,12 @@ describe("WeekGrid", () => {
     fireEvent.pointerMove(cols, { clientY: SLOT_H, clientX: 0, pointerId: 1 });
     fireEvent.pointerUp(cols, { pointerId: 1 });
     // righe 0..1 → 09:00 (540) … 10:00 (600)
-    expect(onCreateRange).toHaveBeenCalledWith("2026-06-10", 540, 600);
+    expect(onCreateRange).toHaveBeenCalledWith(
+      "2026-06-10",
+      540,
+      600,
+      expect.anything(),
+    );
   });
 
   it("blocca lo spostamento che sovrapporrebbe un'altra attività dello stesso giorno", () => {

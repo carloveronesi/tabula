@@ -6,13 +6,16 @@ import {
 } from "react";
 import type { Entry } from "@/data/types";
 import { ContextMenu } from "@/ui";
-import { buildSlots, type WorkHours } from "@/domain/slots";
+import { buildSlots, lunchBoundary, type WorkHours } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
 import {
   rowAtOffset,
+  rowTop,
+  LUNCH_BAND,
   deltaRows,
   createRange,
+  clampCreateToSide,
   moveBlock,
   resizeTop,
   resizeBottom,
@@ -20,7 +23,7 @@ import {
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
 import { withAlpha } from "@/domain/colors";
-import { DayGrid, TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { DayGrid, TIME_GUTTER, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
 
@@ -33,7 +36,12 @@ interface DayViewProps {
   /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
   colorOf?: (entry: Entry) => string | null;
   /** Drag su area vuota → nuova attività in quel giorno/intervallo (minuti). */
-  onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
+  onCreateRange?: (
+    dateISO: string,
+    startMin: number,
+    endMin: number,
+    anchor?: { x: number; y: number },
+  ) => void;
   /** Move/resize confermato → nuovo giorno/intervallo dell'entry (minuti). */
   onUpdateEntry?: (
     entry: Entry,
@@ -62,17 +70,18 @@ type Drag =
 function dragGeom(
   drag: Exclude<Drag, null | { kind: "create" }>,
   slotCount: number,
+  boundary: number | null,
 ): { startRow: number; span: number } {
   if (drag.kind === "move") {
     return {
-      startRow: moveBlock(drag.startRow, drag.span, drag.dRows, slotCount),
+      startRow: moveBlock(drag.startRow, drag.span, drag.dRows, slotCount, boundary),
       span: drag.span,
     };
   }
   if (drag.kind === "resize-top") {
-    return resizeTop(drag.startRow, drag.span, drag.dRows);
+    return resizeTop(drag.startRow, drag.span, drag.dRows, boundary);
   }
-  return resizeBottom(drag.startRow, drag.span, drag.dRows, slotCount);
+  return resizeBottom(drag.startRow, drag.span, drag.dRows, slotCount, boundary);
 }
 
 /**
@@ -95,6 +104,7 @@ export function DayView({
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
+  const boundary = lunchBoundary(workHours, slotMinutes);
   const dayKey = isoDate(date);
   const blocks = entryBlocks(entries, dayKey, slots);
 
@@ -102,7 +112,10 @@ export function DayView({
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number; startMin: number } | null>(null);
-  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
+  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
+    slotCount,
+    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_BOTTOM,
+  );
 
   const offsetY = (clientY: number) =>
     clientY - (areaRef.current?.getBoundingClientRect().top ?? 0);
@@ -116,7 +129,7 @@ export function DayView({
 
   function onAreaPointerDown(e: ReactPointerEvent) {
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
-    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
     beginDrag(e, { kind: "create", anchorRow: row, row });
   }
 
@@ -124,7 +137,7 @@ export function DayView({
     // Solo su area vuota e con qualcosa da incollare; altrimenti menu nativo.
     if (e.target !== e.currentTarget || !canPaste || !onPasteAt) return;
     e.preventDefault();
-    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
     const { startMin } = rowsToRange(row, 1, slots, slotMinutes);
     setMenuAt({ x: e.clientX, y: e.clientY, startMin });
   }
@@ -132,7 +145,7 @@ export function DayView({
   function onPointerMove(e: ReactPointerEvent) {
     if (!drag) return;
     if (drag.kind === "create") {
-      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
       if (row !== drag.row) setDrag({ ...drag, row });
     } else {
       const d = deltaRows(e.clientY - startYRef.current, slotHeight);
@@ -140,8 +153,12 @@ export function DayView({
     }
   }
 
+  const createGeom = (d: Extract<Drag, { kind: "create" }>) => {
+    const r = createRange(d.anchorRow, d.row);
+    return clampCreateToSide(r.startRow, r.span, d.anchorRow, boundary);
+  };
   const geomOf = (d: Exclude<Drag, null>) =>
-    d.kind === "create" ? createRange(d.anchorRow, d.row) : dragGeom(d, slotCount);
+    d.kind === "create" ? createGeom(d) : dragGeom(d, slotCount, boundary);
 
   /** Conflitto del drag corrente (un click puro non è conflitto). */
   function isConflict(d: Exclude<Drag, null>): boolean {
@@ -165,14 +182,21 @@ export function DayView({
     const g = geomOf(d);
     const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
     if (d.kind === "create") {
-      onCreateRange?.(dayKey, startMin, endMin);
+      // Ancora il quick-add al bordo destro dello slot creato (centro verticale).
+      const rect = areaRef.current?.getBoundingClientRect();
+      const top = rowTop(g.startRow, slotHeight, boundary);
+      const bottom = rowTop(g.startRow + g.span - 1, slotHeight, boundary) + slotHeight;
+      const anchor = rect
+        ? { x: rect.right, y: rect.top + (top + bottom) / 2 }
+        : undefined;
+      onCreateRange?.(dayKey, startMin, endMin, anchor);
     } else {
       const entry = entries.find((x) => x.id === d.id);
       if (entry) onUpdateEntry?.(entry, dayKey, startMin, endMin);
     }
   }
 
-  const ghost = drag?.kind === "create" ? createRange(drag.anchorRow, drag.row) : null;
+  const ghost = drag?.kind === "create" ? createGeom(drag) : null;
   const dragConflict = drag ? isConflict(drag) : false;
 
   return (
@@ -193,6 +217,7 @@ export function DayView({
             slots={slots}
             slotMinutes={slotMinutes}
             slotHeight={slotHeight}
+            boundary={boundary}
             withDot
           />
         )}
@@ -202,7 +227,7 @@ export function DayView({
             data-conflict={dragConflict}
             style={{
               position: "absolute",
-              top: ghost.startRow * slotHeight + 2,
+              top: rowTop(ghost.startRow, slotHeight, boundary) + 2,
               height: ghost.span * slotHeight - 4,
               left: 4,
               right: 4,
@@ -216,10 +241,14 @@ export function DayView({
         {blocks.map((b) => {
           const active = drag && drag.kind !== "create" && drag.id === b.entry.id;
           const live = active
-            ? dragGeom(drag, slotCount)
+            ? dragGeom(drag, slotCount, boundary)
             : { startRow: b.startRow, span: b.span };
           const color = colorOf?.(b.entry) ?? null;
-          const heightPx = live.span * slotHeight - 4;
+          // Top/altezza via `rowTop`: include la striscia pausa per le entry che
+          // la attraversano (dati pregressi), resta `span*slotHeight` per le altre.
+          const top = rowTop(live.startRow, slotHeight, boundary);
+          const heightPx =
+            rowTop(live.startRow + live.span - 1, slotHeight, boundary) + slotHeight - top - 4;
           // Blocchi bassi (~30 min): titolo e orario stanno su una riga sola,
           // altrimenti due righe impilate non ci stanno e il titolo viene tagliato.
           const compact = heightPx < 44;
@@ -243,7 +272,7 @@ export function DayView({
               }}
               style={{
                 position: "absolute",
-                top: live.startRow * slotHeight + 2,
+                top: top + 2,
                 height: heightPx,
                 left: 4,
                 right: 4,

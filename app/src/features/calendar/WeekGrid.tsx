@@ -8,21 +8,31 @@ import type { Entry, Location } from "@/data/types";
 import { ContextMenu } from "@/ui";
 import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 import { workWeekDays, dowMon0, isoDate, isPatronDay } from "@/domain/calendarNav";
-import { buildSlots, minutesToLabel, type WorkHours } from "@/domain/slots";
+import {
+  buildSlots,
+  fasciaEndLabel,
+  lunchBoundary,
+  minutesToLabel,
+  type WorkHours,
+} from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
 import { withAlpha } from "@/domain/colors";
 import {
   rowAtOffset,
+  rowTop,
+  LUNCH_BAND,
   columnAtOffset,
   deltaRows,
   createRange,
+  clampCreateToSide,
   moveBlock,
   resizeTop,
   resizeBottom,
   rowsToRange,
 } from "@/domain/dragGrid";
-import { TIME_GUTTER } from "@/features/calendar/DayGrid";
+import { TIME_GUTTER, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
+import { LunchBand } from "@/features/calendar/LunchBand";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
 
@@ -41,7 +51,12 @@ interface WeekGridProps {
   onSelectEntry?: (entry: Entry) => void;
   /** Colore del blocco (per cliente/sottotipo); `null` → accento di default. */
   colorOf?: (entry: Entry) => string | null;
-  onCreateRange?: (dateISO: string, startMin: number, endMin: number) => void;
+  onCreateRange?: (
+    dateISO: string,
+    startMin: number,
+    endMin: number,
+    anchor?: { x: number; y: number },
+  ) => void;
   onUpdateEntry?: (
     entry: Entry,
     dateISO: string,
@@ -86,15 +101,16 @@ type Drag =
 function vGeom(
   drag: Extract<Drag, { kind: "move" | "resize-top" | "resize-bottom" }>,
   slotCount: number,
+  boundary: number | null,
 ): { startRow: number; span: number } {
   if (drag.kind === "move")
     return {
-      startRow: moveBlock(drag.startRow, drag.span, drag.dRows, slotCount),
+      startRow: moveBlock(drag.startRow, drag.span, drag.dRows, slotCount, boundary),
       span: drag.span,
     };
   if (drag.kind === "resize-top")
-    return resizeTop(drag.startRow, drag.span, drag.dRows);
-  return resizeBottom(drag.startRow, drag.span, drag.dRows, slotCount);
+    return resizeTop(drag.startRow, drag.span, drag.dRows, boundary);
+  return resizeBottom(drag.startRow, drag.span, drag.dRows, slotCount, boundary);
 }
 
 /**
@@ -125,6 +141,7 @@ export function WeekGrid({
   const todayKey = isoDate(new Date());
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
+  const boundary = lunchBoundary(workHours, slotMinutes);
   const colCount = days.length;
 
   const colsRef = useRef<HTMLDivElement>(null);
@@ -136,7 +153,10 @@ export function WeekGrid({
     date: string;
     startMin: number;
   } | null>(null);
-  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(slotCount);
+  const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
+    slotCount,
+    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_BOTTOM,
+  );
 
   const colsRect = () => colsRef.current?.getBoundingClientRect();
   const offsetY = (clientY: number) => clientY - (colsRect()?.top ?? 0);
@@ -149,7 +169,7 @@ export function WeekGrid({
 
   function onColumnPointerDown(e: ReactPointerEvent, col: number) {
     if (e.target !== e.currentTarget) return; // su un blocco: lo gestisce il blocco
-    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
     begin(e, { kind: "create", col, anchorRow: row, row });
   }
 
@@ -157,7 +177,7 @@ export function WeekGrid({
     // Solo su area vuota e con qualcosa da incollare; altrimenti menu nativo.
     if (e.target !== e.currentTarget || !canPaste || !onPasteAt) return;
     e.preventDefault();
-    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+    const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
     const { startMin } = rowsToRange(row, 1, slots, slotMinutes);
     setMenuAt({ x: e.clientX, y: e.clientY, date: isoDate(days[col]), startMin });
   }
@@ -165,7 +185,7 @@ export function WeekGrid({
   function onPointerMove(e: ReactPointerEvent) {
     if (!drag) return;
     if (drag.kind === "create") {
-      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount);
+      const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
       if (row !== drag.row) setDrag({ ...drag, row });
       return;
     }
@@ -185,8 +205,12 @@ export function WeekGrid({
   }
 
   const colOf = (d: Drag) => (d.kind === "move" ? d.targetCol : d.col);
+  const createGeom = (d: Extract<Drag, { kind: "create" }>) => {
+    const r = createRange(d.anchorRow, d.row);
+    return clampCreateToSide(r.startRow, r.span, d.anchorRow, boundary);
+  };
   const geomOf = (d: Drag) =>
-    d.kind === "create" ? createRange(d.anchorRow, d.row) : vGeom(d, slotCount);
+    d.kind === "create" ? createGeom(d) : vGeom(d, slotCount, boundary);
 
   /** Conflitto del drag corrente nel giorno di destinazione (click puro escluso). */
   function isConflict(d: Drag): boolean {
@@ -211,7 +235,15 @@ export function WeekGrid({
     const { startMin, endMin } = rowsToRange(g.startRow, g.span, slots, slotMinutes);
     const dayKey = isoDate(days[colOf(d)]);
     if (d.kind === "create") {
-      onCreateRange?.(dayKey, startMin, endMin);
+      // Ancora il quick-add al bordo destro della colonna creata.
+      const rect = colsRect();
+      const colW = rect ? rect.width / colCount : 0;
+      const top = rowTop(g.startRow, slotHeight, boundary);
+      const bottom = rowTop(g.startRow + g.span - 1, slotHeight, boundary) + slotHeight;
+      const anchor = rect
+        ? { x: rect.left + (colOf(d) + 1) * colW, y: rect.top + (top + bottom) / 2 }
+        : undefined;
+      onCreateRange?.(dayKey, startMin, endMin, anchor);
     } else {
       const entry = entries.find((x) => x.id === d.id);
       if (entry) onUpdateEntry?.(entry, dayKey, startMin, endMin);
@@ -222,11 +254,11 @@ export function WeekGrid({
   const dragConflict = drag ? isConflict(drag) : false;
   const preview =
     drag?.kind === "create"
-      ? { col: drag.col, ...createRange(drag.anchorRow, drag.row), ghost: true }
+      ? { col: drag.col, ...createGeom(drag), ghost: true }
       : drag
         ? {
             col: drag.kind === "move" ? drag.targetCol : drag.col,
-            ...vGeom(drag, slotCount),
+            ...vGeom(drag, slotCount, boundary),
             ghost: false,
           }
         : null;
@@ -267,21 +299,40 @@ export function WeekGrid({
       </div>
 
       <div ref={wrapRef} className="flex min-h-0 flex-1 overflow-hidden">
-        <ul className="flex shrink-0 flex-col" style={{ width: TIME_GUTTER }}>
-          {slots.map((minutes) => {
+        <ul
+          className="flex shrink-0 flex-col"
+          style={{ width: TIME_GUTTER, paddingBottom: GRID_PAD_BOTTOM }}
+        >
+          {slots.map((minutes, i) => {
             const onHalf = minutes % 30 === 0;
+            const lastIdx = slots.length - 1;
+            const dayEnd = i === lastIdx ? fasciaEndLabel(i, minutes, boundary, lastIdx, workHours) : null;
             return (
-              <li
-                key={minutes}
-                className={`relative min-h-[14px] flex-1 border-t ${
-                  onHalf ? "border-line" : "border-transparent"
-                }`}
-              >
-                {onHalf && (
-                  <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
-                    {minutesToLabel(minutes)}
-                  </span>
+              <li key={minutes} className="contents">
+                {i === boundary && (
+                  <LunchBand>
+                    {/* 13:00 a cavallo del bordo superiore della banda. */}
+                    <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
+                      {minutesToLabel(workHours.morningEnd)}
+                    </span>
+                  </LunchBand>
                 )}
+                <div
+                  className={`relative min-h-[14px] flex-1 border-t ${
+                    onHalf ? "border-line" : "border-transparent"
+                  }`}
+                >
+                  {onHalf && (
+                    <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
+                      {minutesToLabel(minutes)}
+                    </span>
+                  )}
+                  {dayEnd !== null && (
+                    <span className="tnum absolute bottom-0 right-2 translate-y-1/2 font-mono text-xs text-muted">
+                      {minutesToLabel(dayEnd)}
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -300,6 +351,7 @@ export function WeekGrid({
               data-testid={`week-col-${col}`}
               onPointerDown={(e) => onColumnPointerDown(e, col)}
               onContextMenu={(e) => onColumnContextMenu(e, col)}
+              style={{ paddingBottom: GRID_PAD_BOTTOM }}
               className={`relative flex flex-1 flex-col border-l border-line ${
                 isoDate(d) === todayKey
                   ? "bg-primary-wash"
@@ -308,25 +360,34 @@ export function WeekGrid({
                     : ""
               }`}
             >
-              {slots.map((minutes) => (
-                <div
-                  key={minutes}
-                  className={`pointer-events-none min-h-[14px] flex-1 border-t ${
-                    minutes % 30 === 0 ? "border-line" : "border-transparent"
-                  }`}
-                />
+              {slots.map((minutes, i) => (
+                <div key={minutes} className="contents">
+                  {i === boundary && <LunchBand />}
+                  <div
+                    className={`pointer-events-none min-h-[14px] flex-1 border-t ${
+                      minutes % 30 === 0 ? "border-line" : "border-transparent"
+                    }`}
+                  />
+                </div>
               ))}
               {isoDate(d) === todayKey && (
                 <NowLine
                   slots={slots}
                   slotMinutes={slotMinutes}
                   slotHeight={slotHeight}
+                  boundary={boundary}
                 />
               )}
               {entryBlocks(entries, isoDate(d), slots).map((b) => {
                 if (drag && drag.kind !== "create" && drag.id === b.entry.id)
                   return null; // mostrato nell'anteprima
                 const color = colorOf?.(b.entry) ?? null;
+                const top = rowTop(b.startRow, slotHeight, boundary);
+                const height =
+                  rowTop(b.startRow + b.span - 1, slotHeight, boundary) +
+                  slotHeight -
+                  top -
+                  2;
                 return (
                   <button
                     key={b.entry.id}
@@ -348,8 +409,8 @@ export function WeekGrid({
                     }}
                     style={{
                       position: "absolute",
-                      top: b.startRow * slotHeight + 1,
-                      height: b.span * slotHeight - 2,
+                      top: top + 1,
+                      height,
                       left: 2,
                       right: 2,
                       backgroundColor: color ? withAlpha(color, 0.16) : undefined,
@@ -412,8 +473,12 @@ export function WeekGrid({
               style={{
                 left: `calc(${(preview.col / colCount) * 100}% + 2px)`,
                 width: `calc(${100 / colCount}% - 4px)`,
-                top: preview.startRow * slotHeight + 1,
-                height: preview.span * slotHeight - 2,
+                top: rowTop(preview.startRow, slotHeight, boundary) + 1,
+                height:
+                  rowTop(preview.startRow + preview.span - 1, slotHeight, boundary) +
+                  slotHeight -
+                  rowTop(preview.startRow, slotHeight, boundary) -
+                  2,
               }}
             />
           )}
