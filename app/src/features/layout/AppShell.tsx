@@ -4,7 +4,7 @@ import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
 import { entryColor } from "@/domain/colors";
 import { isoDate, workingDatesOfMonth } from "@/domain/calendarNav";
-import { dayBreakdown } from "@/domain/dayBreakdown";
+import { dayBreakdown, entryLabel } from "@/domain/dayBreakdown";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -111,6 +111,23 @@ export function AppShell() {
     return (entry: Entry) => entryColor(entry, maps);
   }, [settings.clientColors, settings.internalColors]);
 
+  // Resolver dei nomi cliente/sottotipo, condivisi da legenda e blocchi.
+  const names = useMemo(() => {
+    const subtypes = [...settings.subtypes.client, ...settings.subtypes.internal];
+    return {
+      clientName: (id: string) =>
+        clients.find((c) => c.id === id)?.name ?? "Cliente",
+      subtypeLabel: (id: string) =>
+        subtypes.find((s) => s.id === id)?.label ?? "Interno",
+    };
+  }, [clients, settings.subtypes]);
+
+  // Etichetta cliente/sottotipo del blocco (vista Giorno), accanto all'orario.
+  const labelOf = useMemo(
+    () => (entry: Entry) => entryLabel(entry, names),
+    [names],
+  );
+
   const updateEntryRange = async (
     entry: Entry,
     dateISO: string,
@@ -134,25 +151,18 @@ export function AppShell() {
   const dayKey = isoDate(activeDate);
   const breakdown = useMemo(() => {
     const dayEntries = entries.filter((e) => e.startsAt.slice(0, 10) === dayKey);
-    const subtypes = [...settings.subtypes.client, ...settings.subtypes.internal];
     return dayBreakdown(
       dayEntries,
       {
         clientColors: settings.clientColors,
         internalColors: settings.internalColors,
       },
-      {
-        clientName: (id) =>
-          clients.find((c) => c.id === id)?.name ?? "Cliente",
-        subtypeLabel: (id) =>
-          subtypes.find((s) => s.id === id)?.label ?? "Interno",
-      },
+      names,
     );
   }, [
     entries,
     dayKey,
-    clients,
-    settings.subtypes,
+    names,
     settings.clientColors,
     settings.internalColors,
   ]);
@@ -178,6 +188,7 @@ export function AppShell() {
                   slotMinutes={settings.slotMinutes}
                   onSelectEntry={showDetail}
                   colorOf={colorOf}
+                  labelOf={labelOf}
                   onCreateRange={createRange}
                   onUpdateEntry={updateEntryRange}
                   canPaste={canPaste}
