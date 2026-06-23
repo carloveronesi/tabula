@@ -87,7 +87,12 @@ describe("DayView", () => {
     fireEvent.pointerMove(area, { clientY: SLOT_H * 3, pointerId: 1 }); // riga 3
     fireEvent.pointerUp(area, { pointerId: 1 });
     // righe 0..3 → 09:00 (540) … fine riga 3 (630+30 = 660)
-    expect(onCreateRange).toHaveBeenCalledWith("2026-06-10", 540, 660);
+    expect(onCreateRange).toHaveBeenCalledWith(
+      "2026-06-10",
+      540,
+      660,
+      expect.anything(),
+    );
   });
 
   it("drag di un blocco → onUpdateEntry col nuovo orario", () => {

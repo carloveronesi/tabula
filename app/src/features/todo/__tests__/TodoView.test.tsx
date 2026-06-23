@@ -126,7 +126,10 @@ describe("TodoView", () => {
       expect(useTodoStore.getState().todos[0].done).toBe(true),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /elimina/i }));
+    // I completati stanno nel gruppo "Completate", nascosto dal filtro di
+    // default "Aperte": passa a "Tutte" per raggiungerli.
+    fireEvent.click(screen.getByRole("button", { name: "Tutte" }));
+    fireEvent.click(await screen.findByRole("button", { name: /elimina/i }));
     await waitFor(() =>
       expect(useTodoStore.getState().todos).toHaveLength(0),
     );

@@ -23,8 +23,28 @@ describe("DayGrid", () => {
     expect(screen.getByText("17:30")).toBeInTheDocument();
   });
 
+  it("etichetta anche le fini fascia (13:00 fine mattino, 18:00 fine giornata)", () => {
+    render(<DayGrid workHours={WH} slotMinutes={30} />);
+    expect(screen.getByText("13:00")).toBeInTheDocument();
+    expect(screen.getByText("18:00")).toBeInTheDocument();
+  });
+
   it("rispetta slotMinutes (15 min → 32 slot)", () => {
     render(<DayGrid workHours={WH} slotMinutes={15} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(32);
+  });
+
+  it("mostra la striscia pausa pranzo, con 13:00 sul suo bordo superiore", () => {
+    render(<DayGrid workHours={WH} slotMinutes={30} />);
+    const band = screen.getByTestId("lunch-band");
+    expect(band).toBeInTheDocument();
+    expect(band).toHaveTextContent(/pausa/i);
+    // L'orario di inizio pausa è ancorato alla banda (a cavallo del bordo).
+    expect(band).toHaveTextContent("13:00");
+  });
+
+  it("niente striscia se il pomeriggio è attaccato al mattino", () => {
+    render(<DayGrid workHours={{ ...WH, afternoonStart: 780 }} slotMinutes={30} />);
+    expect(screen.queryByTestId("lunch-band")).not.toBeInTheDocument();
   });
 });

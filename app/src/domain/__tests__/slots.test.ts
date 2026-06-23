@@ -3,6 +3,8 @@ import {
   buildSlots,
   dayPresets,
   entryRowSpan,
+  fasciaEndLabel,
+  lunchBoundary,
   minutesOfDay,
   minutesToLabel,
   type WorkHours,
@@ -46,6 +48,42 @@ describe("buildSlots", () => {
   it("non genera slot che sforano la fine della fascia", () => {
     const s = buildSlots({ ...WH, morningEnd: 770 }, 30);
     expect(s.morning.at(-1)).toBe(720); // 720+30=750<=770; 750+30=780>770 escluso
+  });
+});
+
+describe("lunchBoundary", () => {
+  it("confine = n° slot mattutini (dove inizia il pomeriggio)", () => {
+    expect(lunchBoundary(WH, 30)).toBe(8); // 8 slot mattino
+    expect(lunchBoundary(WH, 15)).toBe(16);
+  });
+
+  it("nessuna pausa se il pomeriggio è attaccato al mattino", () => {
+    expect(lunchBoundary({ ...WH, afternoonStart: 780 }, 30)).toBeNull();
+  });
+
+  it("nessuna pausa se una fascia è vuota", () => {
+    // mattino vuoto: morningStart === morningEnd
+    expect(lunchBoundary({ ...WH, morningStart: 780 }, 30)).toBeNull();
+  });
+});
+
+describe("fasciaEndLabel", () => {
+  // 30 min: 16 slot, confine 8, ultimo indice 15. slots[7]=750 (12:30), slots[15]=1050.
+  it("ultima riga del mattino → fine mattino (13:00)", () => {
+    expect(fasciaEndLabel(7, 750, 8, 15, WH)).toBe(780);
+  });
+  it("ultima riga del giorno → fine pomeriggio (18:00)", () => {
+    expect(fasciaEndLabel(15, 1050, 8, 15, WH)).toBe(1080);
+  });
+  it("righe intermedie → nessuna etichetta", () => {
+    expect(fasciaEndLabel(3, 630, 8, 15, WH)).toBeNull();
+  });
+  it("senza pausa: solo la fine giornata, non quella del mattino", () => {
+    const cont = { ...WH, afternoonStart: 780 }; // pomeriggio attaccato
+    const slots = buildSlots(cont, 30).all;
+    const last = slots.length - 1;
+    expect(fasciaEndLabel(7, slots[7], null, last, cont)).toBeNull();
+    expect(fasciaEndLabel(last, slots[last], null, last, cont)).toBe(1080);
   });
 });
 

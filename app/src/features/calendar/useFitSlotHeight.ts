@@ -6,12 +6,16 @@ const MIN_SLOT_HEIGHT = 14;
 
 /**
  * Altezza-slot *misurata* per la matematica di blocchi e drag: lo spazio
- * verticale disponibile diviso per `slotCount`. Il riempimento visivo lo fa la
- * griglia stessa con righe `flex-1`; qui ricaviamo l'altezza reale di una riga
- * così i blocchi assoluti combaciano. Segue il resize via `ResizeObserver`;
- * senza (jsdom) resta `SLOT_HEIGHT`, mantenendo coerenti i test di drag.
+ * verticale disponibile (meno la striscia pausa, `reserve`) diviso per
+ * `slotCount`. Il riempimento visivo lo fa la griglia stessa con righe `flex-1`;
+ * qui ricaviamo l'altezza reale di una riga così i blocchi assoluti combaciano.
+ * Segue il resize via `ResizeObserver`; senza (jsdom) resta `SLOT_HEIGHT`,
+ * mantenendo coerenti i test di drag.
  */
-export function useFitSlotHeight<T extends HTMLElement>(slotCount: number): {
+export function useFitSlotHeight<T extends HTMLElement>(
+  slotCount: number,
+  reserve = 0,
+): {
   ref: RefObject<T>;
   slotHeight: number;
 } {
@@ -25,14 +29,14 @@ export function useFitSlotHeight<T extends HTMLElement>(slotCount: number): {
     const measure = () => {
       const h = el.clientHeight;
       if (h > 0) {
-        setSlotHeight(Math.max(MIN_SLOT_HEIGHT, h / slotCount));
+        setSlotHeight(Math.max(MIN_SLOT_HEIGHT, (h - reserve) / slotCount));
       }
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [slotCount]);
+  }, [slotCount, reserve]);
 
   return { ref, slotHeight };
 }

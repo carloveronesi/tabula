@@ -21,6 +21,7 @@ import { WeekGrid } from "@/features/calendar/WeekGrid";
 import { MonthGrid } from "@/features/calendar/MonthGrid";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
+import { QuickAddPopover } from "@/features/calendar/QuickAddPopover";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
@@ -54,6 +55,7 @@ export function AppShell() {
   const notify = useToastStore((s) => s.notify);
   const showDetail = useEditorStore((s) => s.showDetail);
   const openCreate = useEditorStore((s) => s.openCreate);
+  const openQuickAdd = useEditorStore((s) => s.openQuickAdd);
   const clipboard = useEditorStore((s) => s.clipboard);
 
   const canPaste = clipboard !== null;
@@ -94,8 +96,12 @@ export function AppShell() {
     setView("day");
   };
 
-  const createRange = (dateISO: string, startMin: number, endMin: number) =>
-    openCreate({ date: dateISO, startMin, endMin });
+  const createRange = (
+    dateISO: string,
+    startMin: number,
+    endMin: number,
+    anchor?: { x: number; y: number },
+  ) => openQuickAdd({ date: dateISO, startMin, endMin, anchor: anchor ?? null });
 
   // Colore del blocco per cliente/sottotipo (memoizzato sulle mappe colore).
   const colorOf = useMemo(() => {
@@ -249,6 +255,7 @@ export function AppShell() {
       </div>
       <EntryEditor />
       <EntryDetail />
+      <QuickAddPopover />
       <Toaster />
     </div>
   );
