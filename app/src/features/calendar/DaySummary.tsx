@@ -83,7 +83,7 @@ export function DaySummary({
                   <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink/85">
                     {r.label}
                   </span>
-                  <span className="tnum font-mono text-[11.5px] text-ink">
+                  <span className="tnum text-[11.5px] text-ink">
                     {formatHours(r.minutes)}
                   </span>
                 </li>

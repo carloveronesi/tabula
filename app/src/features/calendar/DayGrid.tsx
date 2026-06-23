@@ -17,6 +17,12 @@ export const TIME_GUTTER = 56;
  * tagliata dall'`overflow-hidden`. Riservato in `useFitSlotHeight`.
  */
 export const GRID_PAD_BOTTOM = 10;
+/**
+ * Respiro in cima, simmetrico: anche la prima etichetta (es. 09:00) sta *a
+ * cavallo* della linea iniziale, quindi serve un filo di spazio sopra perché la
+ * metà superiore non venga tagliata. Riservato in `useFitSlotHeight`.
+ */
+export const GRID_PAD_TOP = 10;
 
 interface DayGridProps {
   workHours: WorkHours;
@@ -36,8 +42,8 @@ export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
   const lastIdx = slots.length - 1;
   return (
     <ul
-      className="flex h-full flex-col border-b border-line"
-      style={{ paddingBottom: GRID_PAD_BOTTOM }}
+      className="flex h-full flex-col"
+      style={{ paddingTop: GRID_PAD_TOP, paddingBottom: GRID_PAD_BOTTOM }}
     >
       {slots.map((minutes, i) => {
         // Etichetta e linea solo ogni 30 min (leggibilità); i 15 min restano per
@@ -53,7 +59,7 @@ export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
                 {/* 13:00 (fine mattino) a cavallo del bordo superiore della banda,
                     come il 14:00 sta sul bordo inferiore. */}
                 <span
-                  className="tnum absolute -top-2 left-0 pr-3 text-right font-mono text-xs text-muted"
+                  className="tnum absolute -top-2 left-0 pr-3 text-right text-xs text-muted"
                   style={{ width: TIME_GUTTER }}
                 >
                   {minutesToLabel(workHours.morningEnd)}
@@ -66,10 +72,10 @@ export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
             <div
               className={`relative flex min-h-[14px] flex-1 border-t ${
                 onHalf ? "border-line" : "border-transparent"
-              }`}
+              } ${i === lastIdx ? "border-b border-line" : ""}`}
             >
               <span
-                className="tnum shrink-0 -translate-y-2 pr-3 text-right font-mono text-xs text-muted"
+                className="tnum shrink-0 -translate-y-2 pr-3 text-right text-xs text-muted"
                 style={{ width: TIME_GUTTER }}
               >
                 {onHalf ? minutesToLabel(minutes) : ""}
@@ -77,7 +83,9 @@ export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
               <span className="flex-1" />
               {dayEnd !== null && (
                 <span
-                  className="tnum absolute bottom-0 left-0 translate-y-1/2 pr-3 text-right font-mono text-xs text-muted"
+                  className="tnum absolute bottom-0 left-0 translate-y-1/2 pr-3 text-right text-xs text-muted"
+                  // A cavallo della linea finale (il `border-b` dell'ultima riga);
+                  // il `paddingBottom` dà spazio sotto perché non venga tagliata.
                   style={{ width: TIME_GUTTER }}
                 >
                   {minutesToLabel(dayEnd)}

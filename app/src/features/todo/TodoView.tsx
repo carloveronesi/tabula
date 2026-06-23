@@ -137,7 +137,7 @@ function TodoRow({
                   style={{ width: `${pct}%` }}
                 />
               </span>
-              <span className="tnum font-mono text-[11px] text-muted">
+              <span className="tnum text-[11px] text-muted">
                 {done}/{total}
               </span>
             </>
@@ -192,7 +192,7 @@ function TodoRow({
 
         <label
           className={cn(
-            "tnum relative flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 font-mono text-[11px]",
+            "tnum relative flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[11px]",
             overdue
               ? "bg-danger/10 text-danger"
               : t.dueDate

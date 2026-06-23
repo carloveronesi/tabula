@@ -76,7 +76,7 @@ export function TimeField({ label, value, onChange, step = 30 }: TimeFieldProps)
             commit((e.target as HTMLInputElement).value);
           }
         }}
-        className="tnum w-full min-w-0 bg-transparent px-3.5 text-center font-mono text-sm text-ink outline-none"
+        className="tnum w-full min-w-0 bg-transparent px-3.5 text-center text-sm text-ink outline-none"
       />
       <div className="flex flex-col border-l border-line">
         <button

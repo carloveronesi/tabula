@@ -23,7 +23,7 @@ import {
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
 import { withAlpha } from "@/domain/colors";
-import { DayGrid, TIME_GUTTER, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
+import { DayGrid, TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
 
@@ -114,7 +114,7 @@ export function DayView({
   const [menuAt, setMenuAt] = useState<{ x: number; y: number; startMin: number } | null>(null);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
     slotCount,
-    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_BOTTOM,
+    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_TOP + GRID_PAD_BOTTOM,
   );
 
   const offsetY = (clientY: number) =>
@@ -209,8 +209,8 @@ export function DayView({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onContextMenu={onAreaContextMenu}
-        className="absolute inset-y-0 right-0 touch-none"
-        style={{ left: TIME_GUTTER }}
+        className="absolute bottom-0 right-0 touch-none"
+        style={{ left: TIME_GUTTER, top: GRID_PAD_TOP }}
       >
         {dayKey === isoDate(new Date()) && (
           <NowLine
@@ -312,7 +312,7 @@ export function DayView({
                 {b.entry.title}
               </span>
               <span
-                className={`tnum truncate font-mono text-[10px] font-normal text-muted ${
+                className={`tnum truncate text-[10px] font-normal text-muted ${
                   compact ? "shrink-0" : ""
                 }`}
               >

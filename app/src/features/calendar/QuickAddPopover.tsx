@@ -188,7 +188,7 @@ export function QuickAddPopover() {
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 font-mono text-xs text-ink">
+        <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
           {minutesToLabel(startMin)}
           <span className="text-faint">–</span>
           {minutesToLabel(endMin)}
