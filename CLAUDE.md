@@ -20,3 +20,6 @@ visivo. Il codice vive in `app/` (`cd app` per `npm` e i test).
 - `npm test` — suite Vitest
 - `npm run typecheck` — `tsc -b`
 - `npm run build` — build di produzione
+- `npm run setup:ocr` — vendorizza gli asset OCR (Tesseract) in `public/tesseract/`
+  (gitignored); serve una volta su un checkout fresco per provare l'import da
+  screenshot. Il `build` lo esegue da sé (hook `prebuild`).

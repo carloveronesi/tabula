@@ -5,6 +5,12 @@ node_modules/
 app/dist/
 dist/
 
+# Asset OCR (Tesseract): committiamo solo la lingua (unico pezzo scaricato dalla
+# rete), così il build/deploy è autosufficiente. Worker e core wasm restano fuori,
+# rigenerati da node_modules con `npm run setup:ocr`.
+app/public/tesseract/worker.min.js
+app/public/tesseract/core/
+
 # coverage
 coverage/
 app/coverage/

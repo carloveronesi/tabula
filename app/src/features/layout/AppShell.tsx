@@ -22,6 +22,7 @@ import { MonthGrid } from "@/features/calendar/MonthGrid";
 import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { QuickAddPopover } from "@/features/calendar/QuickAddPopover";
+import { TeamsImportModal } from "@/features/calendar/import/TeamsImportModal";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
@@ -55,6 +56,7 @@ export function AppShell() {
   const notify = useToastStore((s) => s.notify);
   const showDetail = useEditorStore((s) => s.showDetail);
   const openQuickAdd = useEditorStore((s) => s.openQuickAdd);
+  const openTeamsImport = useEditorStore((s) => s.openTeamsImport);
   const clipboard = useEditorStore((s) => s.clipboard);
 
   const canPaste = clipboard !== null;
@@ -206,6 +208,7 @@ export function AppShell() {
                   })
                 }
                 onPaste={canPaste ? () => void pasteEntry() : undefined}
+                onImportCalls={() => openTeamsImport(dayKey)}
                 presenceEnabled={settings.presenceTracking.enabled}
                 location={locations[dayKey] ?? null}
                 onSetLocation={(loc) => void setLocation(dayKey, loc)}
@@ -271,6 +274,7 @@ export function AppShell() {
       <EntryEditor />
       <EntryDetail />
       <QuickAddPopover />
+      <TeamsImportModal />
       <Toaster />
     </div>
   );

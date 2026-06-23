@@ -60,6 +60,9 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   prossimi passi, collaboratori, contatti, link e milestone.
 - **Scorciatoie di durata** nell'editor (Giornata / Mattina / Pomeriggio) per
   impostare gli orari con un gesto — comode per ferie a giornata intera o mezza.
+- **Import chiamate da Teams (OCR)** — da uno screenshot della cronologia
+  chiamate, l'app legge persona, durata e giorno **in locale** (Tesseract.js,
+  nessun upload) e ne abbozza le attività, sempre da rivedere prima di salvare.
 - **Shell ad altezza fissa**: la giornata lavorativa sta tutta a video, senza scroll.
 
 ### 🗂️ Clienti & Progetti
@@ -118,8 +121,10 @@ Organizzate per sezioni:
 - **Nessun backend, nessun account, nessuna telemetria.** Tutto è salvato in
   IndexedDB sul tuo dispositivo.
 - **Import / export** dei dati per backup o migrazione.
-- **PWA installabile e offline-first**: nessuna dipendenza di rete a runtime
-  (icone inline, font di sistema).
+- **PWA installabile e offline-first**: nessuna dipendenza **esterna** a runtime
+  (niente CDN né tracker; icone inline, font di sistema). Anche l'**OCR**
+  dell'import da screenshot è self-hosted e gira sul dispositivo — l'immagine non
+  lascia mai il browser.
 
 ### ♿ Accessibilità
 
@@ -137,6 +142,7 @@ Organizzate per sezioni:
 | Stile         | Tailwind CSS 3 (token OKLCH) |
 | Stato         | Zustand |
 | Storage       | IndexedDB via Dexie |
+| OCR           | Tesseract.js (in locale, self-hosted) |
 | Ricorrenze    | rrule |
 | Markdown      | react-markdown + remark-gfm |
 | Test          | Vitest + Testing Library |
@@ -156,18 +162,24 @@ npm run dev        # http://localhost:5173
 
 ```bash
 npm run dev        # dev server
-npm run build      # build di produzione
+npm run setup:ocr  # scarica/copia gli asset OCR (Tesseract) in public/
+npm run build      # build di produzione (esegue setup:ocr in automatico)
 npm run preview    # anteprima della build
 npm test           # suite di test (Vitest)
 npm run coverage   # test + coverage
 npm run typecheck  # type-check (tsc -b)
 ```
 
+> **OCR offline.** L'import delle chiamate da screenshot usa Tesseract.js
+> interamente in locale. Worker, core wasm e lingua italiana sono serviti da
+> `public/tesseract/` (gitignored, ~20 MB) e rigenerati con `npm run setup:ocr`;
+> il `build` lo invoca da sé. In `dev` lancialo una volta per provare la feature.
+
 ## Struttura del progetto
 
 ```
 app/src/
-├── data/        storage (IndexedDB/Dexie), modello dati, import/export
+├── data/        storage (IndexedDB/Dexie), modello dati, import/export, OCR
 ├── domain/      logica pura (nessun I/O, nessun React) — test-driven
 ├── store/       stato applicativo (Zustand)
 ├── features/    UI per dominio (calendar, projects, todo, summary,
