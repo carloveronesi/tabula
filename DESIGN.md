@@ -7,7 +7,7 @@ Nitido e tecnico, ma **abitabile**: non più bianco-su-bianco da wireframe, bens
 (figura/sfondo). Navigazione a **rail laterale** di icone; il contenuto vive in un
 pannello arrotondato con elevazione bassa. Resta l'identità: **neutri freddi**, una
 sola famiglia **sans**, un **unico accento cobalto** (azioni, selezione, "oggi",
-blocchi-evento), numeri/orari in **mono**. La profondità arriva da superficie +
+blocchi-evento), numeri/orari in **sans con cifre tabellari** (`tnum`). La profondità arriva da superficie +
 raggio + ombra fredda, non dal colore di superficie. Supporto chiaro / scuro /
 sistema.
 
@@ -82,9 +82,11 @@ usano `font-weight 650` + `letter-spacing -0.011em`.
 |----------------|-------|-----|
 | `--font-sans`  | `"Inter", "Inter var", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` | tutto: titoli, UI, corpo, dati |
 | `--font-serif` | alias di `--font-sans` (deprecato) | — |
-| `--font-mono`  | `ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace` | etichette orarie, numeri |
+| `--font-mono`  | `ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace` | solo `code` nel markdown |
 
-Etichette orarie e numeri: cifre tabellari (`tnum`). Scala **rem fissa** (~1.2):
+Etichette orarie e numeri: **stessa famiglia sans** (`--font-sans`) con **cifre
+tabellari** (`tnum`), così l'incolonnamento non balla pur restando nel carattere
+di tutto il resto. Il mono è riservato al `code` inline. Scala **rem fissa** (~1.2):
 `xs .75` · `sm .8125` · `base .9375` (15px) · `lg 1.0625` · `xl 1.25` · `2xl 1.5`
 · `4xl 2.25`. `text-wrap: balance` su h1–h3.
 

@@ -23,7 +23,7 @@ import {
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
 import { withAlpha } from "@/domain/colors";
-import { DayGrid, TIME_GUTTER, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
+import { DayGrid, TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
 
@@ -114,7 +114,7 @@ export function DayView({
   const [menuAt, setMenuAt] = useState<{ x: number; y: number; startMin: number } | null>(null);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
     slotCount,
-    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_BOTTOM,
+    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_TOP + GRID_PAD_BOTTOM,
   );
 
   const offsetY = (clientY: number) =>
@@ -209,8 +209,8 @@ export function DayView({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onContextMenu={onAreaContextMenu}
-        className="absolute inset-y-0 right-0 touch-none"
-        style={{ left: TIME_GUTTER }}
+        className="absolute bottom-0 right-0 touch-none"
+        style={{ left: TIME_GUTTER, top: GRID_PAD_TOP }}
       >
         {dayKey === isoDate(new Date()) && (
           <NowLine
@@ -236,6 +236,14 @@ export function DayView({
               dragConflict ? "border-danger" : "border-dashed border-primary"
             }`}
           />
+        )}
+
+        {blocks.length === 0 && !drag && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
+            <p className="text-center text-[13px] text-muted">
+              Trascina sulla griglia per creare un'attività
+            </p>
+          </div>
         )}
 
         {blocks.map((b) => {
@@ -270,6 +278,13 @@ export function DayView({
                   dRows: 0,
                 });
               }}
+              onKeyDown={(e) => {
+                // Apertura da tastiera: il drag (apri/sposta) vive sui pointer event.
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectEntry?.(b.entry);
+                }
+              }}
               style={{
                 position: "absolute",
                 top: top + 2,
@@ -297,7 +312,7 @@ export function DayView({
                 {b.entry.title}
               </span>
               <span
-                className={`tnum truncate font-mono text-[10px] font-normal text-muted ${
+                className={`tnum truncate text-[10px] font-normal text-muted ${
                   compact ? "shrink-0" : ""
                 }`}
               >
@@ -315,8 +330,10 @@ export function DayView({
                     dRows: 0,
                   });
                 }}
-                className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
-              />
+                className="absolute inset-x-0 top-0 flex h-1.5 cursor-ns-resize items-start justify-center"
+              >
+                <span aria-hidden className="h-0.5 w-5 rounded-pill bg-ink/25 opacity-0 transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100" />
+              </span>
               <span
                 data-testid="resize-bottom"
                 onPointerDown={(e) => {
@@ -329,8 +346,10 @@ export function DayView({
                     dRows: 0,
                   });
                 }}
-                className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
-              />
+                className="absolute inset-x-0 bottom-0 flex h-1.5 cursor-ns-resize items-end justify-center"
+              >
+                <span aria-hidden className="h-0.5 w-5 rounded-pill bg-ink/25 opacity-0 transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100" />
+              </span>
             </button>
           );
         })}

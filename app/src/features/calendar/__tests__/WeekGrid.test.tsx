@@ -96,6 +96,23 @@ describe("WeekGrid", () => {
     expect(onSelectEntry).toHaveBeenCalledWith(entries[0]);
   });
 
+  it("Invio su un blocco focalizzato seleziona la entry (tastiera)", () => {
+    const onSelectEntry = vi.fn();
+    const entries = [entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00")];
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        entries={entries}
+        onSelectEntry={onSelectEntry}
+      />,
+    );
+    fireEvent.keyDown(screen.getByTestId("entry-block"), { key: "Enter" });
+    expect(onSelectEntry).toHaveBeenCalledWith(entries[0]);
+  });
+
   it("drag verticale di un blocco → nuovo orario, stesso giorno", () => {
     const onUpdateEntry = vi.fn();
     const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00");

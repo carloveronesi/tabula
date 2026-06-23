@@ -138,6 +138,22 @@ describe("DayView", () => {
     expect(onUpdateEntry).not.toHaveBeenCalled();
   });
 
+  it("Invio su un blocco focalizzato → onSelectEntry (tastiera)", () => {
+    const onSelectEntry = vi.fn();
+    const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[e]}
+        workHours={WH}
+        slotMinutes={30}
+        onSelectEntry={onSelectEntry}
+      />,
+    );
+    fireEvent.keyDown(screen.getByTestId("entry-block"), { key: "Enter" });
+    expect(onSelectEntry).toHaveBeenCalledWith(e);
+  });
+
   it("blocca lo spostamento che sovrapporrebbe un'altra attività", () => {
     const onUpdateEntry = vi.fn();
     const a = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "A"); // righe 0–1

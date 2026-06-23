@@ -31,7 +31,7 @@ import {
   resizeBottom,
   rowsToRange,
 } from "@/domain/dragGrid";
-import { TIME_GUTTER, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
+import { TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { LunchBand } from "@/features/calendar/LunchBand";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
@@ -155,7 +155,7 @@ export function WeekGrid({
   } | null>(null);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
     slotCount,
-    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_BOTTOM,
+    (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_TOP + GRID_PAD_BOTTOM,
   );
 
   const colsRect = () => colsRef.current?.getBoundingClientRect();
@@ -298,7 +298,11 @@ export function WeekGrid({
         })}
       </div>
 
-      <div ref={wrapRef} className="flex min-h-0 flex-1 overflow-hidden">
+      <div
+        ref={wrapRef}
+        className="flex min-h-0 flex-1 overflow-hidden"
+        style={{ paddingTop: GRID_PAD_TOP }}
+      >
         <ul
           className="flex shrink-0 flex-col"
           style={{ width: TIME_GUTTER, paddingBottom: GRID_PAD_BOTTOM }}
@@ -312,7 +316,7 @@ export function WeekGrid({
                 {i === boundary && (
                   <LunchBand>
                     {/* 13:00 a cavallo del bordo superiore della banda. */}
-                    <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
+                    <span className="tnum absolute -top-2 right-2 text-xs text-muted">
                       {minutesToLabel(workHours.morningEnd)}
                     </span>
                   </LunchBand>
@@ -323,12 +327,12 @@ export function WeekGrid({
                   }`}
                 >
                   {onHalf && (
-                    <span className="tnum absolute -top-2 right-2 font-mono text-xs text-muted">
+                    <span className="tnum absolute -top-2 right-2 text-xs text-muted">
                       {minutesToLabel(minutes)}
                     </span>
                   )}
                   {dayEnd !== null && (
-                    <span className="tnum absolute bottom-0 right-2 translate-y-1/2 font-mono text-xs text-muted">
+                    <span className="tnum absolute bottom-0 right-2 translate-y-1/2 text-xs text-muted">
                       {minutesToLabel(dayEnd)}
                     </span>
                   )}
@@ -407,6 +411,13 @@ export function WeekGrid({
                         dRows: 0,
                       });
                     }}
+                    onKeyDown={(e) => {
+                      // Apertura da tastiera: il drag vive sui pointer event.
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelectEntry?.(b.entry);
+                      }
+                    }}
                     style={{
                       position: "absolute",
                       top: top + 1,
@@ -420,7 +431,7 @@ export function WeekGrid({
                     <span
                       aria-hidden
                       style={{ backgroundColor: color ?? undefined }}
-                      className="absolute inset-y-1 left-1 w-0.5 rounded-pill bg-accent"
+                      className="absolute inset-y-1 left-1 w-1 rounded-pill bg-accent"
                     />
                     <span className="line-clamp-2">{b.entry.title}</span>
                     <span

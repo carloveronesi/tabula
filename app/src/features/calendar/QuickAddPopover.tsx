@@ -52,15 +52,33 @@ export function QuickAddPopover() {
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
 
-  // Re-inizializza ad ogni apertura su uno slot.
+  // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
+  // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
+  // gestisce il proprio focus).
   useEffect(() => {
     if (!quickAdd) return;
     setTitle("");
     setClientId(null);
-    // Focus al titolo appena montato.
+    const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
-    return () => window.cancelAnimationFrame(id);
+    return () => {
+      window.cancelAnimationFrame(id);
+      if (!useEditorStore.getState().open) prevFocus?.focus?.();
+    };
   }, [quickAdd]);
+
+  // Scroll/resize spostano lo slot sotto al popover: l'ancora diventa stale, così
+  // chiudiamo invece di lasciarlo "appeso" nel vuoto.
+  useEffect(() => {
+    if (!quickAdd) return;
+    const close = () => closeQuickAdd();
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [quickAdd, closeQuickAdd]);
 
   // Esc chiude.
   useEffect(() => {
@@ -170,7 +188,7 @@ export function QuickAddPopover() {
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 font-mono text-xs text-ink">
+        <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
           {minutesToLabel(startMin)}
           <span className="text-faint">–</span>
           {minutesToLabel(endMin)}
