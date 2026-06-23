@@ -54,7 +54,6 @@ export function AppShell() {
   const undo = useCalendarStore((s) => s.undo);
   const notify = useToastStore((s) => s.notify);
   const showDetail = useEditorStore((s) => s.showDetail);
-  const openCreate = useEditorStore((s) => s.openCreate);
   const openQuickAdd = useEditorStore((s) => s.openQuickAdd);
   const clipboard = useEditorStore((s) => s.clipboard);
 
@@ -187,8 +186,13 @@ export function AppShell() {
               </div>
               <DaySummary
                 breakdown={breakdown}
-                onAdd={() =>
-                  openCreate({ date: dayKey, startMin: 540, endMin: 600 })
+                onAdd={(anchor) =>
+                  openQuickAdd({
+                    date: dayKey,
+                    startMin: 540,
+                    endMin: 600,
+                    anchor: anchor ?? null,
+                  })
                 }
                 onPaste={canPaste ? () => void pasteEntry() : undefined}
                 presenceEnabled={settings.presenceTracking.enabled}

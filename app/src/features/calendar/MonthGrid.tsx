@@ -108,9 +108,7 @@ export function MonthGrid({
               data-today={today}
               data-dimmed={dimmed}
               aria-label={
-                count > 0
-                  ? `${d.getDate()}: ${count} ${count === 1 ? "attività" : "attività"}`
-                  : undefined
+                count > 0 ? `${d.getDate()}: ${count} attività` : undefined
               }
               onClick={() => onOpenDay?.(d)}
               className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
@@ -183,14 +181,14 @@ export function MonthGrid({
                               color ? "" : "bg-accent"
                             }`}
                           />
-                          <span className="truncate text-[10px] leading-tight text-ink/80">
+                          <span className="truncate text-[11px] leading-tight text-ink/80">
                             {e.title}
                           </span>
                         </li>
                       );
                     })}
                     {count > MAX_NAMES && (
-                      <li className="pl-2.5 text-[9px] font-semibold text-muted">
+                      <li className="pl-2.5 text-[10px] font-semibold text-muted">
                         +{count - MAX_NAMES}
                       </li>
                     )}

@@ -7,8 +7,8 @@ import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 
 interface DaySummaryProps {
   breakdown: DayBreakdown;
-  /** Nuova attività in questa giornata. */
-  onAdd: () => void;
+  /** Nuova attività in questa giornata; `anchor` ancora il quick-add al bottone. */
+  onAdd: (anchor?: { x: number; y: number }) => void;
   /** Incolla l'attività copiata in questa giornata; assente se appunti vuoti. */
   onPaste?: () => void;
   /** Mostra il selettore della sede (tracciamento presenze attivo). */
@@ -43,13 +43,11 @@ export function DaySummary({
   return (
     <aside className="hidden w-64 min-h-0 flex-none flex-col gap-3.5 overflow-y-auto lg:flex">
       <div className="rounded-lg border border-line bg-surface p-[18px] shadow-card">
-        <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
-          Oggi registrato
-        </div>
-        <div className="tnum mt-2 text-[40px] font-bold leading-none tracking-tight text-ink">
+        <div className="text-[13px] font-medium text-muted">Oggi registrato</div>
+        <div className="tnum mt-1 text-2xl font-semibold leading-tight tracking-tight text-ink">
           {formatHours(totalMin)}
         </div>
-        <div className="mt-2 text-[12.5px] text-muted">
+        <div className="mt-1 text-[12.5px] text-muted">
           {count === 0
             ? "Nessuna attività"
             : `${count} ${count === 1 ? "attività" : "attività"}`}
@@ -58,9 +56,7 @@ export function DaySummary({
         {presenceEnabled && onSetLocation && (
           <>
             <div className="my-4 h-px bg-line" />
-            <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
-              Sede
-            </div>
+            <div className="text-[13px] font-medium text-muted">Sede</div>
             <div className="mt-2">
               <DayLocationPicker
                 value={location}
@@ -99,7 +95,10 @@ export function DaySummary({
 
       <button
         type="button"
-        onClick={onAdd}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          onAdd({ x: r.left, y: r.top + r.height / 2 });
+        }}
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent/40 bg-accent-wash/50 px-4 py-3.5 text-[12.5px] font-semibold text-accent transition-colors duration-[var(--dur-fast)] ease-out hover:bg-accent-wash"
       >
         <IconPlus size={15} />

@@ -407,6 +407,13 @@ export function WeekGrid({
                         dRows: 0,
                       });
                     }}
+                    onKeyDown={(e) => {
+                      // Apertura da tastiera: il drag vive sui pointer event.
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelectEntry?.(b.entry);
+                      }
+                    }}
                     style={{
                       position: "absolute",
                       top: top + 1,
@@ -420,7 +427,7 @@ export function WeekGrid({
                     <span
                       aria-hidden
                       style={{ backgroundColor: color ?? undefined }}
-                      className="absolute inset-y-1 left-1 w-0.5 rounded-pill bg-accent"
+                      className="absolute inset-y-1 left-1 w-1 rounded-pill bg-accent"
                     />
                     <span className="line-clamp-2">{b.entry.title}</span>
                     <span

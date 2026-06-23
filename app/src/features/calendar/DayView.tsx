@@ -238,6 +238,14 @@ export function DayView({
           />
         )}
 
+        {blocks.length === 0 && !drag && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
+            <p className="text-center text-[13px] text-muted">
+              Trascina sulla griglia per creare un'attività
+            </p>
+          </div>
+        )}
+
         {blocks.map((b) => {
           const active = drag && drag.kind !== "create" && drag.id === b.entry.id;
           const live = active
@@ -269,6 +277,13 @@ export function DayView({
                   span: b.span,
                   dRows: 0,
                 });
+              }}
+              onKeyDown={(e) => {
+                // Apertura da tastiera: il drag (apri/sposta) vive sui pointer event.
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectEntry?.(b.entry);
+                }
               }}
               style={{
                 position: "absolute",
@@ -315,8 +330,10 @@ export function DayView({
                     dRows: 0,
                   });
                 }}
-                className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
-              />
+                className="absolute inset-x-0 top-0 flex h-1.5 cursor-ns-resize items-start justify-center"
+              >
+                <span aria-hidden className="h-0.5 w-5 rounded-pill bg-ink/25 opacity-0 transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100" />
+              </span>
               <span
                 data-testid="resize-bottom"
                 onPointerDown={(e) => {
@@ -329,8 +346,10 @@ export function DayView({
                     dRows: 0,
                   });
                 }}
-                className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
-              />
+                className="absolute inset-x-0 bottom-0 flex h-1.5 cursor-ns-resize items-end justify-center"
+              >
+                <span aria-hidden className="h-0.5 w-5 rounded-pill bg-ink/25 opacity-0 transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100" />
+              </span>
             </button>
           );
         })}
