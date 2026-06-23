@@ -11,6 +11,8 @@ interface DaySummaryProps {
   onAdd: (anchor?: { x: number; y: number }) => void;
   /** Incolla l'attività copiata in questa giornata; assente se appunti vuoti. */
   onPaste?: () => void;
+  /** Apre l'import delle chiamate Teams da screenshot per questa giornata. */
+  onImportCalls?: () => void;
   /** Mostra il selettore della sede (tracciamento presenze attivo). */
   presenceEnabled?: boolean;
   location?: Location | null;
@@ -32,6 +34,7 @@ export function DaySummary({
   breakdown,
   onAdd,
   onPaste,
+  onImportCalls,
   presenceEnabled = false,
   location = null,
   onSetLocation,
@@ -112,6 +115,16 @@ export function DaySummary({
           className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
         >
           Incolla attività
+        </button>
+      )}
+
+      {onImportCalls && (
+        <button
+          type="button"
+          onClick={onImportCalls}
+          className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
+        >
+          Importa chiamate…
         </button>
       )}
 

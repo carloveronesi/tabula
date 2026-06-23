@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "setup:ocr": "node scripts/setup-ocr.mjs",
+    "prebuild": "node scripts/setup-ocr.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
@@ -21,6 +23,7 @@
     "react-markdown": "^9.0.1",
     "remark-gfm": "^4.0.0",
     "rrule": "^2.8.1",
+    "tesseract.js": "^7.0.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
