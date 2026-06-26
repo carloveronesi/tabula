@@ -115,7 +115,7 @@ export function ScheduleSettings() {
 
       <SettingsSection
         title="Giorno del patrono"
-        description="Una festività locale ricorrente: viene mostrata come festivo nel calendario, come un fine settimana."
+        description="Una festività locale ricorrente, in aggiunta alle festività nazionali italiane già gestite in automatico: viene mostrata come festivo nel calendario, come un fine settimana."
       >
         <div className="flex flex-wrap items-end gap-3">
           <Field label="Mese">

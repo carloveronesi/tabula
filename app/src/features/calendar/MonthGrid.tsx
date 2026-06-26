@@ -2,7 +2,7 @@ import type { Entry, Location } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
 import { durationMinutes } from "@/domain/time";
 import { LOCATION_LABEL } from "@/domain/presence";
-import { isoDate, monthGridDates, dowMon0, isPatronDay } from "@/domain/calendarNav";
+import { isoDate, monthGridDates, dowMon0, isHoliday, holidayLabel } from "@/domain/calendarNav";
 import { IconHome, IconBuilding, IconBriefcase } from "@/ui/icons";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
@@ -84,7 +84,8 @@ export function MonthGrid({
       <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px bg-line">
         {cells.map((d) => {
           const outside = d.getMonth() !== month;
-          const weekend = dowMon0(d) >= 5 || isPatronDay(d, patronDay);
+          const weekend = dowMon0(d) >= 5 || isHoliday(d, patronDay);
+          const holName = holidayLabel(d, patronDay);
           const today = isoDate(d) === todayKey;
           const dayKey = isoDate(d);
           const dayEntries = byDay.get(dayKey) ?? [];
@@ -137,6 +138,14 @@ export function MonthGrid({
                   </span>
                 )}
               </div>
+              {holName && !outside && (
+                <span
+                  className="w-full truncate text-[10px] font-medium leading-tight text-faint"
+                  title={holName}
+                >
+                  {holName}
+                </span>
+              )}
               {count > 0 && (
                 <div className="mt-auto flex w-full flex-col gap-1">
                   <div className="flex h-1 w-full gap-px overflow-hidden rounded-pill">

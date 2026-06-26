@@ -27,11 +27,12 @@ describe("isPatronDay", () => {
 });
 
 describe("workingDatesOfMonth", () => {
-  it("conta i feriali lun–ven escludendo i weekend", () => {
-    // Giugno 2026: 22 giorni feriali lun–ven.
+  it("conta i feriali lun–ven escludendo weekend e festività nazionali", () => {
+    // Giugno 2026: 22 feriali lun–ven, meno il 2 giugno (Festa della Repubblica).
     const dates = workingDatesOfMonth(D(2026, 5, 15), [0, 1, 2, 3, 4], "");
-    expect(dates).toHaveLength(22);
+    expect(dates).toHaveLength(21);
     expect(dates[0]).toBe("2026-06-01"); // 1 giugno è lunedì
+    expect(dates).not.toContain("2026-06-02"); // Festa della Repubblica
   });
 
   it("esclude il giorno del patrono", () => {
