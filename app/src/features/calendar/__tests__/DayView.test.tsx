@@ -207,6 +207,39 @@ describe("DayView", () => {
     expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
   });
 
+  it("click destro su un'attività → menu con azioni che chiamano gli handler", () => {
+    const onCopyEntry = vi.fn();
+    const onDuplicateEntry = vi.fn();
+    const onDeleteEntry = vi.fn();
+    const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[e]}
+        workHours={WH}
+        slotMinutes={30}
+        onCopyEntry={onCopyEntry}
+        onDuplicateEntry={onDuplicateEntry}
+        onDeleteEntry={onDeleteEntry}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByTestId("entry-block"), { clientX: 20, clientY: 20 });
+    expect(screen.getByRole("menuitem", { name: "Apri" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Duplica" }));
+    expect(onDuplicateEntry).toHaveBeenCalledWith(e);
+    expect(onCopyEntry).not.toHaveBeenCalled();
+    expect(onDeleteEntry).not.toHaveBeenCalled();
+  });
+
+  it("senza handler azione il click destro sull'attività non apre il menu", () => {
+    const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");
+    render(
+      <DayView date={new Date(2026, 5, 10)} entries={[e]} workHours={WH} slotMinutes={30} />,
+    );
+    fireEvent.contextMenu(screen.getByTestId("entry-block"), { clientX: 20, clientY: 20 });
+    expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+  });
+
   it("resize dal bordo inferiore → onUpdateEntry con durata maggiore", () => {
     const onUpdateEntry = vi.fn();
     const e = entry("a", "2026-06-10T09:00:00", "2026-06-10T10:00:00", "Call");

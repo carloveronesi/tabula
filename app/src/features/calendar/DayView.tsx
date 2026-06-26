@@ -55,7 +55,18 @@ interface DayViewProps {
   canPaste?: boolean;
   /** Incolla nello slot indicato (click destro su area vuota). */
   onPasteAt?: (dateISO: string, startMin: number) => void;
+  /** Copia l'attività (voce del menu contestuale sul blocco). */
+  onCopyEntry?: (entry: Entry) => void;
+  /** Duplica l'attività nel primo slot libero della giornata. */
+  onDuplicateEntry?: (entry: Entry) => void;
+  /** Elimina l'attività. */
+  onDeleteEntry?: (entry: Entry) => void;
 }
+
+/** Menu contestuale: incolla su area vuota, oppure azioni su un'attività. */
+type Menu =
+  | { x: number; y: number; kind: "paste"; startMin: number }
+  | { x: number; y: number; kind: "entry"; entry: Entry };
 
 type Drag =
   | { kind: "create"; anchorRow: number; row: number }
@@ -104,6 +115,9 @@ export function DayView({
   onUpdateEntry,
   canPaste = false,
   onPasteAt,
+  onCopyEntry,
+  onDuplicateEntry,
+  onDeleteEntry,
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
@@ -114,7 +128,8 @@ export function DayView({
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const [drag, setDrag] = useState<Drag>(null);
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number; startMin: number } | null>(null);
+  const [menu, setMenu] = useState<Menu | null>(null);
+  const hasEntryMenu = !!(onCopyEntry || onDuplicateEntry || onDeleteEntry);
   const { ref: wrapRef, slotHeight } = useFitSlotHeight<HTMLDivElement>(
     slotCount,
     (boundary !== null ? LUNCH_BAND : 0) + GRID_PAD_TOP + GRID_PAD_BOTTOM,
@@ -142,7 +157,7 @@ export function DayView({
     e.preventDefault();
     const row = rowAtOffset(offsetY(e.clientY), slotHeight, slotCount, boundary);
     const { startMin } = rowsToRange(row, 1, slots, slotMinutes);
-    setMenuAt({ x: e.clientX, y: e.clientY, startMin });
+    setMenu({ x: e.clientX, y: e.clientY, kind: "paste", startMin });
   }
 
   function onPointerMove(e: ReactPointerEvent) {
@@ -273,6 +288,7 @@ export function DayView({
               data-start-row={b.startRow}
               data-span={b.span}
               onPointerDown={(e) => {
+                if (e.button !== 0) return; // il destro apre il menu, non trascina
                 e.stopPropagation();
                 beginDrag(e, {
                   kind: "move",
@@ -281,6 +297,12 @@ export function DayView({
                   span: b.span,
                   dRows: 0,
                 });
+              }}
+              onContextMenu={(e) => {
+                if (!hasEntryMenu) return; // niente azioni → menu nativo
+                e.preventDefault();
+                e.stopPropagation();
+                setMenu({ x: e.clientX, y: e.clientY, kind: "entry", entry: b.entry });
               }}
               onKeyDown={(e) => {
                 // Apertura da tastiera: il drag (apri/sposta) vive sui pointer event.
@@ -370,16 +392,31 @@ export function DayView({
       </div>
 
       <ContextMenu
-        at={menuAt ? { x: menuAt.x, y: menuAt.y } : null}
-        onClose={() => setMenuAt(null)}
-        items={[
-          {
-            label: "Incolla qui",
-            onSelect: () => {
-              if (menuAt) onPasteAt?.(dayKey, menuAt.startMin);
-            },
-          },
-        ]}
+        at={menu ? { x: menu.x, y: menu.y } : null}
+        onClose={() => setMenu(null)}
+        items={
+          menu?.kind === "entry"
+            ? [
+                { label: "Apri", onSelect: () => onSelectEntry?.(menu.entry) },
+                { label: "Copia", onSelect: () => onCopyEntry?.(menu.entry) },
+                {
+                  label: "Duplica",
+                  onSelect: () => onDuplicateEntry?.(menu.entry),
+                },
+                {
+                  label: "Elimina",
+                  onSelect: () => onDeleteEntry?.(menu.entry),
+                },
+              ]
+            : [
+                {
+                  label: "Incolla qui",
+                  onSelect: () => {
+                    if (menu) onPasteAt?.(dayKey, menu.startMin);
+                  },
+                },
+              ]
+        }
       />
     </div>
   );

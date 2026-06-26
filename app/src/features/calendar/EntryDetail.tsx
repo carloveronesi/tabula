@@ -1,13 +1,10 @@
 import type { ReactNode } from "react";
-import { nanoid } from "nanoid";
 import type { Entry, EntryType } from "@/data/types";
 import { minutesOfDay, minutesToLabel } from "@/domain/slots";
-import { firstFreeRange, duplicateEntry } from "@/domain/duplicate";
+import { copyEntry, duplicateEntry } from "@/features/layout/entryActions";
 import { useEditorStore } from "@/store/editor";
 import { useInventoryStore } from "@/store/inventory";
-import { useCalendarStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
-import { useToastStore } from "@/store/toast";
 import { Button, Markdown, Modal } from "@/ui";
 
 const TYPE_LABEL: Record<EntryType, string> = {
@@ -50,16 +47,11 @@ export function EntryDetail() {
   const e = useEditorStore((s) => s.detail);
   const hide = useEditorStore((s) => s.hideDetail);
   const openEdit = useEditorStore((s) => s.openEdit);
-  const copyEntry = useEditorStore((s) => s.copyEntry);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
   const people = useInventoryStore((s) => s.people);
   const contacts = useInventoryStore((s) => s.contacts);
-  const entries = useCalendarStore((s) => s.entries);
-  const saveEntry = useCalendarStore((s) => s.saveEntry);
-  const undo = useCalendarStore((s) => s.undo);
   const settings = useSettingsStore((s) => s.settings);
-  const notify = useToastStore((s) => s.notify);
 
   const clientName = e && clients.find((c) => c.id === e.clientId)?.name;
   const projectName = e && projects.find((p) => p.id === e.projectId)?.name;
@@ -84,41 +76,11 @@ export function EntryDetail() {
     : [];
 
   const duplicate = async () => {
-    if (!e) return;
-    const date = e.startsAt.slice(0, 10);
-    const duration = minutesOfDay(e.endsAt) - minutesOfDay(e.startsAt);
-    const wh = settings.workHours;
-    const range = firstFreeRange(
-      entries,
-      date,
-      duration,
-      { startMin: wh.morningStart, endMin: wh.afternoonEnd },
-      settings.slotMinutes,
-    );
-    if (!range) {
-      notify("Nessuno spazio libero in giornata");
-      return;
-    }
-    await saveEntry(
-      duplicateEntry(
-        e,
-        date,
-        range.startMin,
-        range.endMin,
-        nanoid(),
-        Date.now(),
-      ),
-    );
-    notify("Attività duplicata", {
-      action: { label: "Annulla", run: () => void undo() },
-    });
-    hide();
+    if (e && (await duplicateEntry(e))) hide();
   };
 
   const copy = () => {
-    if (!e) return;
-    copyEntry(e);
-    notify("Attività copiata — incolla con ⌘V o tasto destro sul giorno");
+    if (e) copyEntry(e);
   };
 
   return (

@@ -33,6 +33,11 @@ import { useCalendarData } from "@/features/calendar/useCalendarData";
 import { useTheme } from "@/features/layout/useTheme";
 import { useKeyboardShortcuts } from "@/features/layout/useKeyboardShortcuts";
 import { pasteEntry } from "@/features/layout/clipboardActions";
+import {
+  copyEntry,
+  duplicateEntry,
+  deleteEntry,
+} from "@/features/layout/entryActions";
 
 /**
  * Shell dell'app: barra superiore + area contenuto instradata sulla vista.
@@ -195,6 +200,9 @@ export function AppShell() {
                   onUpdateEntry={updateEntryRange}
                   canPaste={canPaste}
                   onPasteAt={pasteAt}
+                  onCopyEntry={copyEntry}
+                  onDuplicateEntry={(e) => void duplicateEntry(e)}
+                  onDeleteEntry={(e) => void deleteEntry(e)}
                 />
               </div>
               <DaySummary
@@ -256,6 +264,9 @@ export function AppShell() {
             onUpdateEntry={updateEntryRange}
             canPaste={canPaste}
             onPasteAt={pasteAt}
+            onCopyEntry={copyEntry}
+            onDuplicateEntry={(e) => void duplicateEntry(e)}
+            onDeleteEntry={(e) => void deleteEntry(e)}
             presenceEnabled={settings.presenceTracking.enabled}
             locations={locations}
             onSetLocation={(date, loc) => void setLocation(date, loc)}
