@@ -1,5 +1,6 @@
 import type { ViewMode } from "@/domain/view";
 import type { ISODate, ISODateTime } from "@/data/types";
+import { nationalHolidayName } from "@/domain/holidays";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -40,8 +41,27 @@ export function isPatronDay(date: Date, patronDay: string): boolean {
 }
 
 /**
+ * Nome del festivo della data — festività nazionale italiana o giorno del
+ * patrono — oppure `null` se feriale. Il patrono è una festività locale senza
+ * nome proprio, perciò è etichettato "Festa del patrono". Il weekend non è un
+ * festivo in questo senso: resta a carico di `dowMon0`.
+ */
+export function holidayLabel(date: Date, patronDay: string): string | null {
+  return (
+    nationalHolidayName(date) ??
+    (isPatronDay(date, patronDay) ? "Festa del patrono" : null)
+  );
+}
+
+/** Vero se la data è un festivo nazionale o il patrono (weekend escluso). */
+export function isHoliday(date: Date, patronDay: string): boolean {
+  return holidayLabel(date, patronDay) !== null;
+}
+
+/**
  * Date feriali (lavorative) del mese di `date`: i giorni in `workingDays`
- * (lun=0…dom=6) escluso il patrono. Usato per il denominatore delle presenze.
+ * (lun=0…dom=6) esclusi i festivi (nazionali e patrono). Usato per il
+ * denominatore delle presenze.
  */
 export function workingDatesOfMonth(
   date: Date,
@@ -54,7 +74,7 @@ export function workingDatesOfMonth(
   const out: ISODate[] = [];
   for (let day = 1; day <= last; day++) {
     const d = new Date(year, month, day);
-    if (workingDays.includes(dowMon0(d)) && !isPatronDay(d, patronDay)) {
+    if (workingDays.includes(dowMon0(d)) && !isHoliday(d, patronDay)) {
       out.push(isoDate(d));
     }
   }

@@ -7,7 +7,7 @@ import {
 import type { Entry, Location } from "@/data/types";
 import { ContextMenu } from "@/ui";
 import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
-import { workWeekDays, dowMon0, isoDate, isPatronDay } from "@/domain/calendarNav";
+import { workWeekDays, dowMon0, isoDate, isHoliday, holidayLabel } from "@/domain/calendarNav";
 import {
   buildSlots,
   fasciaEndLabel,
@@ -285,7 +285,8 @@ export function WeekGrid({
         <span className="shrink-0" style={{ width: TIME_GUTTER }} />
         {days.map((d) => {
           const today = isoDate(d) === todayKey;
-          const holiday = dowMon0(d) >= 5 || isPatronDay(d, patronDay);
+          const holiday = dowMon0(d) >= 5 || isHoliday(d, patronDay);
+          const holName = holidayLabel(d, patronDay);
           const key = isoDate(d);
           return (
             <div
@@ -300,6 +301,14 @@ export function WeekGrid({
               >
                 {dayLabel(d)}
               </span>
+              {holName && (
+                <span
+                  className="max-w-full truncate text-[10px] font-medium leading-tight text-faint"
+                  title={holName}
+                >
+                  {holName}
+                </span>
+              )}
               {presenceEnabled && onSetLocation && (
                 <DayLocationPicker
                   variant="compact"
@@ -375,7 +384,7 @@ export function WeekGrid({
               className={`relative flex flex-1 flex-col border-l border-line ${
                 isoDate(d) === todayKey
                   ? "bg-primary-wash"
-                  : dowMon0(d) >= 5 || isPatronDay(d, patronDay)
+                  : dowMon0(d) >= 5 || isHoliday(d, patronDay)
                     ? "bg-weekend"
                     : ""
               }`}
