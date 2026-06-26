@@ -7,6 +7,7 @@ import {
   lunchBoundary,
   minutesOfDay,
   minutesToLabel,
+  outsideWorkHours,
   type WorkHours,
 } from "@/domain/slots";
 
@@ -120,5 +121,39 @@ describe("entryRowSpan", () => {
 
   it("inizio fuori dalle fasce lavorative → null", () => {
     expect(entryRowSpan(420, 480, slots)).toBeNull(); // 07:00
+  });
+
+  it("inizio nella pausa pranzo ma copre il pomeriggio → ancora al 1º slot coperto", () => {
+    // 13:00–16:00: le 13:00 non sono uno slot, ma copre 14:00–16:00 → riga 8.
+    expect(entryRowSpan(780, 960, slots)).toEqual({ startRow: 8, span: 4 });
+  });
+
+  it("entirely nella pausa pranzo (nessuno slot coperto) → null", () => {
+    expect(entryRowSpan(780, 840, slots)).toBeNull(); // 13:00–14:00
+  });
+});
+
+describe("outsideWorkHours", () => {
+  // WH: mattina 09:00–13:00, pomeriggio 14:00–18:00, pausa 13:00–14:00.
+  it("attività dentro una fascia → falso", () => {
+    expect(outsideWorkHours(540, 600, WH)).toBe(false); // 09:00–10:00
+    expect(outsideWorkHours(840, 1080, WH)).toBe(false); // 14:00–18:00
+  });
+
+  it("a cavallo della pausa (mattina→pomeriggio) → falso", () => {
+    expect(outsideWorkHours(720, 870, WH)).toBe(false); // 12:00–14:30
+  });
+
+  it("inizio nella pausa → vero", () => {
+    expect(outsideWorkHours(780, 960, WH)).toBe(true); // 13:00–16:00
+  });
+
+  it("fine nella pausa → vero", () => {
+    expect(outsideWorkHours(600, 810, WH)).toBe(true); // 10:00–13:30
+  });
+
+  it("prima o dopo gli orari → vero", () => {
+    expect(outsideWorkHours(480, 540, WH)).toBe(true); // 08:00–09:00
+    expect(outsideWorkHours(1020, 1140, WH)).toBe(true); // 17:00–19:00
   });
 });

@@ -9,7 +9,7 @@ import {
   type EntryDraft,
 } from "@/domain/entryDraft";
 import { conflictsOnDay } from "@/domain/conflict";
-import { dayPresets } from "@/domain/slots";
+import { dayPresets, minutesToLabel, outsideWorkHours } from "@/domain/slots";
 import { collaboratorCandidateIds } from "@/domain/collaborators";
 import { useEditorStore, type EditorSeed } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
@@ -140,6 +140,11 @@ export function EntryEditor() {
       entries,
       base?.id ?? null,
     );
+  // Avviso (non bloccante): orario nella pausa o fuori dalle fasce di lavoro.
+  const offHours = valid && outsideWorkHours(draft.startMin, draft.endMin, workHours);
+  const workWindow = `${minutesToLabel(workHours.morningStart)}–${minutesToLabel(
+    workHours.morningEnd,
+  )}, ${minutesToLabel(workHours.afternoonStart)}–${minutesToLabel(workHours.afternoonEnd)}`;
   const patch = (p: Partial<EntryDraft>) => setDraft((d) => ({ ...d, ...p }));
 
   const addLink = () =>
@@ -307,6 +312,15 @@ export function EntryEditor() {
               className="flex items-center gap-1.5 text-sm text-danger"
             >
               Si sovrappone a un'altra attività di quel giorno.
+            </p>
+          )}
+          {offHours && (
+            <p
+              role="status"
+              className="flex items-center gap-1.5 text-sm text-muted"
+            >
+              Orario fuori dalla giornata lavorativa ({workWindow}): puoi salvare
+              comunque.
             </p>
           )}
           <div className="flex items-center justify-between gap-3">
