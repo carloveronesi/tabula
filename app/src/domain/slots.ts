@@ -78,6 +78,27 @@ export function dayPresets(wh: WorkHours): DayPreset[] {
   ];
 }
 
+/**
+ * Vero se l'attività [startMin, endMin) non sta dentro la giornata lavorativa:
+ * l'inizio o la fine cadono nella pausa pranzo o fuori dalle fasce mattino/
+ * pomeriggio. Un'attività a cavallo della pausa (inizia in mattina, finisce nel
+ * pomeriggio) è regolare. Usata per l'avviso non bloccante dell'editor — non
+ * impedisce il salvataggio, segnala solo che l'orario è anomalo.
+ */
+export function outsideWorkHours(
+  startMin: number,
+  endMin: number,
+  wh: WorkHours,
+): boolean {
+  const startOk =
+    (startMin >= wh.morningStart && startMin < wh.morningEnd) ||
+    (startMin >= wh.afternoonStart && startMin < wh.afternoonEnd);
+  const endOk =
+    (endMin > wh.morningStart && endMin <= wh.morningEnd) ||
+    (endMin > wh.afternoonStart && endMin <= wh.afternoonEnd);
+  return !startOk || !endOk;
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -94,18 +115,23 @@ export function minutesOfDay(iso: string): number {
 
 /**
  * Posizione di un'entry sulla griglia a slot: riga d'inizio (indice 0-based in
- * `slots`) e numero di slot occupati. `null` se l'inizio non è in una fascia.
+ * `slots`) e numero di slot occupati. `null` solo se l'entry non copre alcuno
+ * slot lavorativo.
+ *
+ * Se l'inizio coincide con uno slot lo usa come riga; se invece cade *fuori*
+ * dagli slot ma l'entry ne copre comunque qualcuno (es. un'attività che parte
+ * nella pausa pranzo perché gli orari di lavoro sono cambiati dopo averla
+ * creata) si aggancia al primo slot coperto. Così resta visibile e cliccabile
+ * invece di sparire pur continuando a bloccare lo slot — l'invariante è che
+ * tutto ciò che conta come conflitto (selettore rosso) dev'essere disegnato.
  */
 export function entryRowSpan(
   startMin: number,
   endMin: number,
   slots: number[],
 ): { startRow: number; span: number } | null {
-  const startRow = slots.indexOf(startMin);
-  if (startRow === -1) return null;
-  const span = Math.max(
-    1,
-    slots.filter((s) => s >= startMin && s < endMin).length,
-  );
-  return { startRow, span };
+  const covered = slots.filter((s) => s >= startMin && s < endMin);
+  const anchor = slots.includes(startMin) ? startMin : covered[0];
+  if (anchor === undefined) return null;
+  return { startRow: slots.indexOf(anchor), span: Math.max(1, covered.length) };
 }

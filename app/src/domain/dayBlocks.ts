@@ -9,8 +9,9 @@ export interface PositionedEntry {
 
 /**
  * Entry di un giorno posizionate sulla griglia a slot: filtra per data e
- * scarta quelle che non iniziano su uno slot lavorativo. Condivisa da DayView
- * e WeekGrid per non duplicare la logica di posizionamento.
+ * scarta solo quelle che non coprono alcuno slot lavorativo (le altre, anche se
+ * iniziano fuori griglia, vengono ancorate — vedi `entryRowSpan`). Condivisa da
+ * DayView e WeekGrid per non duplicare la logica di posizionamento.
  */
 export function entryBlocks(
   entries: Entry[],
