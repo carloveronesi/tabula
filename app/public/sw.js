@@ -10,6 +10,7 @@ const APP_SHELL = [
   BASE + "index.html",
   BASE + "manifest.webmanifest",
   BASE + "tabula-mark.svg",
+  BASE + "tabula-mark-maskable.svg",
 ];
 
 self.addEventListener("install", (event) => {

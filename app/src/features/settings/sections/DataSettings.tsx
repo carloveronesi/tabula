@@ -9,6 +9,7 @@ import { useSettingsStore } from "@/store/settings";
 import { useInventoryStore } from "@/store/inventory";
 import { useCalendarStore } from "@/store/calendar";
 import { useToastStore } from "@/store/toast";
+import { useInstallPrompt } from "@/pwa/useInstallPrompt";
 import { Button } from "@/ui";
 import { SettingsSection } from "@/features/settings/SettingsSection";
 
@@ -34,6 +35,7 @@ export function DataSettings() {
   const loadInventory = useInventoryStore((s) => s.loadInventory);
   const loadRange = useCalendarStore((s) => s.loadRange);
   const notify = useToastStore((s) => s.notify);
+  const { canInstall, install } = useInstallPrompt();
 
   async function onExport() {
     setExporting(true);
@@ -129,6 +131,17 @@ export function DataSettings() {
           {exporting ? "Export in corso…" : "Esporta backup…"}
         </Button>
       </SettingsSection>
+
+      {canInstall && (
+        <SettingsSection
+          title="Installa app"
+          description="Installa Tabula come app sul tuo dispositivo per aprirla dalla home e usarla offline."
+        >
+          <Button variant="subtle" onClick={install}>
+            Installa Tabula
+          </Button>
+        </SettingsSection>
+      )}
     </div>
   );
 }
