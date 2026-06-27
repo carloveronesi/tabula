@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { initialKeyState, resolveKey, type KeyState } from "@/domain/keymap";
 import { isoDate } from "@/domain/calendarNav";
 import { useUiStore } from "@/store";
+import { useSettingsStore } from "@/store/settings";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useToastStore } from "@/store/toast";
@@ -70,13 +71,17 @@ export function useKeyboardShortcuts(): void {
         case "view":
           ui.setView(action.view);
           break;
-        case "new":
+        case "new": {
+          // Allinea la fascia di default agli orari di lavoro e alla durata-slot
+          // configurati, invece di un 09:00–10:00 fisso scollegato dai settings.
+          const { workHours, slotMinutes } = useSettingsStore.getState().settings;
           useEditorStore.getState().openCreate({
             date: isoDate(ui.activeDate),
-            startMin: 540,
-            endMin: 600,
+            startMin: workHours.morningStart,
+            endMin: workHours.morningStart + slotMinutes,
           });
           break;
+        }
         case "timer":
           void toggleTimer();
           break;
