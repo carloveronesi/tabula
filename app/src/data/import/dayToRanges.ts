@@ -24,7 +24,10 @@ function pad2(n: number): string {
 }
 
 function isoAt(date: ISODate, minutes: number): ISODateTime {
-  return `${date}T${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}:00`;
+  // Vincolo a [0, 1440] come dateTimeAt: 1440 = "24:00:00" (fine giornata),
+  // niente ore ≥ 25 che lo slice e `new Date` leggerebbero in giorni diversi.
+  const m = Math.max(0, Math.min(24 * 60, Math.round(minutes)));
+  return `${date}T${pad2(Math.floor(m / 60))}:${pad2(m % 60)}:00`;
 }
 
 /**
