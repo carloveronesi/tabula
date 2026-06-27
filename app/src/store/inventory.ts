@@ -11,6 +11,7 @@ import {
   putPerson,
   putProject,
 } from "@/data/repositories";
+import { persist } from "@/store/persist";
 
 interface InventoryState {
   clients: Client[];
@@ -44,32 +45,37 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     ]);
     set({ clients, projects, people, contacts });
   },
-  saveProject: async (project) => {
-    await putProject(project);
-    const rest = get().projects.filter((p) => p.id !== project.id);
-    set({ projects: [...rest, project] });
-  },
-  removeProject: async (id) => {
-    await deleteProject(id);
-    set({ projects: get().projects.filter((p) => p.id !== id) });
-  },
-  saveClient: async (client) => {
-    await putClient(client);
-    const rest = get().clients.filter((c) => c.id !== client.id);
-    set({
-      clients: [...rest, client].sort((a, b) => a.name.localeCompare(b.name)),
-    });
-  },
-  savePerson: async (person) => {
-    await putPerson(person);
-    const rest = get().people.filter((p) => p.id !== person.id);
-    set({
-      people: [...rest, person].sort((a, b) => a.name.localeCompare(b.name)),
-    });
-  },
-  saveContact: async (contact) => {
-    await putContact(contact);
-    const rest = get().contacts.filter((k) => k.id !== contact.id);
-    set({ contacts: [...rest, contact] });
-  },
+  saveProject: (project) =>
+    persist("Salvataggio progetto", async () => {
+      await putProject(project);
+      const rest = get().projects.filter((p) => p.id !== project.id);
+      set({ projects: [...rest, project] });
+    }),
+  removeProject: (id) =>
+    persist("Eliminazione progetto", async () => {
+      await deleteProject(id);
+      set({ projects: get().projects.filter((p) => p.id !== id) });
+    }),
+  saveClient: (client) =>
+    persist("Salvataggio cliente", async () => {
+      await putClient(client);
+      const rest = get().clients.filter((c) => c.id !== client.id);
+      set({
+        clients: [...rest, client].sort((a, b) => a.name.localeCompare(b.name)),
+      });
+    }),
+  savePerson: (person) =>
+    persist("Salvataggio persona", async () => {
+      await putPerson(person);
+      const rest = get().people.filter((p) => p.id !== person.id);
+      set({
+        people: [...rest, person].sort((a, b) => a.name.localeCompare(b.name)),
+      });
+    }),
+  saveContact: (contact) =>
+    persist("Salvataggio contatto", async () => {
+      await putContact(contact);
+      const rest = get().contacts.filter((k) => k.id !== contact.id);
+      set({ contacts: [...rest, contact] });
+    }),
 }));

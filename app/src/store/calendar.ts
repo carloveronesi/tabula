@@ -9,6 +9,7 @@ import {
   type Change,
   type History,
 } from "@/domain/history";
+import { persist } from "@/store/persist";
 
 interface CalendarState {
   entries: Entry[];
@@ -58,42 +59,46 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const entries = await entriesInRange(from, to);
     set({ entries });
   },
-  saveEntry: async (entry) => {
-    const before = get().entries.find((e) => e.id === entry.id) ?? null;
-    const entries = await applyState(get().entries, entry.id, entry);
-    set((s) => ({
-      entries,
-      history: record(s.history, { before, after: entry }),
-    }));
-  },
-  removeEntry: async (id) => {
-    const before = get().entries.find((e) => e.id === id) ?? null;
-    const entries = await applyState(get().entries, id, null);
-    set((s) => ({
-      entries,
-      history: before
-        ? record(s.history, { before, after: null })
-        : s.history,
-    }));
-  },
-  undo: async () => {
-    const result = undoHistory(get().history);
-    if (!result) return;
-    const entries = await applyState(
-      get().entries,
-      changeId(result.change),
-      result.change.before,
-    );
-    set({ entries, history: result.history });
-  },
-  redo: async () => {
-    const result = redoHistory(get().history);
-    if (!result) return;
-    const entries = await applyState(
-      get().entries,
-      changeId(result.change),
-      result.change.after,
-    );
-    set({ entries, history: result.history });
-  },
+  saveEntry: (entry) =>
+    persist("Salvataggio attività", async () => {
+      const before = get().entries.find((e) => e.id === entry.id) ?? null;
+      const entries = await applyState(get().entries, entry.id, entry);
+      set((s) => ({
+        entries,
+        history: record(s.history, { before, after: entry }),
+      }));
+    }),
+  removeEntry: (id) =>
+    persist("Eliminazione attività", async () => {
+      const before = get().entries.find((e) => e.id === id) ?? null;
+      const entries = await applyState(get().entries, id, null);
+      set((s) => ({
+        entries,
+        history: before
+          ? record(s.history, { before, after: null })
+          : s.history,
+      }));
+    }),
+  undo: () =>
+    persist("Annullamento", async () => {
+      const result = undoHistory(get().history);
+      if (!result) return;
+      const entries = await applyState(
+        get().entries,
+        changeId(result.change),
+        result.change.before,
+      );
+      set({ entries, history: result.history });
+    }),
+  redo: () =>
+    persist("Ripristino", async () => {
+      const result = redoHistory(get().history);
+      if (!result) return;
+      const entries = await applyState(
+        get().entries,
+        changeId(result.change),
+        result.change.after,
+      );
+      set({ entries, history: result.history });
+    }),
 }));

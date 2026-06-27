@@ -10,6 +10,7 @@ import {
   addTag,
   removeTag,
 } from "@/domain/todoDraft";
+import { persist } from "@/store/persist";
 
 interface TodoState {
   todos: Todo[];
@@ -32,13 +33,14 @@ interface TodoState {
  */
 export const useTodoStore = create<TodoState>((set, get) => {
   /** Applica una trasformazione a un todo: persiste e aggiorna la lista. */
-  const transform = async (id: Id, fn: (t: Todo) => Todo) => {
-    const cur = get().todos.find((t) => t.id === id);
-    if (!cur) return;
-    const updated = fn(cur);
-    await putTodo(updated);
-    set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
-  };
+  const transform = (id: Id, fn: (t: Todo) => Todo) =>
+    persist("Salvataggio todo", async () => {
+      const cur = get().todos.find((t) => t.id === id);
+      if (!cur) return;
+      const updated = fn(cur);
+      await putTodo(updated);
+      set({ todos: get().todos.map((t) => (t.id === id ? updated : t)) });
+    });
   const patch = (id: Id, fields: Partial<Todo>) =>
     transform(id, (t) => ({ ...t, ...fields }));
 
@@ -49,9 +51,11 @@ export const useTodoStore = create<TodoState>((set, get) => {
     },
     addTodo: async (title, projectId = null) => {
       if (title.trim() === "") return;
-      const todo = newTodo({ title, projectId }, nanoid(), Date.now());
-      await putTodo(todo);
-      set({ todos: [...get().todos, todo] });
+      await persist("Creazione todo", async () => {
+        const todo = newTodo({ title, projectId }, nanoid(), Date.now());
+        await putTodo(todo);
+        set({ todos: [...get().todos, todo] });
+      });
     },
     toggleTodo: (id) => patch(id, { done: !get().todos.find((t) => t.id === id)?.done }),
     setDue: (id, dueDate) => patch(id, { dueDate }),
@@ -61,9 +65,10 @@ export const useTodoStore = create<TodoState>((set, get) => {
     removeSubtask: (id, subId) => transform(id, (t) => removeSubtask(t, subId)),
     addTag: (id, tag) => transform(id, (t) => addTag(t, tag)),
     removeTag: (id, tag) => transform(id, (t) => removeTag(t, tag)),
-    removeTodo: async (id) => {
-      await deleteTodo(id);
-      set({ todos: get().todos.filter((t) => t.id !== id) });
-    },
+    removeTodo: (id) =>
+      persist("Eliminazione todo", async () => {
+        await deleteTodo(id);
+        set({ todos: get().todos.filter((t) => t.id !== id) });
+      }),
   };
 });

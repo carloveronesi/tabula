@@ -5,6 +5,7 @@ import {
   deleteDayMeta,
   putDayMeta,
 } from "@/data/repositories";
+import { persist } from "@/store/persist";
 
 interface PresenceState {
   /** Sede per data (solo i giorni con sede registrata nel periodo caricato). */
@@ -26,15 +27,16 @@ export const usePresenceStore = create<PresenceState>((set, get) => ({
     for (const r of rows) if (r.location) metas[r.date] = r.location;
     set({ metas });
   },
-  setLocation: async (date, location) => {
-    if (location) {
-      await putDayMeta({ date, location });
-      set({ metas: { ...get().metas, [date]: location } });
-    } else {
-      await deleteDayMeta(date);
-      const next = { ...get().metas };
-      delete next[date];
-      set({ metas: next });
-    }
-  },
+  setLocation: (date, location) =>
+    persist("Salvataggio sede", async () => {
+      if (location) {
+        await putDayMeta({ date, location });
+        set({ metas: { ...get().metas, [date]: location } });
+      } else {
+        await deleteDayMeta(date);
+        const next = { ...get().metas };
+        delete next[date];
+        set({ metas: next });
+      }
+    }),
 }));
