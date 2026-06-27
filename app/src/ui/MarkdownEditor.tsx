@@ -1,6 +1,8 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/ui/cn";
 import { Markdown } from "@/ui/Markdown";
+import { IconMic } from "@/ui/icons";
+import { useDictation } from "@/ui/useDictation";
 
 export interface MarkdownEditorProps {
   value: string;
@@ -15,10 +17,12 @@ export interface MarkdownEditorProps {
 function ToolbarBtn({
   label,
   onClick,
+  pressed,
   children,
 }: {
   label: string;
   onClick: () => void;
+  pressed?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -26,10 +30,14 @@ function ToolbarBtn({
       type="button"
       aria-label={label}
       title={label}
+      aria-pressed={pressed}
       // mousedown preventDefault: non rubare il focus/selezione alla textarea
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-xs text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
+      className={cn(
+        "inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-xs transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink",
+        pressed ? "text-danger" : "text-muted",
+      )}
     >
       {children}
     </button>
@@ -51,6 +59,28 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState(false);
+
+  /** Inserisce testo al cursore (o in coda), separandolo con uno spazio se serve. */
+  function insertAtCursor(text: string) {
+    const ta = ref.current;
+    const s = ta ? ta.selectionStart : value.length;
+    const e = ta ? ta.selectionEnd : value.length;
+    const before = value.slice(0, s);
+    const piece = (before && !/\s$/.test(before) ? " " : "") + text;
+    onChange(before + piece + value.slice(e));
+    queueMicrotask(() => {
+      if (!ta) return;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = s + piece.length;
+    });
+  }
+
+  const { supported, listening, toggle } = useDictation(insertAtCursor);
+
+  // Passando all'anteprima si ferma la dettatura (la textarea sparisce).
+  useEffect(() => {
+    if (preview && listening) toggle();
+  }, [preview, listening, toggle]);
 
   function surround(before: string, after: string) {
     const ta = ref.current;
@@ -98,6 +128,15 @@ export function MarkdownEditor({
         <ToolbarBtn label="Link" onClick={() => surround("[", "](url)")}>
           ↗
         </ToolbarBtn>
+        {supported && !preview && (
+          <ToolbarBtn
+            label={listening ? "Ferma dettatura" : "Detta"}
+            onClick={toggle}
+            pressed={listening}
+          >
+            <IconMic size={16} />
+          </ToolbarBtn>
+        )}
         <button
           type="button"
           onClick={() => setPreview((p) => !p)}

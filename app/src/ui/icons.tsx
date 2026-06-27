@@ -149,6 +149,15 @@ export const IconStop = (p: IconProps) => (
   </Svg>
 );
 
+/** Microfono: dettatura vocale. */
+export const IconMic = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0" />
+    <path d="M12 18v3" />
+  </Svg>
+);
+
 /** Sede: remoto (casa). */
 export const IconHome = (p: IconProps) => (
   <Svg {...p}>
