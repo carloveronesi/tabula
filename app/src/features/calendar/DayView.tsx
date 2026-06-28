@@ -59,6 +59,8 @@ interface DayViewProps {
   onCopyEntry?: (entry: Entry) => void;
   /** Duplica l'attività nel primo slot libero della giornata. */
   onDuplicateEntry?: (entry: Entry) => void;
+  /** Salva l'attività come template riusabile. */
+  onSaveTemplate?: (entry: Entry) => void;
   /** Elimina l'attività. */
   onDeleteEntry?: (entry: Entry) => void;
 }
@@ -117,6 +119,7 @@ export function DayView({
   onPasteAt,
   onCopyEntry,
   onDuplicateEntry,
+  onSaveTemplate,
   onDeleteEntry,
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
@@ -402,6 +405,10 @@ export function DayView({
                 {
                   label: "Duplica",
                   onSelect: () => onDuplicateEntry?.(menu.entry),
+                },
+                {
+                  label: "Salva come template",
+                  onSelect: () => onSaveTemplate?.(menu.entry),
                 },
                 {
                   label: "Elimina",

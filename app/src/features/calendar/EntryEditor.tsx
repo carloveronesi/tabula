@@ -46,6 +46,9 @@ function seedDraft(seed: EditorSeed): EntryDraft {
     ...emptyDraft(seed.date, seed.startMin, seed.endMin),
     title: seed.title ?? "",
     clientId: seed.clientId ?? null,
+    type: seed.type ?? "client",
+    projectId: seed.projectId ?? null,
+    subtypeId: seed.subtypeId ?? null,
   };
 }
 

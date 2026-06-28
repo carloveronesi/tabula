@@ -100,6 +100,18 @@ export interface Todo {
   createdAt: number;
 }
 
+/** Attività salvata da reinserire rapidamente (senza fascia oraria). */
+export interface ActivityTemplate {
+  id: Id;
+  name: string; // etichetta del chip
+  title: string;
+  type: EntryType;
+  clientId: Id | null;
+  projectId: Id | null;
+  subtypeId: Id | null;
+  createdAt: number;
+}
+
 export type Location = "remote" | "office" | "client";
 
 export interface DayMeta {

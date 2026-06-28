@@ -36,6 +36,7 @@ import { pasteEntry } from "@/features/layout/clipboardActions";
 import {
   copyEntry,
   duplicateEntry,
+  saveAsTemplate,
   deleteEntry,
 } from "@/features/layout/entryActions";
 
@@ -202,6 +203,7 @@ export function AppShell() {
                   onPasteAt={pasteAt}
                   onCopyEntry={copyEntry}
                   onDuplicateEntry={(e) => void duplicateEntry(e)}
+                  onSaveTemplate={(e) => void saveAsTemplate(e)}
                   onDeleteEntry={(e) => void deleteEntry(e)}
                 />
               </div>
@@ -266,6 +268,7 @@ export function AppShell() {
             onPasteAt={pasteAt}
             onCopyEntry={copyEntry}
             onDuplicateEntry={(e) => void duplicateEntry(e)}
+            onSaveTemplate={(e) => void saveAsTemplate(e)}
             onDeleteEntry={(e) => void deleteEntry(e)}
             presenceEnabled={settings.presenceTracking.enabled}
             locations={locations}

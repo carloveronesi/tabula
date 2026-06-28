@@ -3,6 +3,7 @@ import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useTemplateStore } from "@/store/templates";
 import { useTimerStore } from "@/store/timer";
 import { usePresenceStore } from "@/store/presence";
 import { useTodoStore } from "@/store/todo";
@@ -18,6 +19,7 @@ export function useCalendarData(): void {
   const activeDate = useUiStore((s) => s.activeDate);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const loadInventory = useInventoryStore((s) => s.loadInventory);
+  const loadTemplates = useTemplateStore((s) => s.loadTemplates);
   const loadTimer = useTimerStore((s) => s.load);
   const loadRange = useCalendarStore((s) => s.loadRange);
   const loadPresence = usePresenceStore((s) => s.loadRange);
@@ -28,9 +30,10 @@ export function useCalendarData(): void {
   useEffect(() => {
     void loadSettings();
     void loadInventory();
+    void loadTemplates();
     void loadTimer();
     void loadTodos();
-  }, [loadSettings, loadInventory, loadTimer, loadTodos]);
+  }, [loadSettings, loadInventory, loadTemplates, loadTimer, loadTodos]);
 
   useEffect(() => {
     void loadRange(from, to);

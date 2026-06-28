@@ -71,6 +71,8 @@ interface WeekGridProps {
   onCopyEntry?: (entry: Entry) => void;
   /** Duplica l'attività nel primo slot libero della giornata. */
   onDuplicateEntry?: (entry: Entry) => void;
+  /** Salva l'attività come template riusabile. */
+  onSaveTemplate?: (entry: Entry) => void;
   /** Elimina l'attività. */
   onDeleteEntry?: (entry: Entry) => void;
   /** Mostra il selettore sede nelle intestazioni (presenze attive). */
@@ -144,6 +146,7 @@ export function WeekGrid({
   onPasteAt,
   onCopyEntry,
   onDuplicateEntry,
+  onSaveTemplate,
   onDeleteEntry,
   presenceEnabled = false,
   locations,
@@ -544,6 +547,10 @@ export function WeekGrid({
                 {
                   label: "Duplica",
                   onSelect: () => onDuplicateEntry?.(menu.entry),
+                },
+                {
+                  label: "Salva come template",
+                  onSelect: () => onSaveTemplate?.(menu.entry),
                 },
                 {
                   label: "Elimina",

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Entry, Id, ISODate } from "@/data/types";
+import type { Entry, EntryType, Id, ISODate } from "@/data/types";
 
 export interface EditorSeed {
   date: ISODate;
@@ -8,6 +8,9 @@ export interface EditorSeed {
   /** Pre-compilazioni opzionali (es. quando si passa dal quick-add). */
   title?: string;
   clientId?: Id | null;
+  type?: EntryType;
+  projectId?: Id | null;
+  subtypeId?: Id | null;
 }
 
 /** Punto-ancora in coordinate viewport per posizionare il quick-add. */

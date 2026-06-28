@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  ActivityTemplate,
   Client,
   Contact,
   DayMeta,
@@ -26,6 +27,7 @@ export class AppDB extends Dexie {
   days!: Table<DayMeta, string>;
   settings!: Table<Settings, string>;
   timer!: Table<RunningTimer, string>;
+  templates!: Table<ActivityTemplate, string>;
 
   constructor() {
     super("tabula");
@@ -42,6 +44,8 @@ export class AppDB extends Dexie {
     });
     // v2: timer "in corso" persistito (sopravvive a reload e chiusura PWA).
     this.version(2).stores({ timer: "id" });
+    // v3: template di attività riutilizzabili dalla creazione rapida.
+    this.version(3).stores({ templates: "id" });
   }
 }
 

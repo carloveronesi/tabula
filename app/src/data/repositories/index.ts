@@ -4,6 +4,7 @@
  */
 import { db } from "@/data/db";
 import type {
+  ActivityTemplate,
   Client,
   Contact,
   DayMeta,
@@ -112,6 +113,19 @@ export function putDayMeta(meta: DayMeta): Promise<string> {
 
 export function deleteDayMeta(date: ISODate): Promise<void> {
   return db.days.delete(date);
+}
+
+/** Tutti i template di attività. */
+export function allTemplates(): Promise<ActivityTemplate[]> {
+  return db.templates.toArray();
+}
+
+export function putTemplate(t: ActivityTemplate): Promise<string> {
+  return db.templates.put(t);
+}
+
+export function deleteTemplate(id: string): Promise<void> {
+  return db.templates.delete(id);
 }
 
 /** Timer "in corso" persistito (record singolo `id: "active"`), o `undefined`. */
