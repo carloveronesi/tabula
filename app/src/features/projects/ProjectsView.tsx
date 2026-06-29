@@ -353,6 +353,34 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ProjectItem({
+  project,
+  totalMin,
+  active,
+  onSelect,
+}: {
+  project: Project;
+  totalMin: number;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={active}
+        className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors duration-[var(--dur-fast)] ease-out ${
+          active ? "bg-raised text-ink" : "text-ink hover:bg-raised"
+        }`}
+      >
+        <span className="truncate">{project.name}</span>
+        <span className="tnum shrink-0 text-xs text-muted">{formatHours(totalMin)}</span>
+      </button>
+    </li>
+  );
+}
+
 /**
  * Vista Progetti: elenco per cliente con statistiche aggregate (ore, attività,
  * periodo) e pannello di dettaglio. Le stats coprono l'intero archivio, quindi
@@ -364,6 +392,7 @@ export function ProjectsView() {
   const contacts = useInventoryStore((s) => s.contacts);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     void allEntries().then(setEntries);
@@ -371,8 +400,18 @@ export function ProjectsView() {
 
   const stats = useMemo(() => aggregateByProject(entries), [entries]);
 
+  const archived = useMemo(
+    () =>
+      projects
+        .filter((p) => p.status === "archived")
+        .sort((a, b) => a.name.localeCompare(b.name, "it")),
+    [projects],
+  );
+
   const groups = useMemo(() => {
-    const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name, "it"));
+    const sorted = [...projects]
+      .filter((p) => p.status !== "archived")
+      .sort((a, b) => a.name.localeCompare(b.name, "it"));
     const byClient = new Map<string, Project[]>();
     for (const p of sorted) {
       const key = p.clientId ?? "__internal";
@@ -444,30 +483,43 @@ export function ProjectsView() {
               {g.label}
             </h3>
             <ul className="space-y-0.5">
-              {g.projects.map((p) => {
-                const st = stats.get(p.id);
-                const active = p.id === selectedId;
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(p.id)}
-                      aria-pressed={active}
-                      className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors duration-[var(--dur-fast)] ease-out ${
-                        active ? "bg-raised text-ink" : "text-ink hover:bg-raised"
-                      }`}
-                    >
-                      <span className="truncate">{p.name}</span>
-                      <span className="tnum shrink-0 text-xs text-muted">
-                        {formatHours(st?.totalMin ?? 0)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
+              {g.projects.map((p) => (
+                <ProjectItem
+                  key={p.id}
+                  project={p}
+                  totalMin={stats.get(p.id)?.totalMin ?? 0}
+                  active={p.id === selectedId}
+                  onSelect={() => setSelectedId(p.id)}
+                />
+              ))}
             </ul>
           </div>
         ))}
+
+        {archived.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowArchived((v) => !v)}
+              className="text-xs font-semibold uppercase tracking-wide text-muted hover:text-ink"
+            >
+              {showArchived ? "Nascondi" : "Mostra"} archiviati ({archived.length})
+            </button>
+            {showArchived && (
+              <ul className="mt-1 space-y-0.5">
+                {archived.map((p) => (
+                  <ProjectItem
+                    key={p.id}
+                    project={p}
+                    totalMin={stats.get(p.id)?.totalMin ?? 0}
+                    active={p.id === selectedId}
+                    onSelect={() => setSelectedId(p.id)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </aside>
 
       {selected && (

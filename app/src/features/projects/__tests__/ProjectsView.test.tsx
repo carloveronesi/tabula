@@ -147,7 +147,8 @@ describe("ProjectsView", () => {
     });
     render(<ProjectsView />);
     expect(screen.getByText("Mario Rossi")).toBeInTheDocument();
-    expect(screen.getByText("Lucia Bianchi")).toBeInTheDocument();
+    // Il referente appare sia nel riepilogo sia come token modificabile.
+    expect(screen.getAllByText("Lucia Bianchi").length).toBeGreaterThan(0);
   });
 
   it("aggiunge una sotto-attività e la salva nel progetto", async () => {
