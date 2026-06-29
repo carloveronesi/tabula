@@ -111,6 +111,30 @@ describe("EntryEditor", () => {
     expect(useEditorStore.getState().open).toBe(false);
   });
 
+  it("nasconde Cliente (e azzera la selezione) per le attività non su cliente", () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    // Tipo cliente (default): il selettore Cliente c'è.
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+
+    // Passando a Interno il selettore Cliente sparisce e la scelta è azzerata.
+    fireEvent.click(screen.getByRole("button", { name: "Interno" }));
+    expect(
+      screen.queryByRole("combobox", { name: "Cliente" }),
+    ).not.toBeInTheDocument();
+
+    // Tornando a Cliente, il campo è di nuovo vuoto (non resta "Acme").
+    fireEvent.click(screen.getByRole("button", { name: "Cliente" }));
+    expect(
+      screen.getByRole("combobox", { name: "Cliente" }),
+    ).toHaveValue("");
+  });
+
   it("la scorciatoia 'Giornata' imposta l'intera giornata lavorativa", async () => {
     useEditorStore
       .getState()
