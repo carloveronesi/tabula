@@ -4,6 +4,7 @@ import { searchEntries } from "@/domain/search";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useEditorStore } from "@/store/editor";
+import { useUiStore } from "@/store";
 import { Button, Combobox, Field, Input, Segmented, type SegmentedOption } from "@/ui";
 
 type TypeFilter = EntryType | "all";
@@ -31,19 +32,33 @@ const fmtDay = (iso: string) =>
 export function SearchView() {
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const people = useInventoryStore((s) => s.people);
+  const contacts = useInventoryStore((s) => s.contacts);
   const showDetail = useEditorStore((s) => s.showDetail);
+  const searchSeed = useUiStore((s) => s.searchSeed);
+  const consumeSearchSeed = useUiStore((s) => s.consumeSearchSeed);
 
   const [entries, setEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<TypeFilter>("all");
   const [clientId, setClientId] = useState<Id | null>(null);
   const [projectId, setProjectId] = useState<Id | null>(null);
+  const [collaboratorId, setCollaboratorId] = useState<Id | null>(null);
+  const [contactId, setContactId] = useState<Id | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
   useEffect(() => {
     void allEntries().then(setEntries);
   }, []);
+
+  // Pre-filtri arrivati da un'altra vista (es. "Vedi attività" di una persona).
+  useEffect(() => {
+    if (!searchSeed) return;
+    setCollaboratorId(searchSeed.collaboratorId ?? null);
+    setContactId(searchSeed.contactId ?? null);
+    consumeSearchSeed();
+  }, [searchSeed, consumeSearchSeed]);
 
   const clientOptions = useMemo(
     () => clients.map((c) => ({ id: c.id, label: c.name })),
@@ -56,6 +71,14 @@ export function SearchView() {
         .map((p) => ({ id: p.id, label: p.name })),
     [projects, clientId],
   );
+  const peopleOptions = useMemo(
+    () => people.map((p) => ({ id: p.id, label: p.name })),
+    [people],
+  );
+  const contactOptions = useMemo(
+    () => contacts.map((k) => ({ id: k.id, label: k.name })),
+    [contacts],
+  );
 
   const results = useMemo(
     () =>
@@ -64,10 +87,12 @@ export function SearchView() {
         type: type === "all" ? null : type,
         clientId,
         projectId,
+        collaboratorId,
+        contactId,
         from: from || null,
         to: to || null,
       }),
-    [entries, query, type, clientId, projectId, from, to],
+    [entries, query, type, clientId, projectId, collaboratorId, contactId, from, to],
   );
 
   const meta = (e: Entry) => {
@@ -81,6 +106,8 @@ export function SearchView() {
     type !== "all" ||
     clientId !== null ||
     projectId !== null ||
+    collaboratorId !== null ||
+    contactId !== null ||
     from !== "" ||
     to !== "";
 
@@ -89,6 +116,8 @@ export function SearchView() {
     setType("all");
     setClientId(null);
     setProjectId(null);
+    setCollaboratorId(null);
+    setContactId(null);
     setFrom("");
     setTo("");
   };
@@ -130,6 +159,24 @@ export function SearchView() {
             options={projectOptions}
             value={projectId}
             onChange={setProjectId}
+          />
+        </Field>
+        <Field label="Collaboratore">
+          <Combobox
+            label="Collaboratore"
+            placeholder="Tutti"
+            options={peopleOptions}
+            value={collaboratorId}
+            onChange={setCollaboratorId}
+          />
+        </Field>
+        <Field label="Referente">
+          <Combobox
+            label="Referente"
+            placeholder="Tutti"
+            options={contactOptions}
+            value={contactId}
+            onChange={setContactId}
           />
         </Field>
         <Field label="Dal">

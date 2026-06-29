@@ -103,4 +103,28 @@ describe("searchEntries", () => {
     );
     expect(r.map((e) => e.id)).toEqual(["x"]);
   });
+
+  const G = [
+    entry("a", "2026-01-10T09:00:00", { collaboratorIds: ["u1", "u2"] }),
+    entry("b", "2026-02-10T09:00:00", { collaboratorIds: ["u2"], contactIds: ["k1"] }),
+    entry("c", "2026-03-10T09:00:00", { contactIds: ["k1", "k2"] }),
+  ];
+
+  it("filtra per collaboratore (da solo attiva la ricerca)", () => {
+    expect(searchEntries(G, { collaboratorId: "u2" }).map((e) => e.id)).toEqual([
+      "b",
+      "a",
+    ]);
+  });
+
+  it("filtra per referente", () => {
+    expect(searchEntries(G, { contactId: "k1" }).map((e) => e.id)).toEqual([
+      "c",
+      "b",
+    ]);
+  });
+
+  it("collaboratore assente: nessun risultato", () => {
+    expect(searchEntries(G, { collaboratorId: "zzz" })).toEqual([]);
+  });
 });

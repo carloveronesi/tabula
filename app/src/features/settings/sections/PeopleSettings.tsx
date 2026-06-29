@@ -3,16 +3,10 @@ import type { Entry } from "@/data/types";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useToastStore } from "@/store/toast";
+import { useUiStore } from "@/store";
 import { Button, Combobox, IconButton, Input } from "@/ui";
-import { IconClose, IconMerge } from "@/ui/icons";
+import { IconClose, IconMerge, IconSearch } from "@/ui/icons";
 import { SettingsSection } from "@/features/settings/SettingsSection";
-
-interface Activity {
-  id: string;
-  date: string;
-  title: string;
-  context: string;
-}
 
 /** Raggruppa le entry per ciascun id presente nella lista estratta da ogni entry. */
 function groupByRef(entries: Entry[], pick: (e: Entry) => string[]): Map<string, Entry[]> {
@@ -26,11 +20,6 @@ function groupByRef(entries: Entry[], pick: (e: Entry) => string[]): Map<string,
   return m;
 }
 
-const fmtDay = (iso: string) =>
-  new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short", year: "2-digit" }).format(
-    new Date(iso),
-  );
-
 function usageLabel(n: number): string {
   return n ? `in ${n} attività` : "mai usato";
 }
@@ -41,10 +30,10 @@ interface RowProps {
   usage: number;
   /** Riga di contesto sotto il nome (clienti/progetti collegati): disambigua i doppioni. */
   meta?: string;
-  /** Attività in cui la persona/contatto compare, mostrate all'espansione. */
-  activities: Activity[];
   /** Campo extra a destra del nome (es. ruolo del contatto). */
   extra?: React.ReactNode;
+  /** Apre la Ricerca filtrata su questo record (solo se ci sono attività). */
+  onViewActivities: () => void;
   /** Altri record in cui fondere questo (per il merge). */
   mergeOptions: { id: string; label: string }[];
   onRename: (name: string) => void;
@@ -52,14 +41,14 @@ interface RowProps {
   onDelete: () => void;
 }
 
-/** Riga gestita: rinomina (onBlur), unione (inline), eliminazione (due passi), attività (espandi). */
+/** Riga gestita: rinomina (onBlur), vedi attività, unione (inline), eliminazione (due passi). */
 function EntityRow({
   id,
   name,
   usage,
   meta,
-  activities,
   extra,
+  onViewActivities,
   mergeOptions,
   onRename,
   onMerge,
@@ -68,7 +57,6 @@ function EntityRow({
   const [draft, setDraft] = useState(name);
   const [merging, setMerging] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => setDraft(name), [name]);
 
@@ -91,21 +79,17 @@ function EntityRow({
           }}
         />
         {extra}
-        {usage > 0 ? (
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-label={`${usageLabel(usage)} — mostra attività`}
-            onClick={() => setExpanded((v) => !v)}
-            className="w-32 shrink-0 text-right text-xs text-muted hover:text-ink"
-          >
-            {usageLabel(usage)} {expanded ? "▴" : "▾"}
-          </button>
-        ) : (
-          <span className="w-32 shrink-0 text-right text-xs text-muted">
-            {usageLabel(usage)}
-          </span>
-        )}
+        <span className="w-28 shrink-0 text-right text-xs text-muted">
+          {usageLabel(usage)}
+        </span>
+        <IconButton
+          label={`Vedi attività di ${name}`}
+          size="sm"
+          disabled={usage === 0}
+          onClick={onViewActivities}
+        >
+          <IconSearch size={16} />
+        </IconButton>
         <IconButton
           label={`Unisci ${name} in un'altra`}
           size="sm"
@@ -138,20 +122,6 @@ function EntityRow({
 
       {meta && <p className="pl-1 text-xs text-muted">{meta}</p>}
 
-      {expanded && activities.length > 0 && (
-        <ul className="ml-1 space-y-1 border-l border-line pl-3">
-          {activities.map((a) => (
-            <li key={a.id} className="flex items-baseline justify-between gap-3 text-xs">
-              <span className="min-w-0 truncate text-ink">
-                <span className="tnum text-muted">{a.date}</span> ·{" "}
-                {a.title || "(senza titolo)"}
-              </span>
-              {a.context && <span className="shrink-0 text-muted">{a.context}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-
       {merging && (
         <div className="pl-1">
           <Combobox
@@ -172,9 +142,10 @@ function EntityRow({
 
 /**
  * Gestione anagrafiche: collaboratori (persone) e referenti (contatti).
- * Rinomina, unisci i doppioni ed elimina; ogni riga mostra i clienti/progetti
- * collegati e, all'espansione, le attività in cui compare. Unione ed
- * eliminazione riassegnano o tolgono i riferimenti da attività, team e progetti.
+ * Ogni riga mostra i clienti/progetti collegati (per distinguere i doppioni),
+ * apre la Ricerca filtrata sulle sue attività, e permette rinomina, unione ed
+ * eliminazione — riassegnando o togliendo i riferimenti da attività, team e
+ * progetti.
  */
 export function PeopleSettings() {
   const people = useInventoryStore((s) => s.people);
@@ -188,9 +159,10 @@ export function PeopleSettings() {
   const mergeContact = useInventoryStore((s) => s.mergeContact);
   const removeContact = useInventoryStore((s) => s.removeContact);
   const notify = useToastStore((s) => s.notify);
+  const openSearch = useUiStore((s) => s.openSearch);
 
-  // Archivio completo per conteggi e dettaglio attività. Ricaricato quando
-  // l'inventario cambia (merge/delete) così i numeri restano coerenti.
+  // Archivio completo per conteggi e sottotitolo. Ricaricato quando l'inventario
+  // cambia (merge/delete) così i numeri restano coerenti.
   const [archive, setArchive] = useState<Entry[]>([]);
   useEffect(() => {
     void allEntries().then(setArchive);
@@ -206,12 +178,6 @@ export function PeopleSettings() {
 
   const byPerson = useMemo(() => groupByRef(archive, (e) => e.collaboratorIds), [archive]);
   const byContact = useMemo(() => groupByRef(archive, (e) => e.contactIds), [archive]);
-
-  const activitiesOf = (entries: Entry[] | undefined): Activity[] =>
-    (entries ?? [])
-      .slice()
-      .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
-      .map((e) => ({ id: e.id, date: fmtDay(e.startsAt), title: e.title, context: entryContext(e) }));
 
   // Sottotitolo: clienti/progetti distinti collegati, per distinguere i doppioni.
   const contextsOf = (entries: Entry[] | undefined): string => {
@@ -238,7 +204,7 @@ export function PeopleSettings() {
     <div className="space-y-6">
       <SettingsSection
         title="Collaboratori"
-        description="Le persone con cui lavori, usate come collaboratori nelle attività. Il sottotitolo mostra i clienti/progetti collegati; clicca sul conteggio per vedere le attività. Unisci i doppioni o elimina chi non serve: i riferimenti vengono aggiornati ovunque."
+        description="Le persone con cui lavori, usate come collaboratori nelle attività. Il sottotitolo mostra i clienti/progetti collegati; «Vedi attività» apre la Ricerca filtrata su quella persona. Unisci i doppioni o elimina chi non serve: i riferimenti vengono aggiornati ovunque."
       >
         {people.length === 0 ? (
           <p className="text-sm text-muted">
@@ -255,7 +221,7 @@ export function PeopleSettings() {
                   name={p.name}
                   usage={entries?.length ?? 0}
                   meta={contextsOf(entries)}
-                  activities={activitiesOf(entries)}
+                  onViewActivities={() => openSearch({ collaboratorId: p.id })}
                   mergeOptions={peopleOptions}
                   onRename={(name) => void savePerson({ ...p, name })}
                   onMerge={(intoId) => {
@@ -276,7 +242,7 @@ export function PeopleSettings() {
 
       <SettingsSection
         title="Referenti"
-        description="I contatti lato cliente. Il ruolo è opzionale; clicca sul conteggio per vedere le attività. Unione ed eliminazione aggiornano i riferimenti in attività e progetti."
+        description="I contatti lato cliente. Il ruolo è opzionale; «Vedi attività» apre la Ricerca filtrata sul referente. Unione ed eliminazione aggiornano i riferimenti in attività e progetti."
       >
         {contacts.length === 0 ? (
           <p className="text-sm text-muted">
@@ -293,7 +259,7 @@ export function PeopleSettings() {
                   name={k.name}
                   usage={entries?.length ?? 0}
                   meta={`Cliente: ${clientName(k.clientId) || "—"}`}
-                  activities={activitiesOf(entries)}
+                  onViewActivities={() => openSearch({ contactId: k.id })}
                   extra={
                     <Input
                       aria-label="Ruolo"
