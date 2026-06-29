@@ -23,6 +23,11 @@ function fold(s: string): string {
     .trim();
 }
 
+/** Nome normalizzato per il confronto esatto (case, spazi, accenti, punteggiatura). */
+export function normalizeName(s: string): string {
+  return fold(s);
+}
+
 /** Insieme dei token (parole) del nome, normalizzati. */
 function tokens(s: string): Set<string> {
   return new Set(fold(s).split(" ").filter(Boolean));

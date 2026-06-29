@@ -8,6 +8,7 @@ import {
   type ProjectEditable,
 } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
+import { findByName } from "@/domain/dedupeName";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useToastStore } from "@/store/toast";
@@ -124,8 +125,9 @@ function ProjectEditor({
   const addTeam = (id: Id) =>
     patch({ teamIds: draft.teamIds.includes(id) ? draft.teamIds : [...draft.teamIds, id] });
   const createPerson = async (name: string) => {
-    const id = nanoid();
-    await savePerson({ id, name });
+    const existing = findByName(people, name);
+    const id = existing?.id ?? nanoid();
+    if (!existing) await savePerson({ id, name });
     addTeam(id);
   };
 
@@ -140,8 +142,12 @@ function ProjectEditor({
     patch({ contactIds: draft.contactIds.includes(id) ? draft.contactIds : [...draft.contactIds, id] });
   const createContact = async (name: string) => {
     if (!draft.clientId) return;
-    const id = nanoid();
-    await saveContact({ id, clientId: draft.clientId, name, role: "" });
+    const existing = findByName(
+      contacts.filter((k) => k.clientId === draft.clientId),
+      name,
+    );
+    const id = existing?.id ?? nanoid();
+    if (!existing) await saveContact({ id, clientId: draft.clientId, name, role: "" });
     addContact(id);
   };
 

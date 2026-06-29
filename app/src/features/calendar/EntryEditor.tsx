@@ -15,6 +15,7 @@ import {
   rankCandidatesByHistory,
 } from "@/domain/collaborators";
 import { allEntries } from "@/data/repositories";
+import { findByName } from "@/domain/dedupeName";
 import { useEditorStore, type EditorSeed } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -248,8 +249,10 @@ export function EntryEditor() {
   }
 
   async function createCollaborator(name: string) {
-    const id = nanoid();
-    await savePerson({ id, name });
+    // Riusa una persona con lo stesso nome se esiste già: niente doppioni.
+    const existing = findByName(people, name);
+    const id = existing?.id ?? nanoid();
+    if (!existing) await savePerson({ id, name });
     // Lega la persona al team del progetto, così ricompare la volta dopo.
     const proj = projects.find((p) => p.id === draft.projectId);
     if (proj && !proj.teamIds.includes(id)) {
@@ -260,8 +263,13 @@ export function EntryEditor() {
 
   async function createContact(name: string) {
     if (!draft.clientId) return;
-    const id = nanoid();
-    await saveContact({ id, clientId: draft.clientId, name, role: "" });
+    // Riusa un referente dello stesso cliente con lo stesso nome.
+    const existing = findByName(
+      contacts.filter((k) => k.clientId === draft.clientId),
+      name,
+    );
+    const id = existing?.id ?? nanoid();
+    if (!existing) await saveContact({ id, clientId: draft.clientId, name, role: "" });
     addId("contactIds", id);
   }
 
