@@ -5,12 +5,14 @@ import {
   IconClock,
   IconBuilding,
   IconTag,
+  IconBookmark,
   IconDatabase,
 } from "@/ui/icons";
 import { GeneralSettings } from "@/features/settings/sections/GeneralSettings";
 import { ScheduleSettings } from "@/features/settings/sections/ScheduleSettings";
 import { PresenceSettings } from "@/features/settings/sections/PresenceSettings";
 import { CategoriesSettings } from "@/features/settings/sections/CategoriesSettings";
+import { TemplatesSettings } from "@/features/settings/sections/TemplatesSettings";
 import { DataSettings } from "@/features/settings/sections/DataSettings";
 
 type SectionId =
@@ -18,6 +20,7 @@ type SectionId =
   | "schedule"
   | "presence"
   | "categories"
+  | "templates"
   | "data";
 
 const SECTIONS: {
@@ -29,6 +32,7 @@ const SECTIONS: {
   { id: "schedule", label: "Orario di lavoro", Icon: IconClock },
   { id: "presence", label: "Presenze", Icon: IconBuilding },
   { id: "categories", label: "Categorie & colori", Icon: IconTag },
+  { id: "templates", label: "Template attività", Icon: IconBookmark },
   { id: "data", label: "Dati", Icon: IconDatabase },
 ];
 
@@ -81,6 +85,7 @@ export function SettingsView() {
           {active === "schedule" && <ScheduleSettings />}
           {active === "presence" && <PresenceSettings />}
           {active === "categories" && <CategoriesSettings />}
+          {active === "templates" && <TemplatesSettings />}
           {active === "data" && <DataSettings />}
         </div>
       </div>

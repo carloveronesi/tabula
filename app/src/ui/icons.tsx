@@ -201,6 +201,13 @@ export const IconTag = (p: IconProps) => (
   </Svg>
 );
 
+/** Segnalibro: template attività salvati. */
+export const IconBookmark = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" />
+  </Svg>
+);
+
 /** Database: i dati locali. */
 export const IconDatabase = (p: IconProps) => (
   <Svg {...p}>

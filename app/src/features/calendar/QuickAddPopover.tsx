@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
+import type { ActivityTemplate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
+import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
 import { entryColor } from "@/domain/colors";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
+import { useTemplateStore } from "@/store/templates";
 import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import { Button, cn, Combobox } from "@/ui";
@@ -45,12 +48,15 @@ export function QuickAddPopover() {
   const notify = useToastStore((s) => s.notify);
   const clients = useInventoryStore((s) => s.clients);
   const saveClient = useInventoryStore((s) => s.saveClient);
+  const templates = useTemplateStore((s) => s.templates);
   const clientColors = useSettingsStore((s) => s.settings.clientColors);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
+  // Template applicato: porta tipo/progetto/sottotipo (non visibili qui) al salvataggio.
+  const [tpl, setTpl] = useState<ActivityTemplate | null>(null);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -59,6 +65,7 @@ export function QuickAddPopover() {
     if (!quickAdd) return;
     setTitle("");
     setClientId(null);
+    setTpl(null);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
     return () => {
@@ -126,10 +133,18 @@ export function QuickAddPopover() {
     setClientId(id);
   }
 
+  function applyTpl(t: ActivityTemplate) {
+    setTpl(t);
+    setTitle(t.title);
+    setClientId(t.clientId);
+    inputRef.current?.focus();
+  }
+
   async function save() {
     if (!valid) return;
+    const base = emptyDraft(date, startMin, endMin);
     const draft = {
-      ...emptyDraft(date, startMin, endMin),
+      ...(tpl ? applyTemplate(base, tpl) : base),
       title,
       clientId,
     };
@@ -141,7 +156,16 @@ export function QuickAddPopover() {
   }
 
   function moreDetails() {
-    openCreate({ date, startMin, endMin, title, clientId });
+    openCreate({
+      date,
+      startMin,
+      endMin,
+      title,
+      clientId,
+      type: tpl?.type,
+      projectId: tpl?.projectId,
+      subtypeId: tpl?.subtypeId,
+    });
   }
 
   return (
@@ -211,6 +235,27 @@ export function QuickAddPopover() {
           />
         )}
       </div>
+
+      {templates.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {templates.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => applyTpl(t)}
+              className={cn(
+                "inline-flex h-7 max-w-full items-center truncate rounded-pill border px-2.5 text-xs",
+                "transition-colors duration-[var(--dur-fast)]",
+                tpl?.id === t.id
+                  ? "border-primary bg-primary-wash text-accent"
+                  : "border-line text-muted hover:border-line-strong hover:text-ink",
+              )}
+            >
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mt-3.5 flex items-center justify-between gap-2 border-t border-line pt-3">
         <Button variant="ghost" size="sm" onClick={moreDetails}>

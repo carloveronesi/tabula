@@ -5,9 +5,11 @@ import {
   firstFreeRange,
   duplicateEntry as buildDuplicate,
 } from "@/domain/duplicate";
+import { templateFromEntry } from "@/domain/activityTemplate";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
+import { useTemplateStore } from "@/store/templates";
 import { useToastStore } from "@/store/toast";
 
 /**
@@ -56,6 +58,16 @@ export async function duplicateEntry(entry: Entry): Promise<boolean> {
     action: { label: "Annulla", run: () => void undo() },
   });
   return true;
+}
+
+/** Salva l'attività come template, riusabile dai chip della creazione rapida. */
+export async function saveAsTemplate(entry: Entry): Promise<void> {
+  await useTemplateStore
+    .getState()
+    .saveTemplate(templateFromEntry(entry, nanoid(), Date.now()));
+  useToastStore
+    .getState()
+    .notify("Template salvato — lo trovi nella creazione rapida");
 }
 
 /** Elimina l'attività, con possibilità di annullare dal toast. */
