@@ -375,7 +375,21 @@ export function EntryEditor() {
                 label="Tipo"
                 options={TYPES}
                 value={draft.type}
-                onChange={(type) => patch({ type, subtypeId: null })}
+                onChange={(type) =>
+                  patch(
+                    type === "client"
+                      ? { type, subtypeId: null }
+                      : {
+                          // Solo le attività su cliente hanno cliente/referenti:
+                          // cambiando tipo si azzerano per non lasciare dati orfani.
+                          type,
+                          subtypeId: null,
+                          clientId: null,
+                          projectId: null,
+                          contactIds: [],
+                        },
+                  )
+                }
               />
             </Field>
 
@@ -434,17 +448,24 @@ export function EntryEditor() {
               })}
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Cliente">
-                <Combobox
-                  label="Cliente"
-                  placeholder="Cerca o crea…"
-                  options={clientOptions}
-                  value={draft.clientId}
-                  onChange={(id) => patch({ clientId: id, projectId: null })}
-                  onCreate={(name) => void createClient(name)}
-                />
-              </Field>
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-3",
+                draft.type === "client" && "sm:grid-cols-2",
+              )}
+            >
+              {draft.type === "client" && (
+                <Field label="Cliente">
+                  <Combobox
+                    label="Cliente"
+                    placeholder="Cerca o crea…"
+                    options={clientOptions}
+                    value={draft.clientId}
+                    onChange={(id) => patch({ clientId: id, projectId: null })}
+                    onCreate={(name) => void createClient(name)}
+                  />
+                </Field>
+              )}
               <Field label="Progetto">
                 <Combobox
                   label="Progetto"
@@ -515,7 +536,8 @@ export function EntryEditor() {
               </div>
             </Field>
 
-            {(draft.clientId || selectedContacts.length > 0) && (
+            {draft.type === "client" &&
+              (draft.clientId || selectedContacts.length > 0) && (
               <Field label="Referenti">
                 <div className="space-y-2">
                   {selectedContacts.length > 0 && (

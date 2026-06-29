@@ -184,3 +184,35 @@ export const IconBriefcase = (p: IconProps) => (
     <path d="M3 13h18" />
   </Svg>
 );
+
+/** Orologio: orario di lavoro. */
+export const IconClock = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 8v4l2.5 2" />
+  </Svg>
+);
+
+/** Etichetta: categorie & colori. */
+export const IconTag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 13l7-7a2 2 0 0 1 1.4-.6H18a2 2 0 0 1 2 2v5.6a2 2 0 0 1-.6 1.4l-7 7a2 2 0 0 1-2.8 0l-4.6-4.6a2 2 0 0 1 0-2.8z" />
+    <circle cx="15.5" cy="8.5" r="1.1" />
+  </Svg>
+);
+
+/** Segnalibro: template attività salvati. */
+export const IconBookmark = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" />
+  </Svg>
+);
+
+/** Database: i dati locali. */
+export const IconDatabase = (p: IconProps) => (
+  <Svg {...p}>
+    <ellipse cx="12" cy="6" rx="7" ry="3" />
+    <path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6" />
+    <path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" />
+  </Svg>
+);
