@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { cn } from "@/ui";
+import {
+  IconSettings,
+  IconClock,
+  IconBuilding,
+  IconTag,
+  IconDatabase,
+} from "@/ui/icons";
 import { GeneralSettings } from "@/features/settings/sections/GeneralSettings";
 import { ScheduleSettings } from "@/features/settings/sections/ScheduleSettings";
 import { PresenceSettings } from "@/features/settings/sections/PresenceSettings";
@@ -13,12 +20,16 @@ type SectionId =
   | "categories"
   | "data";
 
-const SECTIONS: { id: SectionId; label: string }[] = [
-  { id: "general", label: "Generale" },
-  { id: "schedule", label: "Orario di lavoro" },
-  { id: "presence", label: "Presenze" },
-  { id: "categories", label: "Categorie & colori" },
-  { id: "data", label: "Dati" },
+const SECTIONS: {
+  id: SectionId;
+  label: string;
+  Icon: ComponentType<{ size?: number }>;
+}[] = [
+  { id: "general", label: "Generale", Icon: IconSettings },
+  { id: "schedule", label: "Orario di lavoro", Icon: IconClock },
+  { id: "presence", label: "Presenze", Icon: IconBuilding },
+  { id: "categories", label: "Categorie & colori", Icon: IconTag },
+  { id: "data", label: "Dati", Icon: IconDatabase },
 ];
 
 /**
@@ -51,13 +62,14 @@ export function SettingsView() {
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => setActive(s.id)}
                 className={cn(
-                  "whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm",
+                  "flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm",
                   "transition-[background-color,color] duration-[var(--dur-fast)] ease-out",
                   isActive
                     ? "bg-primary-wash font-medium text-accent"
                     : "text-muted hover:bg-raised hover:text-ink",
                 )}
               >
+                <s.Icon size={16} />
                 {s.label}
               </button>
             );
