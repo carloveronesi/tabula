@@ -78,11 +78,19 @@ export function QuickAddPopover() {
   // chiudiamo invece di lasciarlo "appeso" nel vuoto.
   useEffect(() => {
     if (!quickAdd) return;
+    // Chiudi solo se la pagina si sposta davvero (l'ancora diventa stale). Ignora
+    // gli scroll spuri che non muovono la finestra: input del titolo che trabocca,
+    // lista del cliente, scroll-into-view del focus sul combobox.
+    const x0 = window.scrollX;
+    const y0 = window.scrollY;
+    const onScroll = () => {
+      if (window.scrollX !== x0 || window.scrollY !== y0) closeQuickAdd();
+    };
     const close = () => closeQuickAdd();
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", close);
     return () => {
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [quickAdd, closeQuickAdd]);
@@ -100,14 +108,16 @@ export function QuickAddPopover() {
     return () => document.removeEventListener("keydown", onKey);
   }, [quickAdd, closeQuickAdd]);
 
-  // Click fuori chiude.
+  // Click fuori chiude. In fase di cattura: un click su un elemento che si rimuove
+  // da sé (es. l'opzione del dropdown cliente, che chiude la lista) sarebbe già
+  // staccato dal DOM nella fase di bubble e verrebbe scambiato per "fuori".
   useEffect(() => {
     if (!quickAdd) return;
     const onDown = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) closeQuickAdd();
     };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
   }, [quickAdd, closeQuickAdd]);
 
   const clientOptions = useMemo(

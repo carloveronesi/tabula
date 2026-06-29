@@ -196,12 +196,23 @@ describe("QuickAddPopover", () => {
     expect(useEditorStore.getState().quickAdd).toBeNull();
   });
 
-  it("uno scroll chiude il popover (l'ancora diventa stale)", () => {
+  it("uno scroll che sposta la pagina chiude il popover (l'ancora diventa stale)", () => {
     openSlot();
     render(<QuickAddPopover />);
 
+    window.scrollY = 120;
     fireEvent.scroll(window);
+    window.scrollY = 0;
     expect(useEditorStore.getState().quickAdd).toBeNull();
+  });
+
+  it("uno scroll spurio che non sposta la pagina non chiude il popover", () => {
+    openSlot();
+    render(<QuickAddPopover />);
+
+    // scroll interno (es. lista del cliente, focus-into-view) senza muovere la finestra
+    fireEvent.scroll(window);
+    expect(useEditorStore.getState().quickAdd).not.toBeNull();
   });
 
   it("un resize della finestra chiude il popover", () => {
