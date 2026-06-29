@@ -23,6 +23,7 @@ import { EntryEditor } from "@/features/calendar/EntryEditor";
 import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { QuickAddPopover } from "@/features/calendar/QuickAddPopover";
 import { TeamsImportModal } from "@/features/calendar/import/TeamsImportModal";
+import { CalendarImportModal } from "@/features/calendar/import/CalendarImportModal";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
@@ -63,6 +64,7 @@ export function AppShell() {
   const showDetail = useEditorStore((s) => s.showDetail);
   const openQuickAdd = useEditorStore((s) => s.openQuickAdd);
   const openTeamsImport = useEditorStore((s) => s.openTeamsImport);
+  const openCalendarImport = useEditorStore((s) => s.openCalendarImport);
   const clipboard = useEditorStore((s) => s.clipboard);
 
   const canPaste = clipboard !== null;
@@ -219,6 +221,7 @@ export function AppShell() {
                 }
                 onPaste={canPaste ? () => void pasteEntry() : undefined}
                 onImportCalls={() => openTeamsImport(dayKey)}
+                onImportCalendar={() => openCalendarImport(dayKey)}
                 presenceEnabled={settings.presenceTracking.enabled}
                 location={locations[dayKey] ?? null}
                 onSetLocation={(loc) => void setLocation(dayKey, loc)}
@@ -289,6 +292,7 @@ export function AppShell() {
       <EntryDetail />
       <QuickAddPopover />
       <TeamsImportModal />
+      <CalendarImportModal />
       <Toaster />
     </div>
   );

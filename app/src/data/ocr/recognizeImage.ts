@@ -23,8 +23,14 @@ const paths = {
  * Pre-processa l'immagine per l'OCR: scala di grigi, upscale e — quando lo sfondo
  * è scuro (cronologia Teams in tema scuro) — inversione, così Tesseract vede
  * testo scuro su chiaro. Ritorna un canvas pronto da riconoscere.
+ *
+ * L'upscale è adattivo: 3× per le immagini piccole (vista settimana, testo
+ * minuto), 2× per quelle già grandi, con un tetto sui pixel totali per non far
+ * esplodere memoria/tempo. Più pixel = OCR più pulito sul testo fino.
  */
-function preprocess(bitmap: ImageBitmap, scale = 2): HTMLCanvasElement {
+function preprocess(bitmap: ImageBitmap): HTMLCanvasElement {
+  const px = bitmap.width * bitmap.height;
+  const scale = px * 9 <= 30_000_000 ? 3 : px * 4 <= 30_000_000 ? 2 : 1;
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width * scale;
   canvas.height = bitmap.height * scale;
@@ -51,15 +57,31 @@ function preprocess(bitmap: ImageBitmap, scale = 2): HTMLCanvasElement {
   return canvas;
 }
 
+/** Una parola riconosciuta col suo riquadro, in pixel del canvas pre-processato. */
+export interface OcrWord {
+  text: string;
+  /** Confidenza 0..100 di Tesseract: utile per scartare icone/barre lette male. */
+  confidence: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Riconoscimento con geometria: parole + testo grezzo + dimensioni del canvas. */
+export interface OcrLayout {
+  words: OcrWord[];
+  text: string;
+  width: number;
+  height: number;
+}
+
 /**
- * Riconosce il testo di un'immagine (file o blob) in italiano. `onProgress`
- * riceve l'avanzamento per la UI. Il worker viene creato e terminato a ogni
- * chiamata: l'uso è occasionale, non vale tenerlo vivo.
+ * Esegue l'OCR su un'immagine pre-processata e ritorna la pagina Tesseract con le
+ * dimensioni del canvas. Worker creato e terminato a ogni chiamata: uso
+ * occasionale, non vale tenerlo vivo.
  */
-export async function recognizeImage(
-  source: Blob,
-  onProgress?: (p: OcrProgress) => void,
-): Promise<string> {
+async function runOcr(source: Blob, onProgress?: (p: OcrProgress) => void) {
   const { createWorker } = await import("tesseract.js");
   const bitmap = await createImageBitmap(source);
   const canvas = preprocess(bitmap);
@@ -76,9 +98,55 @@ export async function recognizeImage(
       : undefined,
   });
   try {
-    const { data } = await worker.recognize(canvas);
-    return data.text;
+    // tesseract.js v6+: `recognize` ritorna solo il testo se non si chiede altro.
+    // `blocks: true` serve per i riquadri (bbox) di righe/parole, che usa l'import
+    // dal calendario per ricavare gli orari dalla geometria.
+    const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
+    return { page: data, width: canvas.width, height: canvas.height };
   } finally {
     await worker.terminate();
   }
+}
+
+/** Riconosce il testo di un'immagine (file o blob) in italiano. */
+export async function recognizeImage(
+  source: Blob,
+  onProgress?: (p: OcrProgress) => void,
+): Promise<string> {
+  const { page } = await runOcr(source, onProgress);
+  return page.text;
+}
+
+/**
+ * Come `recognizeImage`, ma conserva la geometria a livello di *parola*: ogni
+ * parola col suo riquadro. Serve a chi legge un layout a griglia (il calendario),
+ * dove Tesseract fonde in un'unica "riga" testo di colonne diverse: solo i
+ * riquadri delle singole parole restano fedeli alla posizione reale.
+ */
+export async function recognizeLayout(
+  source: Blob,
+  onProgress?: (p: OcrProgress) => void,
+): Promise<OcrLayout> {
+  const { page, width, height } = await runOcr(source, onProgress);
+  const words: OcrWord[] = [];
+  for (const block of page.blocks ?? []) {
+    for (const para of block.paragraphs) {
+      for (const line of para.lines) {
+        for (const word of line.words) {
+          const text = word.text.trim();
+          if (text) {
+            words.push({
+              text,
+              confidence: word.confidence,
+              x0: word.bbox.x0,
+              y0: word.bbox.y0,
+              x1: word.bbox.x1,
+              y1: word.bbox.y1,
+            });
+          }
+        }
+      }
+    }
+  }
+  return { words, text: page.text, width, height };
 }

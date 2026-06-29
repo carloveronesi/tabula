@@ -48,6 +48,8 @@ interface EditorState {
   clipboard: Entry | null;
   /** Import OCR chiamate Teams: giorno di riferimento; `null` = chiuso. */
   teamsImportDay: ISODate | null;
+  /** Import OCR dal calendario: giorno in cui creare gli eventi; `null` = chiuso. */
+  calendarImportDay: ISODate | null;
 
   openCreate: (seed: EditorSeed) => void;
   openEdit: (entry: Entry) => void;
@@ -59,6 +61,8 @@ interface EditorState {
   copyEntry: (entry: Entry) => void;
   openTeamsImport: (day: ISODate) => void;
   closeTeamsImport: () => void;
+  openCalendarImport: (day: ISODate) => void;
+  closeCalendarImport: () => void;
 }
 
 /**
@@ -73,6 +77,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   detail: null,
   clipboard: null,
   teamsImportDay: null,
+  calendarImportDay: null,
 
   openCreate: (seed) =>
     set({ open: true, base: null, seed, detail: null, quickAdd: null }),
@@ -86,4 +91,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   copyEntry: (entry) => set({ clipboard: entry }),
   openTeamsImport: (day) => set({ teamsImportDay: day, quickAdd: null, detail: null }),
   closeTeamsImport: () => set({ teamsImportDay: null }),
+  openCalendarImport: (day) =>
+    set({ calendarImportDay: day, quickAdd: null, detail: null }),
+  closeCalendarImport: () => set({ calendarImportDay: null }),
 }));
