@@ -361,6 +361,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function ProjectsView() {
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
+  const contacts = useInventoryStore((s) => s.contacts);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -398,6 +399,11 @@ export function ProjectsView() {
 
   const selected = projects.find((p) => p.id === selectedId) ?? null;
   const sel = selected ? stats.get(selected.id) : undefined;
+  const selRefs = selected
+    ? selected.contactIds
+        .map((id) => contacts.find((k) => k.id === id)?.name)
+        .filter((n): n is string => !!n)
+    : [];
   const estMin = (selected?.estimatedHours ?? 0) * 60;
   const progressPct =
     estMin > 0 ? Math.min(100, Math.round(((sel?.totalMin ?? 0) / estMin) * 100)) : 0;
@@ -481,6 +487,11 @@ export function ProjectsView() {
                   "Cliente")
                 : "Progetto interno"}
             </p>
+            {selRefs.length > 0 && (
+              <p className="text-sm text-muted">
+                Referenti: <span className="text-ink">{selRefs.join(", ")}</span>
+              </p>
+            )}
             {(selected.startDate || selected.endDate) && (
               <p className="tnum text-xs text-muted">
                 Pianificato:{" "}
