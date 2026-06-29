@@ -37,7 +37,7 @@ export function NowLine({
     <div
       data-testid="now-line"
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
+      className="pointer-events-none absolute inset-x-0 z-10 flex -translate-y-1/2 items-center"
       style={{ top: offset * slotHeight + band }}
     >
       {withDot && (
