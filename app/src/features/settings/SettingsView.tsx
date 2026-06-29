@@ -6,6 +6,7 @@ import {
   IconBuilding,
   IconTag,
   IconBookmark,
+  IconUsers,
   IconDatabase,
 } from "@/ui/icons";
 import { GeneralSettings } from "@/features/settings/sections/GeneralSettings";
@@ -13,6 +14,7 @@ import { ScheduleSettings } from "@/features/settings/sections/ScheduleSettings"
 import { PresenceSettings } from "@/features/settings/sections/PresenceSettings";
 import { CategoriesSettings } from "@/features/settings/sections/CategoriesSettings";
 import { TemplatesSettings } from "@/features/settings/sections/TemplatesSettings";
+import { PeopleSettings } from "@/features/settings/sections/PeopleSettings";
 import { DataSettings } from "@/features/settings/sections/DataSettings";
 
 type SectionId =
@@ -21,6 +23,7 @@ type SectionId =
   | "presence"
   | "categories"
   | "templates"
+  | "people"
   | "data";
 
 const SECTIONS: {
@@ -33,6 +36,7 @@ const SECTIONS: {
   { id: "presence", label: "Presenze", Icon: IconBuilding },
   { id: "categories", label: "Categorie & colori", Icon: IconTag },
   { id: "templates", label: "Template attività", Icon: IconBookmark },
+  { id: "people", label: "Persone & referenti", Icon: IconUsers },
   { id: "data", label: "Dati", Icon: IconDatabase },
 ];
 
@@ -86,6 +90,7 @@ export function SettingsView() {
           {active === "presence" && <PresenceSettings />}
           {active === "categories" && <CategoriesSettings />}
           {active === "templates" && <TemplatesSettings />}
+          {active === "people" && <PeopleSettings />}
           {active === "data" && <DataSettings />}
         </div>
       </div>

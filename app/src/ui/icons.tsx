@@ -185,6 +185,25 @@ export const IconBriefcase = (p: IconProps) => (
   </Svg>
 );
 
+/** Persone: anagrafiche di collaboratori e contatti. */
+export const IconUsers = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="9" cy="8" r="3" />
+    <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+    <path d="M16 5.5a3 3 0 0 1 0 5.5" />
+    <path d="M17 14.5a5.5 5.5 0 0 1 3.5 5.5" />
+  </Svg>
+);
+
+/** Unione: fonde due record in uno. */
+export const IconMerge = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 20V10l-3 3M7 10l3 3" />
+    <path d="M7 10c0-3 2-6 7-6" />
+    <path d="M14 4h6M17 1l3 3-3 3" />
+  </Svg>
+);
+
 /** Orologio: orario di lavoro. */
 export const IconClock = (p: IconProps) => (
   <Svg {...p}>

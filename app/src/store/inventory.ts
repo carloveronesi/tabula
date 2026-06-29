@@ -10,6 +10,8 @@ import {
   putContact,
   putPerson,
   putProject,
+  repointContact,
+  repointPerson,
 } from "@/data/repositories";
 import { persist } from "@/store/persist";
 
@@ -24,6 +26,12 @@ interface InventoryState {
   saveClient: (client: Client) => Promise<void>;
   savePerson: (person: Person) => Promise<void>;
   saveContact: (contact: Contact) => Promise<void>;
+  /** Unisce una persona in un'altra (riassegna i riferimenti) ed elimina la prima. */
+  mergePerson: (fromId: string, toId: string) => Promise<void>;
+  /** Elimina una persona e la toglie da attività e team. */
+  removePerson: (id: string) => Promise<void>;
+  mergeContact: (fromId: string, toId: string) => Promise<void>;
+  removeContact: (id: string) => Promise<void>;
 }
 
 /**
@@ -77,5 +85,25 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       await putContact(contact);
       const rest = get().contacts.filter((k) => k.id !== contact.id);
       set({ contacts: [...rest, contact] });
+    }),
+  mergePerson: (fromId, toId) =>
+    persist("Unione persone", async () => {
+      await repointPerson(fromId, toId);
+      set({ people: get().people.filter((p) => p.id !== fromId) });
+    }),
+  removePerson: (id) =>
+    persist("Eliminazione persona", async () => {
+      await repointPerson(id, null);
+      set({ people: get().people.filter((p) => p.id !== id) });
+    }),
+  mergeContact: (fromId, toId) =>
+    persist("Unione contatti", async () => {
+      await repointContact(fromId, toId);
+      set({ contacts: get().contacts.filter((k) => k.id !== fromId) });
+    }),
+  removeContact: (id) =>
+    persist("Eliminazione contatto", async () => {
+      await repointContact(id, null);
+      set({ contacts: get().contacts.filter((k) => k.id !== id) });
     }),
 }));
