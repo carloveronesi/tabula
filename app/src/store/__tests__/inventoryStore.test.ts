@@ -2,7 +2,30 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/data/db";
 import { useInventoryStore } from "@/store/inventory";
-import type { Client, Contact, Person, Project } from "@/data/types";
+import type { Client, Contact, Entry, Person, Project } from "@/data/types";
+
+function entry(id: string, over: Partial<Entry> = {}): Entry {
+  return {
+    id,
+    startsAt: "2026-01-01T09:00:00",
+    endsAt: "2026-01-01T10:00:00",
+    type: "client",
+    projectId: "p1",
+    clientId: "c1",
+    subtypeId: null,
+    title: "",
+    collaboratorIds: [],
+    contactIds: [],
+    notes: "",
+    blockers: "",
+    nextSteps: "",
+    links: [],
+    milestone: null,
+    createdAt: 0,
+    updatedAt: 0,
+    ...over,
+  };
+}
 
 function client(id: string, name: string): Client {
   return { id, name, color: null, createdAt: 0 };
@@ -39,6 +62,7 @@ beforeEach(async () => {
   await db.projects.clear();
   await db.people.clear();
   await db.contacts.clear();
+  await db.entries.clear();
   useInventoryStore.setState({ clients: [], projects: [], people: [], contacts: [] });
 });
 
@@ -137,5 +161,46 @@ describe("useInventoryStore", () => {
     expect(contacts).toHaveLength(1);
     expect(contacts[0]).toMatchObject({ name: "Mario Rossi", role: "PM" });
     expect(await db.contacts.get("k1")).toMatchObject({ name: "Mario Rossi" });
+  });
+
+  it("mergePerson riassegna i riferimenti (entry + team) ed elimina la sorgente", async () => {
+    await db.people.bulkPut([person("u1", "Mario"), person("u2", "M. Rossi")]);
+    await db.projects.put({ ...project("p1", "c1", "Sito"), teamIds: ["u1", "u2"] });
+    await db.entries.put(entry("e1", { collaboratorIds: ["u1"] }));
+    useInventoryStore.setState({ people: [person("u1", "Mario"), person("u2", "M. Rossi")] });
+
+    await useInventoryStore.getState().mergePerson("u1", "u2");
+
+    expect(useInventoryStore.getState().people.map((p) => p.id)).toEqual(["u2"]);
+    expect(await db.people.get("u1")).toBeUndefined();
+    expect((await db.entries.get("e1"))!.collaboratorIds).toEqual(["u2"]);
+    // dedup: il team aveva sia u1 sia u2 → resta solo u2.
+    expect((await db.projects.get("p1"))!.teamIds).toEqual(["u2"]);
+  });
+
+  it("removePerson toglie la persona da attività e team", async () => {
+    await db.people.put(person("u1", "Mario"));
+    await db.projects.put({ ...project("p1", "c1", "Sito"), teamIds: ["u1", "u9"] });
+    await db.entries.put(entry("e1", { collaboratorIds: ["u1", "u9"] }));
+    useInventoryStore.setState({ people: [person("u1", "Mario")] });
+
+    await useInventoryStore.getState().removePerson("u1");
+
+    expect(useInventoryStore.getState().people).toEqual([]);
+    expect((await db.entries.get("e1"))!.collaboratorIds).toEqual(["u9"]);
+    expect((await db.projects.get("p1"))!.teamIds).toEqual(["u9"]);
+  });
+
+  it("removeContact toglie il contatto da attività e progetti", async () => {
+    await db.contacts.put(contact("k1", "c1", "Anna"));
+    await db.projects.put({ ...project("p1", "c1", "Sito"), contactIds: ["k1"] });
+    await db.entries.put(entry("e1", { contactIds: ["k1", "k2"] }));
+    useInventoryStore.setState({ contacts: [contact("k1", "c1", "Anna")] });
+
+    await useInventoryStore.getState().removeContact("k1");
+
+    expect(useInventoryStore.getState().contacts).toEqual([]);
+    expect((await db.entries.get("e1"))!.contactIds).toEqual(["k2"]);
+    expect((await db.projects.get("p1"))!.contactIds).toEqual([]);
   });
 });

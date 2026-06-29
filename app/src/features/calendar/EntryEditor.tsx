@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { EntryType } from "@/data/types";
+import type { Entry, EntryType } from "@/data/types";
 import {
   applyDraft,
   draftFromEntry,
@@ -10,7 +10,11 @@ import {
 } from "@/domain/entryDraft";
 import { conflictsOnDay } from "@/domain/conflict";
 import { dayPresets, minutesToLabel, outsideWorkHours } from "@/domain/slots";
-import { collaboratorCandidateIds } from "@/domain/collaborators";
+import {
+  collaboratorCandidateIds,
+  rankCandidatesByHistory,
+} from "@/domain/collaborators";
+import { allEntries } from "@/data/repositories";
 import { useEditorStore, type EditorSeed } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -110,6 +114,15 @@ export function EntryEditor() {
     setConfirmingDelete(false);
   }, [open, base, seed]);
 
+  // Archivio completo: serve solo a ordinare i collaboratori per frequenza.
+  // Caricato all'apertura. ponytail: scan dell'intera tabella entries a ogni
+  // apertura; se diventa pesante, cache in uno store o indice per cliente.
+  const [archive, setArchive] = useState<Entry[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    void allEntries().then(setArchive);
+  }, [open]);
+
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
   const subtypeOptions = useMemo(() => {
     const list =
@@ -167,22 +180,27 @@ export function EntryEditor() {
       d[key].includes(id) ? d : { ...d, [key]: [...d[key], id] },
     );
 
-  // Collaboratori: candidati dai team dei progetti (cliente+progetto).
+  // Collaboratori: candidati dai team dei progetti (cliente+progetto),
+  // riordinati per frequenza di collaborazione reale sullo storico.
   const candidateIds = useMemo(
-    () => collaboratorCandidateIds(projects, draft.projectId, draft.clientId),
-    [projects, draft.projectId, draft.clientId],
+    () =>
+      rankCandidatesByHistory(
+        collaboratorCandidateIds(projects, draft.projectId, draft.clientId),
+        archive,
+        draft.projectId,
+        draft.clientId,
+      ),
+    [projects, archive, draft.projectId, draft.clientId],
   );
   const selectedCollaborators = draft.collaboratorIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
   const collaboratorAddOptions = useMemo(
     () =>
-      people
-        .filter(
-          (p) =>
-            candidateIds.includes(p.id) &&
-            !draft.collaboratorIds.includes(p.id),
-        )
+      candidateIds
+        .filter((id) => !draft.collaboratorIds.includes(id))
+        .map((id) => people.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => !!p)
         .map((p) => ({ id: p.id, label: p.name })),
     [people, candidateIds, draft.collaboratorIds],
   );

@@ -3,6 +3,7 @@
  * Le query usano l'indice temporale `startsAt`.
  */
 import { db } from "@/data/db";
+import { remapIds } from "@/domain/refs";
 import type {
   ActivityTemplate,
   Client,
@@ -61,6 +62,49 @@ export function putPerson(person: Person): Promise<string> {
 
 export function putContact(contact: Contact): Promise<string> {
   return db.contacts.put(contact);
+}
+
+/**
+ * Riassegna i riferimenti a una persona prima di eliminarne il record:
+ * `to` = id (unione in un'altra persona) oppure `null` (eliminazione). Tocca
+ * `entry.collaboratorIds` e `project.teamIds`; riscrive solo i record cambiati.
+ */
+export async function repointPerson(
+  from: string,
+  to: string | null,
+): Promise<void> {
+  await db.transaction("rw", db.entries, db.projects, db.people, async () => {
+    for (const e of await db.entries.toArray()) {
+      const next = remapIds(e.collaboratorIds, from, to);
+      if (next !== e.collaboratorIds)
+        await db.entries.put({ ...e, collaboratorIds: next });
+    }
+    for (const p of await db.projects.toArray()) {
+      const next = remapIds(p.teamIds, from, to);
+      if (next !== p.teamIds) await db.projects.put({ ...p, teamIds: next });
+    }
+    await db.people.delete(from);
+  });
+}
+
+/** Come `repointPerson` ma per i contatti: `entry.contactIds`, `project.contactIds`. */
+export async function repointContact(
+  from: string,
+  to: string | null,
+): Promise<void> {
+  await db.transaction("rw", db.entries, db.projects, db.contacts, async () => {
+    for (const e of await db.entries.toArray()) {
+      const next = remapIds(e.contactIds, from, to);
+      if (next !== e.contactIds)
+        await db.entries.put({ ...e, contactIds: next });
+    }
+    for (const p of await db.projects.toArray()) {
+      const next = remapIds(p.contactIds, from, to);
+      if (next !== p.contactIds)
+        await db.projects.put({ ...p, contactIds: next });
+    }
+    await db.contacts.delete(from);
+  });
 }
 
 /** Tutti i progetti (la cascata filtra per cliente in memoria). */
