@@ -93,20 +93,31 @@ function ProjectEditor({
 
   const dirty = !projectEditableEqual(draft, editableOf(project));
 
-  const save = async () => {
-    const trimmed = draft.name.trim();
-    if (!trimmed) return;
-    const subtaskDefs = draft.subtaskDefs
+  const persist = async (over?: Partial<ProjectEditable>) => {
+    const merged = { ...draft, ...over };
+    const trimmed = merged.name.trim();
+    if (!trimmed) return false;
+    const subtaskDefs = merged.subtaskDefs
       .map((s) => ({ ...s, label: s.label.trim() }))
       .filter((s) => s.label);
-    const next: ProjectEditable = { ...draft, name: trimmed, subtaskDefs };
+    const next: ProjectEditable = { ...merged, name: trimmed, subtaskDefs };
     await saveProject({
       ...project,
       ...next,
       kind: next.clientId ? "client" : "internal",
     });
     setDraft(next);
-    notify("Progetto salvato");
+    return true;
+  };
+
+  const save = async () => {
+    if (await persist()) notify("Progetto salvato");
+  };
+
+  const toggleArchive = async () => {
+    const status = draft.status === "archived" ? "active" : "archived";
+    if (await persist({ status }))
+      notify(status === "archived" ? "Progetto archiviato" : "Progetto ripristinato");
   };
 
   const remove = async () => {
@@ -329,9 +340,14 @@ function ProjectEditor({
         <Button type="submit" variant="primary" disabled={!dirty || !draft.name.trim()}>
           Salva
         </Button>
-        <Button variant="danger" onClick={() => void remove()}>
-          Elimina
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => void toggleArchive()}>
+            {draft.status === "archived" ? "Ripristina" : "Archivia"}
+          </Button>
+          <Button variant="danger" onClick={() => void remove()}>
+            Elimina
+          </Button>
+        </div>
       </div>
     </form>
   );
