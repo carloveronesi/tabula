@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/ui/cn";
 import { inputClasses } from "@/ui/Input";
+import { IconChevronDown } from "@/ui/icons";
 
 export interface ComboboxOption {
   id: string;
@@ -120,7 +121,16 @@ export function Combobox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className={inputClasses}
+        className={cn(inputClasses, "pr-9")}
+      />
+      <IconChevronDown
+        size={15}
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted",
+          "transition-transform duration-[var(--dur-fast)]",
+          open && "rotate-180",
+        )}
       />
       {open && (
         <ul
