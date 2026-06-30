@@ -1,5 +1,6 @@
 import type { Entry, EntryType } from "@/data/types";
-import { durationMinutes } from "@/domain/time";
+import { workedMinutes } from "@/domain/time";
+import type { WorkHours } from "@/domain/slots";
 import { entryColor, type ColorMaps } from "@/domain/colors";
 
 const TYPE_LABEL: Record<EntryType, string> = {
@@ -64,12 +65,13 @@ export function dayBreakdown(
   entries: Entry[],
   maps: ColorMaps,
   names: BreakdownNames,
+  wh: WorkHours,
 ): DayBreakdown {
   let totalMin = 0;
   const groups = new Map<string, BreakdownRow>();
 
   for (const e of entries) {
-    const min = durationMinutes(e);
+    const min = workedMinutes(e, wh);
     totalMin += min;
 
     let key: string;

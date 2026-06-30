@@ -22,6 +22,7 @@ import {
   IconButton,
   Icons,
   Input,
+  Markdown,
   Textarea,
 } from "@/ui";
 
@@ -495,6 +496,7 @@ export function ProjectsView() {
   const contacts = useInventoryStore((s) => s.contacts);
   const people = useInventoryStore((s) => s.people);
   const clientColors = useSettingsStore((s) => s.settings.clientColors);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -505,7 +507,7 @@ export function ProjectsView() {
     void allEntries().then(setEntries);
   }, []);
 
-  const stats = useMemo(() => aggregateByProject(entries), [entries]);
+  const stats = useMemo(() => aggregateByProject(entries, workHours), [entries, workHours]);
 
   const colorOf = (clientId: Id | null) =>
     clientId ? (clientColors[clientId] ?? colorFromKey(clientId)) : INTERNAL_COLOR;
@@ -846,17 +848,17 @@ export function ProjectsView() {
               {selected.description && (
                 <div className={CARD}>
                   <div className={CARD_LABEL}>Descrizione</div>
-                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                  <Markdown className="mt-2.5 text-sm leading-relaxed text-muted">
                     {selected.description}
-                  </p>
+                  </Markdown>
                 </div>
               )}
               {selected.objectives && (
                 <div className={CARD}>
                   <div className={CARD_LABEL}>Obiettivi</div>
-                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                  <Markdown className="mt-2.5 text-sm leading-relaxed text-muted">
                     {selected.objectives}
-                  </p>
+                  </Markdown>
                 </div>
               )}
             </div>

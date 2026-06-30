@@ -183,8 +183,9 @@ app/src/
 ├── domain/      logica pura (nessun I/O, nessun React) — test-driven
 ├── store/       stato applicativo (Zustand)
 ├── features/    UI per dominio (calendar, projects, todo, summary,
-│                presenze/settings, search, layout)
+│                settings, search, layout)
 ├── ui/          primitivi UI (Button, Modal, Popover, Combobox, …)
+├── pwa/         registrazione service worker / install prompt
 └── styles/      token di design e configurazione Tailwind
 ```
 

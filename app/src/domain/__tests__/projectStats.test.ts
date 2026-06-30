@@ -29,6 +29,8 @@ function entry(
   };
 }
 
+const WH = { morningStart: 540, morningEnd: 780, afternoonStart: 840, afternoonEnd: 1080 };
+
 describe("aggregateByProject", () => {
   it("somma ore/conteggio e ricava primo/ultimo giorno per progetto", () => {
     const m = aggregateByProject([
@@ -36,7 +38,7 @@ describe("aggregateByProject", () => {
       entry("b", "p1", "2026-06-02T14:00:00", "2026-06-02T15:00:00"), // 60
       entry("c", "p2", "2026-04-01T09:00:00", "2026-04-01T09:30:00"), // 30
       entry("d", null, "2026-04-01T09:00:00", "2026-04-01T10:00:00"), // senza progetto
-    ]);
+    ], WH);
 
     expect(m.get("p1")).toEqual({
       totalMin: 180,
@@ -59,7 +61,7 @@ describe("aggregateByProject", () => {
       entry("b", "p1", "2026-02-01T09:00:00", "2026-02-01T10:00:00"), // più vecchia, ma dopo
       entry("c", "p1", "2026-08-15T09:00:00", "2026-08-15T10:00:00"), // più recente, in mezzo
       entry("d", "p1", "2026-03-10T09:00:00", "2026-03-10T10:00:00"),
-    ]);
+    ], WH);
 
     expect(m.get("p1")).toMatchObject({
       firstDate: "2026-02-01",
@@ -69,6 +71,6 @@ describe("aggregateByProject", () => {
   });
 
   it("vuoto → mappa vuota", () => {
-    expect(aggregateByProject([]).size).toBe(0);
+    expect(aggregateByProject([], WH).size).toBe(0);
   });
 });

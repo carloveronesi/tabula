@@ -217,8 +217,9 @@ export function MonthSummary({
   };
 
   const cov = report.coverage;
-  const clientMax = report.byClient[0]?.minutes ?? 0;
-  const otherMax = report.byOtherType[0]?.minutes ?? 0;
+  // Barre delle card in scala unica: quota sul tempo totale tracciato nel mese,
+  // così Clienti e Altre attività sono confrontabili e la barra = fetta del mese.
+  const total = report.totalMin;
 
   const empty =
     report.totalMin === 0 && !(showPresence && presence.workingDays > 0);
@@ -329,7 +330,7 @@ export function MonthSummary({
                   color={clientColor(c.clientId)}
                   label={clientName(c.clientId)}
                   minutes={c.minutes}
-                  max={clientMax}
+                  max={total}
                   subtypes={c.bySubtype}
                   subtypeLabel={(id) => subtypeLabel("client", id)}
                   filter={filter}
@@ -357,7 +358,7 @@ export function MonthSummary({
                   color={TYPE_DOT[t.type as Exclude<EntryType, "client">]}
                   label={TYPE_LABEL[t.type]}
                   minutes={t.minutes}
-                  max={otherMax}
+                  max={total}
                   subtypes={t.bySubtype}
                   subtypeLabel={(id) => subtypeLabel("internal", id)}
                   subtypeColor={t.type === "internal" ? internalColor : undefined}
