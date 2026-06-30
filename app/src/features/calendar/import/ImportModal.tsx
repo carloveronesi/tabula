@@ -21,6 +21,8 @@ export interface ImportChoice<R> {
   label: string;
   count: number;
   rows: R[];
+  /** Giorno risolto della colonna: scegliendola, vi si imposta l'import e la vista. */
+  day?: ISODate;
 }
 
 /** Esito di `process`: righe pronte, o più colonne tra cui far scegliere. */
@@ -278,6 +280,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
                   type="button"
                   onClick={() => {
                     setRows(c.rows);
+                    if (props.dayField && c.day) props.dayField.onChange(c.day);
                     setStage("review");
                   }}
                   className="rounded-lg border border-line bg-bg px-4 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:border-primary hover:bg-raised"

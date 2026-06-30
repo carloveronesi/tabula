@@ -11,6 +11,7 @@ import {
   eventToDraft,
   splitTitleAndPerson,
 } from "@/domain/calendar-import/eventDraft";
+import { resolveColumnDate } from "@/domain/calendar-import/resolveColumnDate";
 import { useUiStore } from "@/store";
 import { useEditorStore } from "@/store/editor";
 import { useInventoryStore } from "@/store/inventory";
@@ -52,8 +53,9 @@ export function CalendarImportModal() {
   const [targetDay, setTargetDay] = useState<ISODate>(day ?? isoDate(new Date()));
 
   if (!day) return null;
+  const anchor = day; // ristretto a ISODate dopo la guardia (per le closure sotto)
 
-  function rowsFromColumn(col: GridColumn): Row[] {
+  function rowsFromColumn(col: GridColumn, date: ISODate): Row[] {
     return col.events.map((e) => {
       const { title, match: person } = splitTitleAndPerson(
         e.title,
@@ -63,7 +65,7 @@ export function CalendarImportModal() {
       return {
         key: nanoid(),
         title: title || e.title,
-        date: targetDay,
+        date,
         startMin: e.startMin,
         durationMin: e.durationMin,
         matchValue: matchValueOf(person),
@@ -92,18 +94,24 @@ export function CalendarImportModal() {
       return {
         kind: "choose",
         rawText: layout.text,
-        choices: cols.map((c) => ({
-          label: c.label,
-          count: c.events.length,
-          rows: rowsFromColumn(c),
-        })),
+        choices: cols.map((c) => {
+          const date = resolveColumnDate(c.label, anchor);
+          return {
+            label: c.label,
+            count: c.events.length,
+            day: date,
+            rows: rowsFromColumn(c, date),
+          };
+        }),
       };
     }
-    return {
-      kind: "rows",
-      rawText: layout.text,
-      rows: cols.length === 1 ? rowsFromColumn(cols[0]) : [],
-    };
+    if (cols.length === 1) {
+      // Colonna unica: risolvi la sua data ed impostala (sposta anche la vista).
+      const date = resolveColumnDate(cols[0].label, anchor);
+      goToDay(date);
+      return { kind: "rows", rawText: layout.text, rows: rowsFromColumn(cols[0], date) };
+    }
+    return { kind: "rows", rawText: layout.text, rows: [] };
   }
 
   async function persist(rows: Row[]) {
