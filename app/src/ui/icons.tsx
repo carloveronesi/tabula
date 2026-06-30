@@ -93,6 +93,13 @@ export const IconPlus = (p: IconProps) => (
   </Svg>
 );
 
+export const IconEdit = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" />
+    <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+  </Svg>
+);
+
 export const IconChevronLeft = (p: IconProps) => (
   <Svg {...p}>
     <path d="m14 6-6 6 6 6" />

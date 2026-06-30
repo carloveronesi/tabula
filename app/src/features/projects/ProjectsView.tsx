@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { nanoid } from "nanoid";
 import type { Entry, Id, Project, ProjectStatus } from "@/data/types";
 import { aggregateByProject } from "@/domain/projectStats";
@@ -8,9 +8,11 @@ import {
   type ProjectEditable,
 } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
+import { colorFromKey, withAlpha } from "@/domain/colors";
 import { findByName } from "@/domain/dedupeName";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
+import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import {
   Button,
@@ -30,6 +32,25 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   archived: "Archiviato",
 };
 const STATUSES = Object.keys(STATUS_LABEL) as ProjectStatus[];
+
+// Colore della pastiglia di stato (decorativo, hex fissi: non sono ruoli del tema).
+const STATUS_COLOR: Record<ProjectStatus, string> = {
+  active: "#10b981",
+  completed: "#3b82f6",
+  paused: "#f59e0b",
+  archived: "#9aa1b2",
+};
+// ponytail: i progetti interni non hanno un cliente da cui ereditare il colore;
+// ambra fissa per il loro gruppo, come nel mockup.
+const INTERNAL_COLOR = "#f59e0b";
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
 const selectClasses =
   "h-9 w-full rounded border border-line bg-bg px-3 text-sm text-ink " +
@@ -75,9 +96,11 @@ const editableOf = (p: Project): ProjectEditable => ({
 function ProjectEditor({
   project,
   onDeleted,
+  onClose,
 }: {
   project: Project;
   onDeleted: () => void;
+  onClose: () => void;
 }) {
   const clients = useInventoryStore((s) => s.clients);
   const people = useInventoryStore((s) => s.people);
@@ -111,7 +134,10 @@ function ProjectEditor({
   };
 
   const save = async () => {
-    if (await persist()) notify("Progetto salvato");
+    if (await persist()) {
+      notify("Progetto salvato");
+      onClose();
+    }
   };
 
   const toggleArchive = async () => {
@@ -337,9 +363,14 @@ function ProjectEditor({
       </Field>
 
       <div className="flex items-center justify-between">
-        <Button type="submit" variant="primary" disabled={!dirty || !draft.name.trim()}>
-          Salva
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" variant="primary" disabled={!dirty || !draft.name.trim()}>
+            Salva
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Annulla
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => void toggleArchive()}>
             {draft.status === "archived" ? "Ripristina" : "Archivia"}
@@ -360,12 +391,44 @@ const fmtDay = (iso: string) =>
     year: "numeric",
   }).format(new Date(iso));
 
-function Stat({ label, value }: { label: string; value: string }) {
+const CARD = "rounded-lg border border-line bg-surface p-4 shadow-sm";
+const CARD_LABEL =
+  "text-[10px] font-bold uppercase tracking-[0.07em] text-muted";
+
+function StatCard({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
-      <dd className="tnum mt-0.5 text-lg text-ink">{value}</dd>
+    <div className={CARD}>
+      <div className={CARD_LABEL}>{label}</div>
+      <div className="mt-2">{children}</div>
     </div>
+  );
+}
+
+/** Pastiglia di stato del progetto, con punto colorato. */
+function StatusBadge({ status }: { status: ProjectStatus }) {
+  const c = STATUS_COLOR[status];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold"
+      style={{ background: withAlpha(c, 0.14), color: c }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
+      {STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+/** Avatar con iniziali, tinto in modo deterministico sull'id della persona. */
+function Avatar({ id, name }: { id: string; name: string }) {
+  const c = colorFromKey(id);
+  return (
+    <span
+      aria-hidden
+      className="flex h-8 w-8 flex-none items-center justify-center rounded-lg text-xs font-semibold"
+      style={{ background: withAlpha(c, 0.16), color: c }}
+    >
+      {initials(name)}
+    </span>
   );
 }
 
@@ -373,11 +436,13 @@ function ProjectItem({
   project,
   totalMin,
   active,
+  color,
   onSelect,
 }: {
   project: Project;
   totalMin: number;
   active: boolean;
+  color: string;
   onSelect: () => void;
 }) {
   return (
@@ -386,12 +451,34 @@ function ProjectItem({
         type="button"
         onClick={onSelect}
         aria-pressed={active}
-        className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors duration-[var(--dur-fast)] ease-out ${
-          active ? "bg-raised text-ink" : "text-ink hover:bg-raised"
-        }`}
+        className={cn(
+          "relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm",
+          "transition-colors duration-[var(--dur-fast)] ease-out",
+          active ? "bg-raised shadow-sm" : "hover:bg-raised",
+        )}
       >
-        <span className="truncate">{project.name}</span>
-        <span className="tnum shrink-0 text-xs text-muted">{formatHours(totalMin)}</span>
+        {active && (
+          <span
+            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r"
+            style={{ background: color }}
+          />
+        )}
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            active ? "font-semibold text-ink" : "text-ink",
+          )}
+        >
+          {project.name}
+        </span>
+        <span
+          className={cn(
+            "tnum shrink-0 text-xs",
+            active ? "font-medium text-accent" : "text-muted",
+          )}
+        >
+          {formatHours(totalMin)}
+        </span>
       </button>
     </li>
   );
@@ -406,15 +493,25 @@ export function ProjectsView() {
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
   const contacts = useInventoryStore((s) => s.contacts);
+  const people = useInventoryStore((s) => s.people);
+  const clientColors = useSettingsStore((s) => s.settings.clientColors);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     void allEntries().then(setEntries);
   }, []);
 
   const stats = useMemo(() => aggregateByProject(entries), [entries]);
+
+  const colorOf = (clientId: Id | null) =>
+    clientId ? (clientColors[clientId] ?? colorFromKey(clientId)) : INTERNAL_COLOR;
+
+  const matches = (p: Project) =>
+    p.name.toLowerCase().includes(query.trim().toLowerCase());
 
   const archived = useMemo(
     () =>
@@ -435,15 +532,25 @@ export function ProjectsView() {
       list.push(p);
       byClient.set(key, list);
     }
-    const out: { label: string; projects: Project[] }[] = [];
+    const out: { label: string; color: string; projects: Project[] }[] = [];
     for (const c of [...clients].sort((a, b) => a.name.localeCompare(b.name, "it"))) {
       const ps = byClient.get(c.id);
-      if (ps) out.push({ label: c.name, projects: ps });
+      if (ps) out.push({ label: c.name, color: colorOf(c.id), projects: ps });
     }
     const internal = byClient.get("__internal");
-    if (internal) out.push({ label: "Interni", projects: internal });
+    if (internal)
+      out.push({ label: "Interni", color: INTERNAL_COLOR, projects: internal });
     return out;
-  }, [projects, clients]);
+    // colorOf è stabile rispetto a clientColors, già fra le dipendenze.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects, clients, clientColors]);
+
+  const visibleGroups = query.trim()
+    ? groups
+        .map((g) => ({ ...g, projects: g.projects.filter(matches) }))
+        .filter((g) => g.projects.length > 0)
+    : groups;
+  const visibleArchived = query.trim() ? archived.filter(matches) : archived;
 
   const firstId = groups[0]?.projects[0]?.id ?? null;
   useEffect(() => {
@@ -454,19 +561,32 @@ export function ProjectsView() {
 
   const selected = projects.find((p) => p.id === selectedId) ?? null;
   const sel = selected ? stats.get(selected.id) : undefined;
+  const selColor = colorOf(selected?.clientId ?? null);
   const selRefs = selected
     ? selected.contactIds
         .map((id) => contacts.find((k) => k.id === id)?.name)
         .filter((n): n is string => !!n)
     : [];
+  const team = selected
+    ? selected.teamIds
+        .map((id) => people.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => !!p)
+    : [];
+  const subtasks = selected?.subtaskDefs ?? [];
   const estMin = (selected?.estimatedHours ?? 0) * 60;
   const progressPct =
     estMin > 0 ? Math.min(100, Math.round(((sel?.totalMin ?? 0) / estMin) * 100)) : 0;
+
+  const select = (id: string) => {
+    setSelectedId(id);
+    setEditing(false);
+  };
 
   const createProject = async () => {
     const p = newProject({ name: "Nuovo progetto", clientId: null }, nanoid());
     await saveProject(p);
     setSelectedId(p.id);
+    setEditing(true);
   };
 
   if (projects.length === 0) {
@@ -482,22 +602,42 @@ export function ProjectsView() {
     );
   }
 
+  const dot = <span className="text-line">·</span>;
+  const activeCount = projects.filter((p) => p.status !== "archived").length;
+
   return (
-    <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
-      <aside className="space-y-4">
-        <Button
-          variant="subtle"
-          size="sm"
-          className="w-full"
-          onClick={() => void createProject()}
-        >
-          + Nuovo progetto
-        </Button>
-        {groups.map((g) => (
+    <div className="flex min-h-0 flex-1 overflow-hidden">
+      <aside className="flex w-72 flex-none flex-col border-r border-line bg-surface">
+        <div className="px-3 pt-4">
+          <div className="mb-3 flex items-baseline justify-between px-1">
+            <h2 className="text-lg font-bold tracking-tight text-ink">Progetti</h2>
+            <span className="tnum text-xs text-muted">{activeCount} attivi</span>
+          </div>
+          <label className="flex h-9 items-center gap-2 rounded-lg border border-line bg-bg px-3 focus-within:border-primary">
+            <Icons.IconSearch size={15} className="shrink-0 text-muted" />
+            <input
+              type="search"
+              aria-label="Cerca progetto"
+              placeholder="Cerca progetto…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-3">
+        {visibleGroups.map((g) => (
           <div key={g.label}>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
-              {g.label}
-            </h3>
+            <div className="mb-1.5 flex items-center gap-2 px-2">
+              <span
+                className="h-2 w-2 flex-none rounded-sm"
+                style={{ background: g.color }}
+              />
+              <h3 className="text-xs font-bold uppercase tracking-[0.05em] text-muted">
+                {g.label}
+              </h3>
+            </div>
             <ul className="space-y-0.5">
               {g.projects.map((p) => (
                 <ProjectItem
@@ -505,97 +645,161 @@ export function ProjectsView() {
                   project={p}
                   totalMin={stats.get(p.id)?.totalMin ?? 0}
                   active={p.id === selectedId}
-                  onSelect={() => setSelectedId(p.id)}
+                  color={g.color}
+                  onSelect={() => select(p.id)}
                 />
               ))}
             </ul>
           </div>
         ))}
 
-        {archived.length > 0 && (
+        {visibleArchived.length > 0 && (
           <div>
             <button
               type="button"
               onClick={() => setShowArchived((v) => !v)}
-              className="text-xs font-semibold uppercase tracking-wide text-muted hover:text-ink"
+              className="flex items-center gap-1.5 px-2 text-xs font-bold uppercase tracking-[0.05em] text-muted hover:text-ink"
             >
-              {showArchived ? "Nascondi" : "Mostra"} archiviati ({archived.length})
+              {showArchived ? (
+                <Icons.IconChevronDown size={13} />
+              ) : (
+                <Icons.IconChevronRight size={13} />
+              )}
+              {showArchived ? "Nascondi" : "Mostra"} archiviati ({visibleArchived.length})
             </button>
             {showArchived && (
               <ul className="mt-1 space-y-0.5">
-                {archived.map((p) => (
+                {visibleArchived.map((p) => (
                   <ProjectItem
                     key={p.id}
                     project={p}
                     totalMin={stats.get(p.id)?.totalMin ?? 0}
                     active={p.id === selectedId}
-                    onSelect={() => setSelectedId(p.id)}
+                    color={colorOf(p.clientId)}
+                    onSelect={() => select(p.id)}
                   />
                 ))}
               </ul>
             )}
           </div>
         )}
+        </div>
+
+        <div className="border-t border-line p-3">
+          <Button
+            variant="subtle"
+            size="sm"
+            className="w-full"
+            onClick={() => void createProject()}
+          >
+            <Icons.IconPlus size={16} />
+            Nuovo progetto
+          </Button>
+        </div>
       </aside>
 
-      {selected && (
-        <section className="space-y-6">
-          <header className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-semibold tracking-tight text-ink">
-                {selected.name}
-              </h2>
-              <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-muted">
-                {STATUS_LABEL[selected.status]}
-              </span>
+      <div className="min-w-0 flex-1 overflow-y-auto bg-bg px-6 py-6">
+      {selected && editing && (
+        <div className="max-w-3xl">
+          <ProjectEditor
+            key={selected.id}
+            project={selected}
+            onDeleted={() => {
+              setEditing(false);
+              setSelectedId(null);
+            }}
+            onClose={() => setEditing(false)}
+          />
+        </div>
+      )}
+
+      {selected && !editing && (
+        <section className="max-w-3xl space-y-4">
+          <header className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-semibold tracking-tight text-ink">
+                  {selected.name}
+                </h2>
+                <StatusBadge status={selected.status} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-sm"
+                    style={{ background: selColor }}
+                  />
+                  {selected.clientId
+                    ? (clients.find((c) => c.id === selected.clientId)?.name ??
+                      "Cliente")
+                    : "Progetto interno"}
+                </span>
+                {selRefs.length > 0 && (
+                  <>
+                    {dot}
+                    <span>
+                      Referenti:{" "}
+                      <span className="text-ink">{selRefs.join(", ")}</span>
+                    </span>
+                  </>
+                )}
+                {(selected.startDate || selected.endDate) && (
+                  <>
+                    {dot}
+                    <span className="tnum">
+                      {selected.startDate ? fmtDay(selected.startDate) : "…"} →{" "}
+                      {selected.endDate ? fmtDay(selected.endDate) : "…"}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-muted">
-              {selected.clientId
-                ? (clients.find((c) => c.id === selected.clientId)?.name ??
-                  "Cliente")
-                : "Progetto interno"}
-            </p>
-            {selRefs.length > 0 && (
-              <p className="text-sm text-muted">
-                Referenti: <span className="text-ink">{selRefs.join(", ")}</span>
-              </p>
-            )}
-            {(selected.startDate || selected.endDate) && (
-              <p className="tnum text-xs text-muted">
-                Pianificato:{" "}
-                {selected.startDate ? fmtDay(selected.startDate) : "…"} –{" "}
-                {selected.endDate ? fmtDay(selected.endDate) : "…"}
-              </p>
-            )}
+            <Button
+              variant="subtle"
+              size="sm"
+              className="flex-none"
+              onClick={() => setEditing(true)}
+            >
+              <Icons.IconEdit size={15} />
+              Modifica
+            </Button>
           </header>
 
-          <dl className="grid grid-cols-3 gap-4 rounded-lg border border-line bg-surface p-4">
-            <Stat label="Ore" value={formatHours(sel?.totalMin ?? 0)} />
-            <Stat label="Attività" value={String(sel?.count ?? 0)} />
-            <Stat
-              label="Periodo"
-              value={
-                sel?.firstDate
-                  ? `${fmtDay(sel.firstDate)} – ${fmtDay(sel.lastDate as string)}`
-                  : "—"
-              }
-            />
-          </dl>
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard label="Ore registrate">
+              <span className="tnum text-3xl font-bold leading-none tracking-tight text-ink">
+                {formatHours(sel?.totalMin ?? 0)}
+              </span>
+            </StatCard>
+            <StatCard label="Attività">
+              <span className="tnum text-3xl font-bold leading-none tracking-tight text-ink">
+                {sel?.count ?? 0}
+              </span>
+            </StatCard>
+            <StatCard label="Periodo">
+              {sel?.firstDate ? (
+                <span className="tnum text-base font-semibold leading-tight text-ink">
+                  {fmtDay(sel.firstDate)} – {fmtDay(sel.lastDate as string)}
+                </span>
+              ) : (
+                <span className="text-base text-muted">—</span>
+              )}
+            </StatCard>
+          </div>
 
           {selected.estimatedHours > 0 && (
-            <div className="rounded-lg border border-line bg-surface p-4">
+            <div className={CARD}>
               <div className="flex items-baseline justify-between">
-                <span className="text-xs uppercase tracking-wide text-muted">
-                  Avanzamento
-                </span>
-                <span className="tnum text-sm text-ink">
-                  {formatHours(sel?.totalMin ?? 0)}{" "}
-                  <span className="text-muted">
-                    / {selected.estimatedHours}h stimate · {progressPct}%
-                  </span>
+                <span className={CARD_LABEL}>Avanzamento</span>
+                <span className="text-sm text-muted">
+                  <span className="tnum font-semibold text-ink">
+                    {formatHours(sel?.totalMin ?? 0)}
+                  </span>{" "}
+                  / {selected.estimatedHours}h stimate ·{" "}
+                  <span className="font-semibold text-accent">{progressPct}%</span>
                 </span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-line">
+              <div className="mt-3 h-2 overflow-hidden rounded-pill bg-raised">
                 <div
                   className="h-full rounded-pill bg-accent"
                   style={{ width: `${progressPct}%` }}
@@ -604,13 +808,62 @@ export function ProjectsView() {
             </div>
           )}
 
-          <ProjectEditor
-            key={selected.id}
-            project={selected}
-            onDeleted={() => setSelectedId(null)}
-          />
+          {(team.length > 0 || subtasks.length > 0) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {team.length > 0 && (
+                <div className={CARD}>
+                  <div className={CARD_LABEL}>Team</div>
+                  <div className="mt-3 flex flex-col gap-2.5">
+                    {team.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2.5">
+                        <Avatar id={p.id} name={p.name} />
+                        <span className="text-sm text-ink">{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {subtasks.length > 0 && (
+                <div className={CARD}>
+                  <div className={CARD_LABEL}>Sotto-attività</div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {subtasks.map((s) => (
+                      <span
+                        key={s.id}
+                        className="rounded-md bg-primary-wash px-3 py-1 text-xs font-medium text-accent"
+                      >
+                        {s.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(selected.description || selected.objectives) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {selected.description && (
+                <div className={CARD}>
+                  <div className={CARD_LABEL}>Descrizione</div>
+                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                    {selected.description}
+                  </p>
+                </div>
+              )}
+              {selected.objectives && (
+                <div className={CARD}>
+                  <div className={CARD_LABEL}>Obiettivi</div>
+                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                    {selected.objectives}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
+      </div>
     </div>
   );
 }
