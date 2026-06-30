@@ -54,6 +54,11 @@ export function useKeyboardShortcuts(): void {
         return;
       }
       if (action.type === "paste") {
+        // Con un import aperto, Ctrl/Cmd+V serve a incollare l'immagine: lascia
+        // passare l'incolla nativo (altrimenti il preventDefault sopprime il
+        // `paste` che il pannello di import ascolta).
+        const ed = useEditorStore.getState();
+        if (ed.calendarImportDay || ed.teamsImportDay) return;
         e.preventDefault();
         void pasteEntry();
         return;
