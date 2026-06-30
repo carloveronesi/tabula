@@ -287,25 +287,47 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
               <p className="text-sm text-muted">{props.choosePrompt}</p>
             )}
             <div className="flex flex-col gap-2">
-              {choices.map((c, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setRows(c.rows);
-                    if (props.dayField && c.day) props.dayField.onChange(c.day);
-                    setStage("review");
-                  }}
-                  className="rounded-lg border border-line bg-bg px-4 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:border-primary hover:bg-raised"
-                >
-                  {c.label}
-                  <span className="ml-2 text-xs font-normal text-muted">
-                    {c.count} {c.count === 1 ? props.noun.one : props.noun.many}
-                  </span>
-                </button>
-              ))}
+              {choices.map((c, i) => {
+                const current = !!props.dayField && c.day === props.dayField.value;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setRows(c.rows);
+                      if (props.dayField && c.day) props.dayField.onChange(c.day);
+                      setStage("review");
+                    }}
+                    className={`rounded-lg border px-4 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:bg-raised ${
+                      current
+                        ? "border-primary bg-primary-wash"
+                        : "border-line bg-bg hover:border-primary"
+                    }`}
+                  >
+                    {c.label}
+                    <span className="ml-2 text-xs font-normal text-muted">
+                      {c.count} {c.count === 1 ? props.noun.one : props.noun.many}
+                    </span>
+                    {current && (
+                      <span className="ml-2 text-xs font-normal text-primary">
+                        · attuale
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
+        )}
+
+        {stage === "review" && choices.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setStage("columns")}
+            className="mb-3 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-ink"
+          >
+            ‹ Cambia giorno
+          </button>
         )}
 
         {stage === "review" && rawText && (
