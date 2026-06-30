@@ -132,17 +132,25 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
     if (file) void run(file);
   }
 
-  function onPaste(e: React.ClipboardEvent) {
+  // Ctrl/⌘+V: il pannello non ha il focus come un modale, quindi l'incolla
+  // arriva al document, non al div. Ascoltiamo su `window` mentre si attende
+  // l'immagine (stage "pick"). `runRef` evita la closure stantia di `run`.
+  const runRef = useRef(run);
+  runRef.current = run;
+  useEffect(() => {
     if (stage !== "pick") return;
-    const item = Array.from(e.clipboardData.items).find((i) =>
-      i.type.startsWith("image/"),
-    );
-    const file = item?.getAsFile();
-    if (file) {
-      e.preventDefault();
-      void run(file);
-    }
-  }
+    const onPaste = (e: ClipboardEvent) => {
+      const file = Array.from(e.clipboardData?.items ?? [])
+        .find((i) => i.type.startsWith("image/"))
+        ?.getAsFile();
+      if (file) {
+        e.preventDefault();
+        void runRef.current(file);
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [stage]);
 
   function patch(key: string, next: Partial<R>) {
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...next } : r)));
@@ -228,7 +236,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
         </button>
       </header>
 
-      <div onPaste={onPaste} className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <input
           ref={fileRef}
           type="file"

@@ -49,8 +49,8 @@ function existing(startsAt: string, endsAt: string): Entry {
   };
 }
 
-function renderModal(rows: R[]) {
-  render(
+function modalEl(rows: R[]) {
+  return (
     <ImportModal<R>
       title="Importa"
       description="d"
@@ -71,8 +71,12 @@ function renderModal(rows: R[]) {
       renderRow={(r) => <span>riga {r.key}</span>}
       persist={async () => {}}
       onClose={() => {}}
-    />,
+    />
   );
+}
+
+function renderModal(rows: R[]) {
+  render(modalEl(rows));
   fireEvent.change(screen.getByLabelText("file"), {
     target: { files: [new File(["x"], "s.png", { type: "image/png" })] },
   });
@@ -100,5 +104,17 @@ describe("ImportModal — sovrapposizioni", () => {
     renderModal([{ key: "r1", date: "2026-06-12", startMin: 600, durationMin: 60 }]);
     await waitFor(() => expect(screen.getByText("riga r1")).toBeInTheDocument());
     expect(screen.queryByText(/Si sovrappone/)).toBeNull();
+  });
+
+  it("incollare un'immagine (Ctrl+V) avvia l'elaborazione", async () => {
+    render(modalEl([{ key: "r1", date: "2026-06-12", startMin: 600, durationMin: 60 }]));
+    // senza click nel pannello: l'incolla arriva su window
+    const file = new File(["x"], "s.png", { type: "image/png" });
+    const ev = new Event("paste") as Event & { clipboardData: unknown };
+    (ev as unknown as { clipboardData: unknown }).clipboardData = {
+      items: [{ type: "image/png", getAsFile: () => file }],
+    };
+    window.dispatchEvent(ev);
+    await waitFor(() => expect(screen.getByText("riga r1")).toBeInTheDocument());
   });
 });
