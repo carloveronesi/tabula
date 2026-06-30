@@ -19,39 +19,78 @@ const paths = {
   langPath: `${BASE}tesseract/lang`,
 };
 
+// Tetto sui pixel del canvas scalato: limita memoria/tempo dell'integral image.
+const MAX_SCALED_PX = 18_000_000;
+// Bradley: un pixel è testo se sta sotto la media locale di almeno questa frazione.
+const BRADLEY_T = 0.15;
+
 /**
- * Pre-processa l'immagine per l'OCR: scala di grigi, upscale e — quando lo sfondo
- * è scuro (cronologia Teams in tema scuro) — inversione, così Tesseract vede
- * testo scuro su chiaro. Ritorna un canvas pronto da riconoscere.
+ * Pre-processa l'immagine per l'OCR: scala di grigi, upscale, e — quando lo sfondo
+ * è scuro (temi scuri di Teams/Outlook) — inversione, poi **sogliatura adattiva
+ * locale (Bradley)**. La binarizzazione confronta ogni pixel con la media del suo
+ * intorno (calcolata in O(1) con un'integral image), così il testo grigio tenue su
+ * sfondo scuro — che una soglia globale perde — viene staccato e reso nero pieno.
+ * Ritorna un canvas binario pronto da riconoscere.
  *
- * L'upscale è adattivo: 3× per le immagini piccole (vista settimana, testo
- * minuto), 2× per quelle già grandi, con un tetto sui pixel totali per non far
- * esplodere memoria/tempo. Più pixel = OCR più pulito sul testo fino.
+ * L'upscale è adattivo (3× per le immagini piccole, poi 2×, poi 1×) sotto al tetto
+ * di pixel: più pixel = testo fino più leggibile.
  */
 function preprocess(bitmap: ImageBitmap): HTMLCanvasElement {
   const px = bitmap.width * bitmap.height;
-  const scale = px * 9 <= 30_000_000 ? 3 : px * 4 <= 30_000_000 ? 2 : 1;
+  const scale = px * 9 <= MAX_SCALED_PX ? 3 : px * 4 <= MAX_SCALED_PX ? 2 : 1;
   const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width * scale;
-  canvas.height = bitmap.height * scale;
+  const W = (canvas.width = bitmap.width * scale);
+  const H = (canvas.height = bitmap.height * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D non disponibile");
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, W, H);
 
-  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const img = ctx.getImageData(0, 0, W, H);
   const d = img.data;
+  const N = W * H;
   let sum = 0;
-  const lum = new Float32Array(d.length / 4);
+  const lum = new Float32Array(N);
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
     const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     lum[j] = g;
     sum += g;
   }
-  const invert = sum / lum.length < 128; // sfondo prevalentemente scuro
-  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-    const v = invert ? 255 - lum[j] : lum[j];
-    d[i] = d[i + 1] = d[i + 2] = v;
-    d[i + 3] = 255;
+  // Tema scuro → inverti, così il testo diventa scuro su chiaro (atteso da Bradley).
+  if (sum / N < 128) for (let j = 0; j < N; j++) lum[j] = 255 - lum[j];
+
+  // Integral image: somma cumulativa, bordo di zeri a sinistra/in alto.
+  const IW = W + 1;
+  const integral = new Float64Array(IW * (H + 1));
+  for (let y = 0; y < H; y++) {
+    let rowSum = 0;
+    const above = y * IW;
+    const cur = (y + 1) * IW;
+    for (let x = 0; x < W; x++) {
+      rowSum += lum[y * W + x];
+      integral[cur + x + 1] = integral[above + x + 1] + rowSum;
+    }
+  }
+
+  // Finestra ~ una riga di testo, scalata con l'upscale.
+  const r = 8 * scale;
+  for (let y = 0; y < H; y++) {
+    const y0 = y - r < 0 ? 0 : y - r;
+    const y1 = y + r >= H ? H - 1 : y + r;
+    for (let x = 0; x < W; x++) {
+      const x0 = x - r < 0 ? 0 : x - r;
+      const x1 = x + r >= W ? W - 1 : x + r;
+      const count = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const area =
+        integral[(y1 + 1) * IW + (x1 + 1)] -
+        integral[y0 * IW + (x1 + 1)] -
+        integral[(y1 + 1) * IW + x0] +
+        integral[y0 * IW + x0];
+      const isText = lum[y * W + x] * count <= area * (1 - BRADLEY_T);
+      const v = isText ? 0 : 255;
+      const i = (y * W + x) * 4;
+      d[i] = d[i + 1] = d[i + 2] = v;
+      d[i + 3] = 255;
+    }
   }
   ctx.putImageData(img, 0, 0);
   return canvas;

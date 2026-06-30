@@ -197,22 +197,19 @@ export function parseCalendarGrid(
       })
       .sort((a, b) => a.startMin - b.startMin);
 
-    // Durata: lo span del testo (+ uno slot per il padding inferiore della card),
-    // arrotondato allo slot, mai sotto uno slot né oltre l'inizio del successivo.
+    // Durata. Eventi ravvicinati (≤60' di salto) sono di norma attaccati: la
+    // durata è il salto fino al successivo. Con un buco grande (o l'ultimo evento)
+    // la stimiamo dall'altezza del testo, con default 30' e tetto 60'.
+    // ponytail: non vediamo il bordo della card, solo il testo, quindi un blocco
+    // isolato lungo va corretto a mano in revisione.
     return {
       label: labelOf(col),
       events: events.map((e, i) => {
-        const gapToNext =
-          i < events.length - 1 ? events[i + 1].startMin - e.startMin : 120;
-        const dur = snap(e.textSpan + slotMinutes);
-        return {
-          title: e.title,
-          startMin: e.startMin,
-          durationMin: Math.min(
-            Math.max(dur, slotMinutes),
-            Math.max(slotMinutes, gapToNext),
-          ),
-        };
+        const gap =
+          i < events.length - 1 ? events[i + 1].startMin - e.startMin : Infinity;
+        const durationMin =
+          gap <= 60 ? gap : Math.min(60, Math.max(30, snap(e.textSpan + slotMinutes)));
+        return { title: e.title, startMin: e.startMin, durationMin };
       }),
     };
   });
