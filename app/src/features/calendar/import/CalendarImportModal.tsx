@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { nanoid } from "nanoid";
 import type { ISODate } from "@/data/types";
 import { applyDraft } from "@/domain/entryDraft";
@@ -10,10 +11,12 @@ import {
   eventToDraft,
   splitTitleAndPerson,
 } from "@/domain/calendar-import/eventDraft";
+import { useUiStore } from "@/store";
 import { useEditorStore } from "@/store/editor";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
+import { isoDate } from "@/domain/calendarNav";
 import { Combobox, TimeField } from "@/ui";
 import { minutesToLabel } from "@/domain/slots";
 import { ImportModal, type ProcessResult } from "./ImportModal";
@@ -33,7 +36,8 @@ interface Row {
  * Import dei meeting da uno screenshot del calendario. L'OCR conserva la
  * geometria: la posizione verticale di un blocco è il suo orario, il righello
  * delle ore dà la scala. Se lo screenshot ha più giorni si sceglie quale colonna
- * importare; gli eventi vengono creati nel giorno aperto (modificabile per riga).
+ * importare; gli eventi finiscono sul giorno scelto col selettore "Giorno", che
+ * sposta anche la vista (default: il giorno da cui si è aperto l'import).
  */
 export function CalendarImportModal() {
   const day = useEditorStore((s) => s.calendarImportDay);
@@ -42,7 +46,10 @@ export function CalendarImportModal() {
   const contacts = useInventoryStore((s) => s.contacts);
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
+  const setActiveDate = useUiStore((s) => s.setActiveDate);
   const match = useMatchHelpers();
+  // Giorno di destinazione, regolabile in revisione; default = giorno aperto.
+  const [targetDay, setTargetDay] = useState<ISODate>(day ?? isoDate(new Date()));
 
   if (!day) return null;
 
@@ -56,12 +63,17 @@ export function CalendarImportModal() {
       return {
         key: nanoid(),
         title: title || e.title,
-        date: day as ISODate,
+        date: targetDay,
         startMin: e.startMin,
         durationMin: e.durationMin,
         matchValue: matchValueOf(person),
       };
     });
+  }
+
+  function goToDay(date: ISODate) {
+    setTargetDay(date);
+    setActiveDate(new Date(`${date}T00:00:00`));
   }
 
   async function process(
@@ -113,7 +125,7 @@ export function CalendarImportModal() {
       description="Carica uno screenshot della griglia: leggo gli orari dalla posizione dei blocchi e ne abbozzo le attività."
       fileLabel="Screenshot del calendario"
       noun={{ one: "evento", many: "eventi", none: "Nessun evento" }}
-      choosePrompt="Quale giorno vuoi importare? Gli eventi verranno creati nel giorno aperto."
+      choosePrompt="Quale giorno dello screenshot vuoi importare?"
       emptyReview={
         'Non ho riconosciuto nessun evento. Apri "Testo riconosciuto" qui sopra per vedere cosa ha letto l\'OCR: serve il righello delle ore a sinistra (9, 10, 11…) per calibrare gli orari.'
       }
@@ -126,6 +138,11 @@ export function CalendarImportModal() {
         endMin: r.startMin + r.durationMin,
       })}
       rowLabel={(r) => r.title}
+      dayField={{
+        value: targetDay,
+        onChange: goToDay,
+        applyToRow: (date) => ({ date }),
+      }}
       renderRow={(r, patch) => (
         <>
           <input
@@ -135,13 +152,6 @@ export function CalendarImportModal() {
             className="w-full border-b border-line bg-transparent pb-1 text-sm font-semibold text-ink focus:border-primary focus:outline-none"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="date"
-              aria-label="Giorno"
-              value={r.date}
-              onChange={(e) => patch({ date: e.target.value })}
-              className="tnum h-10 rounded-lg border border-line bg-bg px-2.5 text-sm text-ink focus:border-primary focus:outline-none"
-            />
             <div className="w-28">
               <TimeField
                 label="Inizio"

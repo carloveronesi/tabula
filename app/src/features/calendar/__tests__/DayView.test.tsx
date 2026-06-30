@@ -79,14 +79,31 @@ describe("DayView", () => {
         workHours={WH}
         slotMinutes={30}
         previewBlocks={[
-          { key: "p1", label: "Demo", startMin: 600, endMin: 660, conflict: true },
+          {
+            key: "p1",
+            date: "2026-06-10",
+            label: "Demo",
+            startMin: 600,
+            endMin: 660,
+            conflict: true,
+          },
+          // altro giorno → non disegnato sulla griglia visualizzata
+          {
+            key: "p2",
+            date: "2026-06-11",
+            label: "Altrove",
+            startMin: 600,
+            endMin: 660,
+            conflict: false,
+          },
         ]}
       />,
     );
-    const ghost = screen.getByTestId("preview-ghost");
-    expect(ghost).toHaveTextContent("Demo");
-    expect(ghost).toHaveTextContent("10:00–11:00");
-    expect(ghost).toHaveAttribute("data-conflict", "true");
+    const ghosts = screen.getAllByTestId("preview-ghost");
+    expect(ghosts).toHaveLength(1); // solo quello del giorno visualizzato
+    expect(ghosts[0]).toHaveTextContent("Demo");
+    expect(ghosts[0]).toHaveTextContent("10:00–11:00");
+    expect(ghosts[0]).toHaveAttribute("data-conflict", "true");
   });
 
   it("drag su area vuota → onCreateRange con l'intervallo", () => {

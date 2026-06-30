@@ -54,6 +54,17 @@ export interface ImportModalProps<R extends { key: string }> {
   interval: (row: R) => { date: ISODate; startMin: number; endMin: number };
   /** Titolo della riga, per il fantasma sulla griglia. */
   rowLabel: (row: R) => string;
+  /**
+   * Selettore "Giorno" unico (import a giorno singolo, es. calendario): sposta
+   * tutte le righe su quel giorno. Lo shell patcha le righe con `applyToRow` e
+   * notifica `onChange` (il wrapper sposta la vista). Assente per import su più
+   * giorni (es. Teams).
+   */
+  dayField?: {
+    value: ISODate;
+    onChange: (date: ISODate) => void;
+    applyToRow: (date: ISODate) => Partial<R>;
+  };
   /** Blocco campi della riga; `patch` aggiorna quella riga. */
   renderRow: (row: R, patch: (next: Partial<R>) => void) => ReactNode;
   /** Persiste le righe. Lo shell gestisce stato di salvataggio, toast e chiusura. */
@@ -159,6 +170,13 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
     entries,
   );
 
+  function setAllToDay(date: ISODate) {
+    const field = props.dayField;
+    if (!field) return;
+    setRows((rs) => rs.map((r) => ({ ...r, ...field.applyToRow(date) })));
+    field.onChange(date);
+  }
+
   // Anteprima sulla griglia: le righe in revisione come blocchi fantasma.
   const previews: PreviewBlock[] =
     stage === "review"
@@ -166,6 +184,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
           const iv = props.interval(r);
           return {
             key: r.key,
+            date: iv.date,
             label: props.rowLabel(r),
             startMin: iv.startMin,
             endMin: iv.endMin,
@@ -174,7 +193,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
         })
       : [];
   const sig = previews
-    .map((p) => `${p.key}:${p.label}:${p.startMin}:${p.endMin}:${p.conflict}`)
+    .map((p) => `${p.key}:${p.date}:${p.label}:${p.startMin}:${p.endMin}:${p.conflict}`)
     .join("|");
   useEffect(() => {
     setPreview(previews);
@@ -282,6 +301,19 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
               {rawText}
             </pre>
           </details>
+        )}
+
+        {stage === "review" && rows.length > 0 && props.dayField && (
+          <label className="mb-3 flex items-center gap-2 text-sm text-muted">
+            Giorno
+            <input
+              type="date"
+              aria-label="Giorno di destinazione"
+              value={props.dayField.value}
+              onChange={(e) => e.target.value && setAllToDay(e.target.value)}
+              className="tnum h-9 rounded-lg border border-line bg-bg px-2.5 text-sm text-ink focus:border-primary focus:outline-none"
+            />
+          </label>
         )}
 
         {stage === "review" &&

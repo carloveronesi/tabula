@@ -4,9 +4,12 @@
  * fantasmi così l'utente ne vede posizione e durata reali. Vuoto = nessun import.
  */
 import { create } from "zustand";
+import type { ISODate } from "@/data/types";
 
 export interface PreviewBlock {
   key: string;
+  /** Giorno dell'evento: la griglia mostra solo i blocchi del giorno visualizzato. */
+  date: ISODate;
   /** Titolo mostrato nel fantasma, per riconoscere l'evento sulla griglia. */
   label: string;
   startMin: number;

@@ -214,11 +214,7 @@ export function AppShell() {
                   onDuplicateEntry={(e) => void duplicateEntry(e)}
                   onSaveTemplate={(e) => void saveAsTemplate(e)}
                   onDeleteEntry={(e) => void deleteEntry(e)}
-                  previewBlocks={
-                    (calendarImportDay ?? teamsImportDay) === dayKey
-                      ? previewBlocks
-                      : undefined
-                  }
+                  previewBlocks={previewBlocks}
                 />
               </div>
               {/* ponytail: il pannello vive nel ramo vista-Giorno; cambiando vista

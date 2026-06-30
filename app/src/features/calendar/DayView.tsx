@@ -404,6 +404,7 @@ export function DayView({
         })}
 
         {(previewBlocks ?? []).map((p) => {
+          if (p.date !== dayKey) return null;
           const pos = entryRowSpan(p.startMin, p.endMin, slots);
           if (!pos) return null;
           const top = rowTop(pos.startRow, slotHeight, boundary);
