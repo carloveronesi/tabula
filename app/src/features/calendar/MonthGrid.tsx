@@ -147,7 +147,7 @@ export function MonthGrid({
                 </span>
               )}
               {count > 0 && (
-                <div className="mt-auto flex w-full flex-col gap-1">
+                <div className="flex w-full flex-col gap-1">
                   <div className="flex h-1 w-full gap-px overflow-hidden rounded-pill">
                     {dayEntries.map((e) => {
                       const color = colorOf?.(e) ?? null;
