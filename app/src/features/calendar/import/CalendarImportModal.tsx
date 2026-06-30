@@ -182,7 +182,6 @@ export function CalendarImportModal() {
       dayField={{
         value: targetDay,
         onChange: goToDay,
-        applyToRow: (date) => ({ date }),
       }}
       reviewHeader={(patchAll) => (
         <div className="max-w-full">

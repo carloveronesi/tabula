@@ -57,15 +57,14 @@ export interface ImportModalProps<R extends { key: string }> {
   /** Titolo della riga, per il fantasma sulla griglia. */
   rowLabel: (row: R) => string;
   /**
-   * Selettore "Giorno" unico (import a giorno singolo, es. calendario): sposta
-   * tutte le righe su quel giorno. Lo shell patcha le righe con `applyToRow` e
-   * notifica `onChange` (il wrapper sposta la vista). Assente per import su più
-   * giorni (es. Teams).
+   * Giorno di destinazione corrente (import a giorno singolo, es. calendario): si
+   * cambia ripickando una colonna ("Cambia giorno"), che chiama `onChange` (il
+   * wrapper sposta la vista). `value` serve a evidenziare la colonna attuale.
+   * Assente per import su più giorni (es. Teams).
    */
   dayField?: {
     value: ISODate;
     onChange: (date: ISODate) => void;
-    applyToRow: (date: ISODate) => Partial<R>;
   };
   /** Controlli in cima alla revisione (es. "applica a tutte"); `patchAll` aggiorna ogni riga. */
   reviewHeader?: (patchAll: (next: Partial<R>) => void) => ReactNode;
@@ -184,13 +183,6 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
     rows.map((r) => ({ key: r.key, ...props.interval(r) })),
     entries,
   );
-
-  function setAllToDay(date: ISODate) {
-    const field = props.dayField;
-    if (!field) return;
-    setRows((rs) => rs.map((r) => ({ ...r, ...field.applyToRow(date) })));
-    field.onChange(date);
-  }
 
   // Anteprima sulla griglia: le righe in revisione come blocchi fantasma.
   const previews: PreviewBlock[] =
@@ -341,21 +333,9 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
           </details>
         )}
 
-        {stage === "review" && rows.length > 0 && (props.dayField || props.reviewHeader) && (
-          <div className="mb-3 flex flex-col gap-2 rounded-lg border border-line bg-bg p-3">
-            {props.dayField && (
-              <label className="flex items-center gap-2 text-sm text-muted">
-                Giorno
-                <input
-                  type="date"
-                  aria-label="Giorno di destinazione"
-                  value={props.dayField.value}
-                  onChange={(e) => e.target.value && setAllToDay(e.target.value)}
-                  className="tnum h-9 rounded-lg border border-line bg-surface px-2.5 text-sm text-ink focus:border-primary focus:outline-none"
-                />
-              </label>
-            )}
-            {props.reviewHeader?.(patchAll)}
+        {stage === "review" && rows.length > 0 && props.reviewHeader && (
+          <div className="mb-3 rounded-lg border border-line bg-bg p-3">
+            {props.reviewHeader(patchAll)}
           </div>
         )}
 
