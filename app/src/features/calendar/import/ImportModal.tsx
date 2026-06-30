@@ -7,8 +7,11 @@
  * (`persist`).
  */
 import { useRef, useState, type ReactNode } from "react";
+import type { ISODate } from "@/data/types";
 import { Button, Modal } from "@/ui";
 import { useToastStore } from "@/store/toast";
+import { useCalendarStore } from "@/store/calendar";
+import { findConflicts } from "./importConflicts";
 
 export interface ImportChoice<R> {
   label: string;
@@ -43,6 +46,8 @@ export interface ImportModalProps<R extends { key: string }> {
     blob: Blob,
     onProgress: (p: number) => void,
   ) => Promise<ProcessResult<R>>;
+  /** Intervallo occupato dalla riga, per rilevare le sovrapposizioni. */
+  interval: (row: R) => { date: ISODate; startMin: number; endMin: number };
   /** Blocco campi della riga; `patch` aggiorna quella riga. */
   renderRow: (row: R, patch: (next: Partial<R>) => void) => ReactNode;
   /** Persiste le righe. Lo shell gestisce stato di salvataggio, toast e chiusura. */
@@ -54,6 +59,7 @@ type Stage = "pick" | "working" | "columns" | "review";
 
 export function ImportModal<R extends { key: string }>(props: ImportModalProps<R>) {
   const notify = useToastStore((s) => s.notify);
+  const entries = useCalendarStore((s) => s.entries);
   const fileRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>("pick");
   const [progress, setProgress] = useState(0);
@@ -140,6 +146,12 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
   const count = (n: number) =>
     n === 0 ? props.noun.none : `${n} ${n === 1 ? props.noun.one : props.noun.many}`;
 
+  // Sovrapposizioni col giorno e tra le righe; si ricalcola a ogni modifica d'orario.
+  const conflictOf = findConflicts(
+    rows.map((r) => ({ key: r.key, ...props.interval(r) })),
+    entries,
+  );
+
   return (
     <Modal
       open
@@ -150,7 +162,15 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
       footer={
         stage === "review" ? (
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted">{count(rows.length)}</span>
+            <span className="text-sm text-muted">
+              {count(rows.length)}
+              {conflictOf.size > 0 && (
+                <span className="text-danger">
+                  {" · "}
+                  {conflictOf.size} in conflitto
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={reset}>
                 Riprova
@@ -263,6 +283,11 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1 space-y-2">
                       {props.renderRow(r, (next) => patch(r.key, next))}
+                      {conflictOf.has(r.key) && (
+                        <p role="alert" className="text-xs text-danger">
+                          {conflictOf.get(r.key)}
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"

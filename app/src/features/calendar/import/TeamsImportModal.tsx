@@ -114,6 +114,11 @@ export function TeamsImportModal() {
       process={process}
       persist={persist}
       onClose={close}
+      interval={(r) => ({
+        date: r.date,
+        startMin: r.startMin,
+        endMin: r.startMin + r.durationMin,
+      })}
       renderRow={(r, patch) => (
         <>
           <input
