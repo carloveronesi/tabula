@@ -6,7 +6,14 @@ import {
 } from "react";
 import type { Entry } from "@/data/types";
 import { ContextMenu } from "@/ui";
-import { buildSlots, lunchBoundary, type WorkHours } from "@/domain/slots";
+import {
+  buildSlots,
+  entryRowSpan,
+  lunchBoundary,
+  minutesToLabel,
+  type WorkHours,
+} from "@/domain/slots";
+import type { PreviewBlock } from "@/features/calendar/import/importPreviewStore";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
 import {
@@ -63,6 +70,8 @@ interface DayViewProps {
   onSaveTemplate?: (entry: Entry) => void;
   /** Elimina l'attività. */
   onDeleteEntry?: (entry: Entry) => void;
+  /** Blocchi-anteprima dell'import: fantasmi read-only sulla griglia. */
+  previewBlocks?: PreviewBlock[];
 }
 
 /** Menu contestuale: incolla su area vuota, oppure azioni su un'attività. */
@@ -121,6 +130,7 @@ export function DayView({
   onDuplicateEntry,
   onSaveTemplate,
   onDeleteEntry,
+  previewBlocks,
 }: DayViewProps) {
   const slots = buildSlots(workHours, slotMinutes).all;
   const slotCount = slots.length;
@@ -390,6 +400,33 @@ export function DayView({
                 <span aria-hidden className="h-0.5 w-5 rounded-pill bg-ink/25 opacity-0 transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100" />
               </span>
             </button>
+          );
+        })}
+
+        {(previewBlocks ?? []).map((p) => {
+          const pos = entryRowSpan(p.startMin, p.endMin, slots);
+          if (!pos) return null;
+          const top = rowTop(pos.startRow, slotHeight, boundary);
+          const height =
+            rowTop(pos.startRow + pos.span - 1, slotHeight, boundary) +
+            slotHeight - top - 4;
+          return (
+            <div
+              key={p.key}
+              data-testid="preview-ghost"
+              data-conflict={p.conflict}
+              style={{ position: "absolute", top: top + 2, height, left: 4, right: 4 }}
+              className={`pointer-events-none flex flex-col justify-center overflow-hidden rounded-lg border-2 border-dashed px-3 text-xs font-medium ${
+                p.conflict
+                  ? "border-danger bg-danger/10 text-danger"
+                  : "border-primary bg-primary-wash text-primary"
+              }`}
+            >
+              <span className="truncate leading-tight">{p.label || "Evento"}</span>
+              <span className="tnum text-[10px] font-normal opacity-80">
+                {minutesToLabel(p.startMin)}–{minutesToLabel(p.endMin)}
+              </span>
+            </div>
           );
         })}
       </div>

@@ -125,6 +125,7 @@ export function CalendarImportModal() {
         startMin: r.startMin,
         endMin: r.startMin + r.durationMin,
       })}
+      rowLabel={(r) => r.title}
       renderRow={(r, patch) => (
         <>
           <input

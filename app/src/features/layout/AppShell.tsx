@@ -24,6 +24,7 @@ import { EntryDetail } from "@/features/calendar/EntryDetail";
 import { QuickAddPopover } from "@/features/calendar/QuickAddPopover";
 import { TeamsImportModal } from "@/features/calendar/import/TeamsImportModal";
 import { CalendarImportModal } from "@/features/calendar/import/CalendarImportModal";
+import { useImportPreviewStore } from "@/features/calendar/import/importPreviewStore";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
 import { ProjectsView } from "@/features/projects/ProjectsView";
@@ -65,7 +66,10 @@ export function AppShell() {
   const openQuickAdd = useEditorStore((s) => s.openQuickAdd);
   const openTeamsImport = useEditorStore((s) => s.openTeamsImport);
   const openCalendarImport = useEditorStore((s) => s.openCalendarImport);
+  const calendarImportDay = useEditorStore((s) => s.calendarImportDay);
+  const teamsImportDay = useEditorStore((s) => s.teamsImportDay);
   const clipboard = useEditorStore((s) => s.clipboard);
+  const previewBlocks = useImportPreviewStore((s) => s.blocks);
 
   const canPaste = clipboard !== null;
   const pasteAt = (dateISO: string, startMin: number) =>
@@ -159,6 +163,9 @@ export function AppShell() {
 
   // Ripartizione della giornata attiva per il pannello-riepilogo (vista Giorno).
   const dayKey = isoDate(activeDate);
+  // Import attivo: il pannello prende il posto del riepilogo a destra e i suoi
+  // blocchi-anteprima compaiono sulla griglia (solo se è il giorno mostrato).
+  const importActive = calendarImportDay !== null || teamsImportDay !== null;
   const breakdown = useMemo(() => {
     const dayEntries = entries.filter((e) => e.startsAt.slice(0, 10) === dayKey);
     return dayBreakdown(
@@ -207,28 +214,44 @@ export function AppShell() {
                   onDuplicateEntry={(e) => void duplicateEntry(e)}
                   onSaveTemplate={(e) => void saveAsTemplate(e)}
                   onDeleteEntry={(e) => void deleteEntry(e)}
+                  previewBlocks={
+                    (calendarImportDay ?? teamsImportDay) === dayKey
+                      ? previewBlocks
+                      : undefined
+                  }
                 />
               </div>
-              <DaySummary
-                breakdown={breakdown}
-                onAdd={(anchor) =>
-                  openQuickAdd({
-                    date: dayKey,
-                    startMin: 540,
-                    endMin: 600,
-                    anchor: anchor ?? null,
-                  })
-                }
-                onPaste={canPaste ? () => void pasteEntry() : undefined}
-                onImportCalls={() => openTeamsImport(dayKey)}
-                onImportCalendar={() => openCalendarImport(dayKey)}
-                presenceEnabled={settings.presenceTracking.enabled}
-                location={locations[dayKey] ?? null}
-                onSetLocation={(loc) => void setLocation(dayKey, loc)}
-                suggestedLocation={settings.defaultLocation}
-              >
-                <DayTodoWidget onOpenTodo={() => setView("todo")} />
-              </DaySummary>
+              {/* ponytail: il pannello vive nel ramo vista-Giorno; cambiando vista
+                  mentre è aperto si perde lo stato della revisione. Caso raro
+                  (l'import si avvia e si conclude in vista Giorno); spostare lo
+                  stato in uno store se servirà conservarlo. */}
+              {importActive ? (
+                <>
+                  <CalendarImportModal />
+                  <TeamsImportModal />
+                </>
+              ) : (
+                <DaySummary
+                  breakdown={breakdown}
+                  onAdd={(anchor) =>
+                    openQuickAdd({
+                      date: dayKey,
+                      startMin: 540,
+                      endMin: 600,
+                      anchor: anchor ?? null,
+                    })
+                  }
+                  onPaste={canPaste ? () => void pasteEntry() : undefined}
+                  onImportCalls={() => openTeamsImport(dayKey)}
+                  onImportCalendar={() => openCalendarImport(dayKey)}
+                  presenceEnabled={settings.presenceTracking.enabled}
+                  location={locations[dayKey] ?? null}
+                  onSetLocation={(loc) => void setLocation(dayKey, loc)}
+                  suggestedLocation={settings.defaultLocation}
+                >
+                  <DayTodoWidget onOpenTodo={() => setView("todo")} />
+                </DaySummary>
+              )}
             </div>
           ) : view === "month" ? (
             <div className="flex min-h-0 flex-1 gap-4">
@@ -291,8 +314,6 @@ export function AppShell() {
       <EntryEditor />
       <EntryDetail />
       <QuickAddPopover />
-      <TeamsImportModal />
-      <CalendarImportModal />
       <Toaster />
     </div>
   );

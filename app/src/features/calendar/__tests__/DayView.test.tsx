@@ -71,6 +71,24 @@ describe("DayView", () => {
     expect(block).toHaveAttribute("data-span", "2");
   });
 
+  it("disegna i blocchi-anteprima dell'import, col flag di conflitto", () => {
+    render(
+      <DayView
+        date={new Date(2026, 5, 10)}
+        entries={[]}
+        workHours={WH}
+        slotMinutes={30}
+        previewBlocks={[
+          { key: "p1", label: "Demo", startMin: 600, endMin: 660, conflict: true },
+        ]}
+      />,
+    );
+    const ghost = screen.getByTestId("preview-ghost");
+    expect(ghost).toHaveTextContent("Demo");
+    expect(ghost).toHaveTextContent("10:00–11:00");
+    expect(ghost).toHaveAttribute("data-conflict", "true");
+  });
+
   it("drag su area vuota → onCreateRange con l'intervallo", () => {
     const onCreateRange = vi.fn();
     render(

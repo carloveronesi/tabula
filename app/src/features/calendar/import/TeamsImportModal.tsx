@@ -119,6 +119,7 @@ export function TeamsImportModal() {
         startMin: r.startMin,
         endMin: r.startMin + r.durationMin,
       })}
+      rowLabel={(r) => r.name}
       renderRow={(r, patch) => (
         <>
           <input

@@ -67,6 +67,7 @@ function renderModal(rows: R[]) {
         startMin: r.startMin,
         endMin: r.startMin + r.durationMin,
       })}
+      rowLabel={() => "riga"}
       renderRow={(r) => <span>riga {r.key}</span>}
       persist={async () => {}}
       onClose={() => {}}

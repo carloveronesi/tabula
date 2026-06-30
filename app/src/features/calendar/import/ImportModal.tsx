@@ -1,17 +1,21 @@
 /**
- * Shell condiviso dei modali di import da screenshot (calendario, Teams). Gestisce
- * tutto ciò che è identico tra i due: scelta/incolla dell'immagine, barra di
- * progresso dell'OCR, eventuale scelta tra più colonne, blocco "Testo riconosciuto"
- * e la lista di revisione con Scarta/Crea. Ogni modale fornisce solo la propria
- * pipeline (`process`), il rendering della riga (`renderRow`) e il salvataggio
- * (`persist`).
+ * Pannello laterale di import da screenshot (calendario, Teams). Gestisce ciò che
+ * è identico tra i due: scelta/incolla dell'immagine, barra di progresso dell'OCR,
+ * eventuale scelta tra più colonne, e la lista di revisione con Scarta/Crea. Mentre
+ * si rivede, pubblica le righe come blocchi-anteprima ([[importPreviewStore]]) così
+ * la vista Giorno le disegna sulla griglia con posizione e durata reali.
+ *
+ * Ogni modale fornisce la propria pipeline (`process`), il rendering della riga
+ * (`renderRow`), il salvataggio (`persist`) e gli accessori orario/titolo.
  */
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ISODate } from "@/data/types";
-import { Button, Modal } from "@/ui";
+import { Button } from "@/ui";
+import { IconClose } from "@/ui/icons";
 import { useToastStore } from "@/store/toast";
 import { useCalendarStore } from "@/store/calendar";
 import { findConflicts } from "./importConflicts";
+import { useImportPreviewStore, type PreviewBlock } from "./importPreviewStore";
 
 export interface ImportChoice<R> {
   label: string;
@@ -48,6 +52,8 @@ export interface ImportModalProps<R extends { key: string }> {
   ) => Promise<ProcessResult<R>>;
   /** Intervallo occupato dalla riga, per rilevare le sovrapposizioni. */
   interval: (row: R) => { date: ISODate; startMin: number; endMin: number };
+  /** Titolo della riga, per il fantasma sulla griglia. */
+  rowLabel: (row: R) => string;
   /** Blocco campi della riga; `patch` aggiorna quella riga. */
   renderRow: (row: R, patch: (next: Partial<R>) => void) => ReactNode;
   /** Persiste le righe. Lo shell gestisce stato di salvataggio, toast e chiusura. */
@@ -60,6 +66,7 @@ type Stage = "pick" | "working" | "columns" | "review";
 export function ImportModal<R extends { key: string }>(props: ImportModalProps<R>) {
   const notify = useToastStore((s) => s.notify);
   const entries = useCalendarStore((s) => s.entries);
+  const setPreview = useImportPreviewStore((s) => s.setBlocks);
   const fileRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>("pick");
   const [progress, setProgress] = useState(0);
@@ -152,43 +159,50 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
     entries,
   );
 
+  // Anteprima sulla griglia: le righe in revisione come blocchi fantasma.
+  const previews: PreviewBlock[] =
+    stage === "review"
+      ? rows.map((r) => {
+          const iv = props.interval(r);
+          return {
+            key: r.key,
+            label: props.rowLabel(r),
+            startMin: iv.startMin,
+            endMin: iv.endMin,
+            conflict: conflictOf.has(r.key),
+          };
+        })
+      : [];
+  const sig = previews
+    .map((p) => `${p.key}:${p.label}:${p.startMin}:${p.endMin}:${p.conflict}`)
+    .join("|");
+  useEffect(() => {
+    setPreview(previews);
+    // ricalcolata solo quando la firma cambia, per non rimbalzare gli aggiornamenti
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, setPreview]);
+  useEffect(() => () => setPreview([]), [setPreview]);
+
   return (
-    <Modal
-      open
-      onClose={handleClose}
-      title={props.title}
-      description={props.description}
-      size="lg"
-      footer={
-        stage === "review" ? (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted">
-              {count(rows.length)}
-              {conflictOf.size > 0 && (
-                <span className="text-danger">
-                  {" · "}
-                  {conflictOf.size} in conflitto
-                </span>
-              )}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={reset}>
-                Riprova
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={rows.length === 0 || saving}
-                onClick={() => void confirm()}
-              >
-                {saving ? "Creo…" : "Crea attività"}
-              </Button>
-            </div>
-          </div>
-        ) : undefined
-      }
-    >
-      <div onPaste={onPaste}>
+    <aside className="flex min-h-0 w-80 flex-none flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-card lg:w-96">
+      <header className="flex items-start justify-between gap-2 border-b border-line p-4">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-ink">{props.title}</h2>
+          <p className="mt-0.5 text-xs leading-snug text-muted">
+            {props.description}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Chiudi"
+          className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-muted transition-colors hover:bg-raised hover:text-ink"
+        >
+          <IconClose className="h-4 w-4" />
+        </button>
+      </header>
+
+      <div onPaste={onPaste} className="min-h-0 flex-1 overflow-y-auto p-4">
         <input
           ref={fileRef}
           type="file"
@@ -234,11 +248,11 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
         )}
 
         {stage === "columns" && (
-          <div className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-3 py-2">
             {props.choosePrompt && (
               <p className="text-sm text-muted">{props.choosePrompt}</p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {choices.map((c, i) => (
                 <button
                   key={i}
@@ -247,7 +261,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
                     setRows(c.rows);
                     setStage("review");
                   }}
-                  className="rounded-lg border border-line bg-bg px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-primary hover:bg-raised"
+                  className="rounded-lg border border-line bg-bg px-4 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:border-primary hover:bg-raised"
                 >
                   {c.label}
                   <span className="ml-2 text-xs font-normal text-muted">
@@ -274,7 +288,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
           (rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted">{props.emptyReview}</p>
           ) : (
-            <ul className="flex flex-col gap-3 py-1">
+            <ul className="flex flex-col gap-3">
               {rows.map((r) => (
                 <li
                   key={r.key}
@@ -303,6 +317,33 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
             </ul>
           ))}
       </div>
-    </Modal>
+
+      {stage === "review" && (
+        <footer className="flex items-center justify-between gap-2 border-t border-line p-3">
+          <span className="text-sm text-muted">
+            {count(rows.length)}
+            {conflictOf.size > 0 && (
+              <span className="text-danger">
+                {" · "}
+                {conflictOf.size} in conflitto
+              </span>
+            )}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={reset}>
+              Riprova
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={rows.length === 0 || saving}
+              onClick={() => void confirm()}
+            >
+              {saving ? "Creo…" : "Crea attività"}
+            </Button>
+          </div>
+        </footer>
+      )}
+    </aside>
   );
 }
