@@ -22,6 +22,7 @@ import {
   IconButton,
   Icons,
   Input,
+  Markdown,
   Textarea,
 } from "@/ui";
 
@@ -847,17 +848,17 @@ export function ProjectsView() {
               {selected.description && (
                 <div className={CARD}>
                   <div className={CARD_LABEL}>Descrizione</div>
-                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                  <Markdown className="mt-2.5 text-sm leading-relaxed text-muted">
                     {selected.description}
-                  </p>
+                  </Markdown>
                 </div>
               )}
               {selected.objectives && (
                 <div className={CARD}>
                   <div className={CARD_LABEL}>Obiettivi</div>
-                  <p className="mt-2.5 whitespace-pre-line text-sm leading-relaxed text-muted">
+                  <Markdown className="mt-2.5 text-sm leading-relaxed text-muted">
                     {selected.objectives}
-                  </p>
+                  </Markdown>
                 </div>
               )}
             </div>
