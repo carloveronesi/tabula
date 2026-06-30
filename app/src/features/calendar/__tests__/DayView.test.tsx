@@ -75,7 +75,9 @@ describe("DayView", () => {
     render(
       <DayView
         date={new Date(2026, 5, 10)}
-        entries={[]}
+        entries={[
+          entry("e", "2026-06-10T10:00:00", "2026-06-10T11:00:00", "Esistente"),
+        ]}
         workHours={WH}
         slotMinutes={30}
         previewBlocks={[
@@ -104,6 +106,10 @@ describe("DayView", () => {
     expect(ghosts[0]).toHaveTextContent("Demo");
     expect(ghosts[0]).toHaveTextContent("10:00–11:00");
     expect(ghosts[0]).toHaveAttribute("data-conflict", "true");
+    // due colonne: il suggerito a destra, l'esistente ristretto a sinistra
+    expect((ghosts[0] as HTMLElement).style.left).toBe("calc(50% + 2px)");
+    const block = screen.getByTestId("entry-block");
+    expect(block.style.right).toBe("calc(50% + 2px)");
   });
 
   it("drag su area vuota → onCreateRange con l'intervallo", () => {

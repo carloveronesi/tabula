@@ -137,6 +137,11 @@ export function DayView({
   const boundary = lunchBoundary(workHours, slotMinutes);
   const dayKey = isoDate(date);
   const blocks = entryBlocks(entries, dayKey, slots);
+  // Import in corso su questo giorno: due colonne — esistenti a sinistra, blocchi
+  // suggeriti a destra — così il testo non si sovrappone.
+  const dayPreviews = (previewBlocks ?? []).filter((p) => p.date === dayKey);
+  const split = dayPreviews.length > 0;
+  const SPLIT_MID = "calc(50% + 2px)";
 
   const areaRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
@@ -269,7 +274,7 @@ export function DayView({
           />
         )}
 
-        {blocks.length === 0 && !drag && (
+        {blocks.length === 0 && !drag && !split && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
             <p className="text-center text-[13px] text-muted">
               Trascina sulla griglia per creare un'attività
@@ -329,7 +334,7 @@ export function DayView({
                 top: top + 2,
                 height: heightPx,
                 left: 4,
-                right: 4,
+                right: split ? SPLIT_MID : 4,
                 backgroundColor: color ? withAlpha(color, 0.16) : undefined,
               }}
               className={`group relative flex touch-none overflow-hidden rounded-lg bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
@@ -403,8 +408,7 @@ export function DayView({
           );
         })}
 
-        {(previewBlocks ?? []).map((p) => {
-          if (p.date !== dayKey) return null;
+        {dayPreviews.map((p) => {
           const pos = entryRowSpan(p.startMin, p.endMin, slots);
           if (!pos) return null;
           const top = rowTop(pos.startRow, slotHeight, boundary);
@@ -416,7 +420,7 @@ export function DayView({
               key={p.key}
               data-testid="preview-ghost"
               data-conflict={p.conflict}
-              style={{ position: "absolute", top: top + 2, height, left: 4, right: 4 }}
+              style={{ position: "absolute", top: top + 2, height, left: SPLIT_MID, right: 4 }}
               className={`pointer-events-none flex flex-col justify-center overflow-hidden rounded-lg border-2 border-dashed px-3 text-xs font-medium ${
                 p.conflict
                   ? "border-danger bg-danger/10 text-danger"
