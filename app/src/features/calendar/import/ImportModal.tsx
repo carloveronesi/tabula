@@ -67,6 +67,10 @@ export interface ImportModalProps<R extends { key: string }> {
     onChange: (date: ISODate) => void;
     applyToRow: (date: ISODate) => Partial<R>;
   };
+  /** Controlli in cima alla revisione (es. "applica a tutte"); `patchAll` aggiorna ogni riga. */
+  reviewHeader?: (patchAll: (next: Partial<R>) => void) => ReactNode;
+  /** Riga pronta da creare. Se assente, sempre pronta; altrimenti "Crea" è bloccato finché non lo sono tutte. */
+  rowReady?: (row: R) => boolean;
   /** Blocco campi della riga; `patch` aggiorna quella riga. */
   renderRow: (row: R, patch: (next: Partial<R>) => void) => ReactNode;
   /** Persiste le righe. Lo shell gestisce stato di salvataggio, toast e chiusura. */
@@ -149,8 +153,12 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
     setRows((rs) => rs.filter((r) => r.key !== key));
   }
 
+  function patchAll(next: Partial<R>) {
+    setRows((rs) => rs.map((r) => ({ ...r, ...next })));
+  }
+
   async function confirm() {
-    if (rows.length === 0) return;
+    if (rows.length === 0 || notReady > 0) return;
     setSaving(true);
     try {
       await props.persist(rows);
@@ -165,6 +173,11 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
 
   const count = (n: number) =>
     n === 0 ? props.noun.none : `${n} ${n === 1 ? props.noun.one : props.noun.many}`;
+
+  // Righe non ancora pronte (es. senza progetto): bloccano la creazione.
+  const notReady = props.rowReady
+    ? rows.filter((r) => !props.rowReady!(r)).length
+    : 0;
 
   // Sovrapposizioni col giorno e tra le righe; si ricalcola a ogni modifica d'orario.
   const conflictOf = findConflicts(
@@ -306,17 +319,22 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
           </details>
         )}
 
-        {stage === "review" && rows.length > 0 && props.dayField && (
-          <label className="mb-3 flex items-center gap-2 text-sm text-muted">
-            Giorno
-            <input
-              type="date"
-              aria-label="Giorno di destinazione"
-              value={props.dayField.value}
-              onChange={(e) => e.target.value && setAllToDay(e.target.value)}
-              className="tnum h-9 rounded-lg border border-line bg-bg px-2.5 text-sm text-ink focus:border-primary focus:outline-none"
-            />
-          </label>
+        {stage === "review" && rows.length > 0 && (props.dayField || props.reviewHeader) && (
+          <div className="mb-3 flex flex-col gap-2 rounded-lg border border-line bg-bg p-3">
+            {props.dayField && (
+              <label className="flex items-center gap-2 text-sm text-muted">
+                Giorno
+                <input
+                  type="date"
+                  aria-label="Giorno di destinazione"
+                  value={props.dayField.value}
+                  onChange={(e) => e.target.value && setAllToDay(e.target.value)}
+                  className="tnum h-9 rounded-lg border border-line bg-surface px-2.5 text-sm text-ink focus:border-primary focus:outline-none"
+                />
+              </label>
+            )}
+            {props.reviewHeader?.(patchAll)}
+          </div>
         )}
 
         {stage === "review" &&
@@ -357,11 +375,18 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
         <footer className="flex items-center justify-between gap-2 border-t border-line p-3">
           <span className="text-sm text-muted">
             {count(rows.length)}
-            {conflictOf.size > 0 && (
+            {notReady > 0 ? (
               <span className="text-danger">
                 {" · "}
-                {conflictOf.size} in conflitto
+                {notReady} senza progetto
               </span>
+            ) : (
+              conflictOf.size > 0 && (
+                <span className="text-danger">
+                  {" · "}
+                  {conflictOf.size} in conflitto
+                </span>
+              )
             )}
           </span>
           <div className="flex items-center gap-2">
@@ -371,7 +396,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
             <Button
               variant="primary"
               size="sm"
-              disabled={rows.length === 0 || saving}
+              disabled={rows.length === 0 || saving || notReady > 0}
               onClick={() => void confirm()}
             >
               {saving ? "Creo…" : "Crea attività"}

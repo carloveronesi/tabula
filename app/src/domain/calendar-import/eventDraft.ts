@@ -46,13 +46,17 @@ export function splitTitleAndPerson(
   return { title: text, match: matchPerson(text, people, contacts) };
 }
 
-/** Bozza per un evento importato dal calendario: titolo, orario, referente. */
+/**
+ * Bozza per un evento importato dal calendario: titolo, orario, referente. Col
+ * progetto scelto eredita tipo (cliente/interno) e cliente; senza, resta "event".
+ */
 export function eventToDraft(input: {
   title: string;
   date: ISODate;
   startMin: number;
   durationMin: number;
   match: PersonMatch | null;
+  project: { id: string; kind: "client" | "internal"; clientId: string | null } | null;
 }): EntryDraft {
   const isPerson = input.match?.kind === "person";
   const isContact = input.match?.kind === "contact";
@@ -61,9 +65,9 @@ export function eventToDraft(input: {
     date: input.date,
     startMin: input.startMin,
     endMin: input.startMin + input.durationMin,
-    type: "event",
-    clientId: null,
-    projectId: null,
+    type: input.project ? input.project.kind : "event",
+    clientId: input.project ? input.project.clientId : null,
+    projectId: input.project ? input.project.id : null,
     subtypeId: null,
     notes: "",
     blockers: "",

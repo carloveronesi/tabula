@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { nanoid } from "nanoid";
 import type { ISODate } from "@/data/types";
 import { applyDraft } from "@/domain/entryDraft";
@@ -23,6 +23,9 @@ import { minutesToLabel } from "@/domain/slots";
 import { ImportModal, type ProcessResult } from "./ImportModal";
 import { matchValueOf, useMatchHelpers } from "./importMatch";
 
+// Sentinella: l'utente sceglie esplicitamente "nessun progetto" (resta un event).
+const NO_PROJECT = "__event__";
+
 interface Row {
   key: string;
   title: string;
@@ -31,6 +34,8 @@ interface Row {
   durationMin: number;
   /** "person:id" | "contact:id" | null */
   matchValue: string | null;
+  /** id progetto, NO_PROJECT per "event" esplicito, o null = ancora da scegliere. */
+  projectId: string | null;
 }
 
 /**
@@ -39,12 +44,18 @@ interface Row {
  * delle ore dà la scala. Se lo screenshot ha più giorni si sceglie quale colonna
  * importare; gli eventi finiscono sul giorno scelto col selettore "Giorno", che
  * sposta anche la vista (default: il giorno da cui si è aperto l'import).
+ *
+ * Dal solo titolo non si può sapere se un blocco è cliente o interno: si sceglie
+ * un progetto per riga (obbligatorio, "applica a tutte" per il bulk), da cui si
+ * ereditano tipo e cliente. Resta possibile "Evento (senza progetto)".
  */
 export function CalendarImportModal() {
   const day = useEditorStore((s) => s.calendarImportDay);
   const close = useEditorStore((s) => s.closeCalendarImport);
   const people = useInventoryStore((s) => s.people);
   const contacts = useInventoryStore((s) => s.contacts);
+  const projects = useInventoryStore((s) => s.projects);
+  const clients = useInventoryStore((s) => s.clients);
   const slotMinutes = useSettingsStore((s) => s.settings.slotMinutes);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
   const setActiveDate = useUiStore((s) => s.setActiveDate);
@@ -52,8 +63,27 @@ export function CalendarImportModal() {
   // Giorno di destinazione, regolabile in revisione; default = giorno aperto.
   const [targetDay, setTargetDay] = useState<ISODate>(day ?? isoDate(new Date()));
 
+  const projectOptions = useMemo(() => {
+    const clientName = (id: string | null) =>
+      clients.find((c) => c.id === id)?.name ?? "Cliente";
+    return [
+      { id: NO_PROJECT, label: "Evento (senza progetto)" },
+      ...projects.map((p) => ({
+        id: p.id,
+        label:
+          p.kind === "client" ? `${p.name} · ${clientName(p.clientId)}` : `${p.name} · Interno`,
+      })),
+    ];
+  }, [projects, clients]);
+
   if (!day) return null;
   const anchor = day; // ristretto a ISODate dopo la guardia (per le closure sotto)
+
+  const projectOf = (id: string | null) => {
+    if (!id || id === NO_PROJECT) return null;
+    const p = projects.find((x) => x.id === id);
+    return p ? { id: p.id, kind: p.kind, clientId: p.clientId } : null;
+  };
 
   function rowsFromColumn(col: GridColumn, date: ISODate): Row[] {
     return col.events.map((e) => {
@@ -69,6 +99,7 @@ export function CalendarImportModal() {
         startMin: e.startMin,
         durationMin: e.durationMin,
         matchValue: matchValueOf(person),
+        projectId: null,
       };
     });
   }
@@ -122,6 +153,7 @@ export function CalendarImportModal() {
         startMin: r.startMin,
         durationMin: r.durationMin,
         match: match.decode(r.matchValue),
+        project: projectOf(r.projectId),
       });
       await saveEntry(applyDraft(draft, { id: nanoid(), now: Date.now() }));
     }
@@ -146,11 +178,23 @@ export function CalendarImportModal() {
         endMin: r.startMin + r.durationMin,
       })}
       rowLabel={(r) => r.title}
+      rowReady={(r) => r.projectId !== null}
       dayField={{
         value: targetDay,
         onChange: goToDay,
         applyToRow: (date) => ({ date }),
       }}
+      reviewHeader={(patchAll) => (
+        <div className="max-w-full">
+          <Combobox
+            label="Progetto (tutte)"
+            placeholder="Assegna a tutte…"
+            options={projectOptions}
+            value={null}
+            onChange={(id) => id && patchAll({ projectId: id })}
+          />
+        </div>
+      )}
       renderRow={(r, patch) => (
         <>
           <input
@@ -190,6 +234,18 @@ export function CalendarImportModal() {
             <span className="tnum text-xs text-faint">
               → {minutesToLabel(r.startMin + r.durationMin)}
             </span>
+          </div>
+          <div className="max-w-xs">
+            <Combobox
+              label="Progetto"
+              placeholder="Scegli progetto…"
+              options={projectOptions}
+              value={r.projectId}
+              onChange={(id) => patch({ projectId: id })}
+            />
+            {r.projectId === null && (
+              <p className="mt-1 text-xs text-danger">Scegli un progetto</p>
+            )}
           </div>
           <div className="max-w-xs">
             <Combobox
