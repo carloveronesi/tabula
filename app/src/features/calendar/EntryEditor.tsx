@@ -62,7 +62,7 @@ function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-pill border border-primary bg-primary-wash",
+        "inline-flex items-center gap-1 rounded-sm border border-primary bg-primary-wash",
         "py-1 pl-2.5 pr-1 text-xs text-accent",
       )}
     >
@@ -461,7 +461,7 @@ export function EntryEditor() {
                     aria-pressed={active}
                     onClick={() => patch({ startMin: p.startMin, endMin: p.endMin })}
                     className={cn(
-                      "rounded-pill border px-2.5 py-1 text-xs font-medium",
+                      "rounded-sm border px-2.5 py-1 text-xs font-medium",
                       "transition-colors duration-[var(--dur-fast)] ease-out",
                       active
                         ? "border-primary bg-primary-wash text-accent"

@@ -40,7 +40,7 @@ function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-pill border border-primary bg-primary-wash",
+        "inline-flex items-center gap-1 rounded-sm border border-primary bg-primary-wash",
         "py-1 pl-2.5 pr-1 text-xs text-accent",
       )}
     >
@@ -545,7 +545,7 @@ export function ProjectsView() {
               <h2 className="text-2xl font-semibold tracking-tight text-ink">
                 {selected.name}
               </h2>
-              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-muted">
+              <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-muted">
                 {STATUS_LABEL[selected.status]}
               </span>
             </div>

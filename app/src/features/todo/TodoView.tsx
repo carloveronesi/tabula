@@ -229,7 +229,7 @@ function TodoRow({
             {t.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 rounded-pill bg-primary-wash px-2 py-0.5 text-xs text-accent"
+                className="inline-flex items-center gap-1 rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-accent"
               >
                 {tag}
                 <button

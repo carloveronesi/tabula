@@ -268,7 +268,7 @@ export function DayView({
               left: 4,
               right: 4,
             }}
-            className={`pointer-events-none rounded-lg border bg-primary-wash ${
+            className={`pointer-events-none rounded border bg-primary-wash ${
               dragConflict ? "border-danger" : "border-dashed border-primary"
             }`}
           />
@@ -337,7 +337,7 @@ export function DayView({
                 right: split ? SPLIT_MID : 4,
                 backgroundColor: color ? withAlpha(color, 0.16) : undefined,
               }}
-              className={`group relative flex touch-none overflow-hidden rounded-lg bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
+              className={`group relative flex touch-none overflow-hidden rounded bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 compact
                   ? "items-baseline gap-2 py-1"
                   : "flex-col gap-0.5 py-1.5"
@@ -421,7 +421,7 @@ export function DayView({
               data-testid="preview-ghost"
               data-conflict={p.conflict}
               style={{ position: "absolute", top: top + 2, height, left: SPLIT_MID, right: 4 }}
-              className={`pointer-events-none flex flex-col justify-center overflow-hidden rounded-lg border-2 border-dashed px-3 text-xs font-medium ${
+              className={`pointer-events-none flex flex-col justify-center overflow-hidden rounded border-2 border-dashed px-3 text-xs font-medium ${
                 p.conflict
                   ? "border-danger bg-danger/10 text-danger"
                   : "border-primary bg-primary-wash text-primary"

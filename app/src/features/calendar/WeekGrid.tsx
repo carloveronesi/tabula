@@ -466,7 +466,7 @@ export function WeekGrid({
                       right: 2,
                       backgroundColor: color ? withAlpha(color, 0.16) : undefined,
                     }}
-                    className="relative flex touch-none overflow-hidden rounded-lg bg-primary-wash py-0.5 pl-2.5 pr-1.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[box-shadow] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow"
+                    className="relative flex touch-none overflow-hidden rounded bg-primary-wash py-0.5 pl-2.5 pr-1.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[box-shadow] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow"
                   >
                     <span
                       aria-hidden
@@ -514,7 +514,7 @@ export function WeekGrid({
             <div
               data-testid={preview.ghost ? "create-ghost" : "drag-preview"}
               data-conflict={dragConflict}
-              className={`pointer-events-none absolute rounded-lg bg-primary-wash ${
+              className={`pointer-events-none absolute rounded bg-primary-wash ${
                 dragConflict
                   ? "border border-danger ring-1 ring-danger"
                   : preview.ghost

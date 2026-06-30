@@ -254,7 +254,7 @@ export function QuickAddPopover() {
               type="button"
               onClick={() => applyTpl(t)}
               className={cn(
-                "inline-flex h-7 max-w-full items-center truncate rounded-pill border px-2.5 text-xs",
+                "inline-flex h-7 max-w-full items-center truncate rounded-sm border px-2.5 text-xs",
                 "transition-colors duration-[var(--dur-fast)]",
                 tpl?.id === t.id
                   ? "border-primary bg-primary-wash text-accent"
