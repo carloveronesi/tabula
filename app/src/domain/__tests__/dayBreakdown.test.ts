@@ -76,13 +76,22 @@ describe("dayBreakdown", () => {
     expect(out.rows[0].color).toBe("#f43f5e");
   });
 
-  it("evento/ferie senza riferimento → gruppo per tipo, colore null", () => {
+  it("evento/ferie senza riferimento → gruppo per tipo, tinta del tipo", () => {
     const entries = [
       entry("e", "2026-06-18T09:00:00", "2026-06-18T09:30:00", "event"),
     ];
     const out = dayBreakdown(entries, MAPS, NAMES);
     expect(out.rows).toEqual([
-      { key: "type:event", label: "Evento", color: null, minutes: 30 },
+      { key: "type:event", label: "Evento", color: "#ec4899", minutes: 30 },
     ]);
+  });
+
+  it("interno e cliente senza riferimento → colori distinti", () => {
+    const entries = [
+      entry("i", "2026-06-18T09:00:00", "2026-06-18T10:00:00", "internal"),
+      entry("c", "2026-06-18T10:00:00", "2026-06-18T11:00:00", "client"),
+    ];
+    const [a, b] = dayBreakdown(entries, MAPS, NAMES).rows;
+    expect(a.color).not.toBe(b.color);
   });
 });

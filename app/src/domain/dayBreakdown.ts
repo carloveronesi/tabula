@@ -9,12 +9,24 @@ const TYPE_LABEL: Record<EntryType, string> = {
   vacation: "Ferie",
 };
 
+/**
+ * Tinta dei gruppi-per-tipo (entry senza cliente/sottotipo, quindi senza
+ * colore proprio). Valori distinti dalla palette così righe come "Interno" e
+ * "Cliente" non collidono tutte sull'accento.
+ */
+const TYPE_COLOR: Record<EntryType, string> = {
+  internal: "#6366f1", // indigo (vicino all'accento)
+  client: "#f43f5e", // rose
+  event: "#ec4899", // pink
+  vacation: "#06b6d4", // cyan
+};
+
 export interface BreakdownRow {
   /** Chiave stabile del gruppo (cliente/sottotipo/tipo). */
   key: string;
   label: string;
-  /** Colore del gruppo (come i blocchi in timeline); `null` → accento default. */
-  color: string | null;
+  /** Colore del gruppo: del cliente/sottotipo, o tinta del tipo come fallback. */
+  color: string;
   minutes: number;
 }
 
@@ -74,7 +86,8 @@ export function dayBreakdown(
     if (existing) {
       existing.minutes += min;
     } else {
-      groups.set(key, { key, label, color: entryColor(e, maps), minutes: min });
+      const color = entryColor(e, maps) ?? TYPE_COLOR[e.type];
+      groups.set(key, { key, label, color, minutes: min });
     }
   }
 
