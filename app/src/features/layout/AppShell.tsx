@@ -191,8 +191,12 @@ export function AppShell() {
         <TopBar />
         <main
           data-testid={`view-${view}`}
-          className={`mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5 ${
-            view === "day" || view === "month" ? "max-w-6xl" : "max-w-5xl"
+          className={`flex w-full min-h-0 flex-1 flex-col ${
+            view === "projects"
+              ? "max-w-none"
+              : `mx-auto px-4 py-4 sm:px-6 sm:py-5 ${
+                  view === "day" || view === "month" ? "max-w-6xl" : "max-w-5xl"
+                }`
           }`}
         >
           {view === "day" ? (
@@ -269,6 +273,8 @@ export function AppShell() {
                 onFixFilter={setFixedFilter}
               />
             </div>
+          ) : view === "projects" ? (
+            <ProjectsView />
           ) : (
           <div
             className={`flex min-h-0 flex-1 flex-col rounded-xl border border-line bg-surface shadow-card ${
@@ -299,7 +305,6 @@ export function AppShell() {
             patronDay={settings.patronDay}
           />
         )}
-            {view === "projects" && <ProjectsView />}
             {view === "search" && <SearchView />}
             {view === "settings" && <SettingsView />}
             {view === "todo" && <TodoView />}

@@ -89,6 +89,7 @@ describe("ProjectsView", () => {
   it("modifica il progetto selezionato e lo persiste nello store", async () => {
     render(<ProjectsView />);
 
+    fireEvent.click(screen.getByRole("button", { name: /modifica/i }));
     const nameInput = screen.getByLabelText("Nome") as HTMLInputElement;
     expect(nameInput.value).toBe("Sito"); // primo progetto auto-selezionato
     fireEvent.change(nameInput, { target: { value: "Sito web" } });
@@ -110,6 +111,7 @@ describe("ProjectsView", () => {
   it("elimina il progetto selezionato dallo store", async () => {
     render(<ProjectsView />);
 
+    fireEvent.click(screen.getByRole("button", { name: /modifica/i }));
     fireEvent.click(screen.getByRole("button", { name: /elimina/i }));
 
     await waitFor(() => {
@@ -154,6 +156,7 @@ describe("ProjectsView", () => {
   it("aggiunge una sotto-attività e la salva nel progetto", async () => {
     render(<ProjectsView />);
 
+    fireEvent.click(screen.getByRole("button", { name: /modifica/i }));
     fireEvent.click(
       screen.getByRole("button", { name: /aggiungi sotto-attività/i }),
     );
@@ -174,6 +177,7 @@ describe("ProjectsView", () => {
     render(<ProjectsView />);
 
     fireEvent.click(screen.getByText("Manutenzione")); // interno (clientId null)
+    fireEvent.click(screen.getByRole("button", { name: /modifica/i }));
     const clientSelect = screen.getByLabelText("Cliente") as HTMLSelectElement;
     fireEvent.change(clientSelect, { target: { value: "c1" } });
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
