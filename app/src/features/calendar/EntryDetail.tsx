@@ -111,26 +111,26 @@ export function EntryDetail() {
       {e && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
+            <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-ink">
               {TYPE_LABEL[e.type]}
             </span>
             {clientName && (
-              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
+              <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-ink">
                 {clientName}
               </span>
             )}
             {projectName && (
-              <span className="rounded-pill bg-primary-wash px-2 py-0.5 text-xs text-accent">
+              <span className="rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-accent">
                 {projectName}
               </span>
             )}
             {subtypeName && (
-              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-ink">
+              <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-ink">
                 {subtypeName}
               </span>
             )}
             {e.milestone && (
-              <span className="rounded-pill bg-raised px-2 py-0.5 text-xs text-muted">
+              <span className="rounded-sm bg-raised px-2 py-0.5 text-xs text-muted">
                 ◆ {e.milestone}
               </span>
             )}

@@ -26,7 +26,7 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="inline-flex gap-0.5 rounded-pill border border-line bg-bg p-1"
+      className="inline-flex gap-0.5 rounded border border-line bg-bg p-1"
     >
       {options.map((opt) => {
         const active = opt.id === value;
@@ -37,7 +37,7 @@ export function Segmented<T extends string>({
             aria-pressed={active}
             onClick={() => onChange(opt.id)}
             className={cn(
-              "h-8 rounded-pill px-3.5 text-xs font-medium",
+              "h-8 rounded-sm px-3.5 text-xs font-medium",
               "transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] ease-out",
               active
                 ? "bg-surface text-ink shadow-sm"

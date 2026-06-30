@@ -57,7 +57,7 @@ export function TimerControl() {
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-pill border border-primary bg-primary-wash",
+        "flex items-center gap-1.5 rounded-sm border border-primary bg-primary-wash",
         "py-0.5 pl-2.5 pr-1 text-accent shadow-sm",
       )}
     >

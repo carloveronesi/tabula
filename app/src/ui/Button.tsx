@@ -12,7 +12,7 @@ const base =
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-primary-ink shadow-sm hover:bg-primary-hover hover:shadow",
+    "bg-primary text-primary-ink shadow-[var(--shadow-primary)] hover:bg-primary-hover",
   subtle:
     "border border-line bg-surface text-ink shadow-sm hover:bg-raised hover:border-line-strong",
   ghost: "text-muted hover:bg-raised hover:text-ink",
