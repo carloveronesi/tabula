@@ -175,6 +175,7 @@ export function AppShell() {
         internalColors: settings.internalColors,
       },
       names,
+      settings.workHours,
     );
   }, [
     entries,
@@ -182,6 +183,7 @@ export function AppShell() {
     names,
     settings.clientColors,
     settings.internalColors,
+    settings.workHours,
   ]);
 
   return (

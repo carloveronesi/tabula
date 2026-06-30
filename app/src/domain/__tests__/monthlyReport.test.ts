@@ -106,7 +106,9 @@ describe("monthlyReport", () => {
       30,
     );
     expect(r.byClient).toHaveLength(1);
-    expect(r.byOtherType.map((t) => t.type)).toEqual<EntryType[]>(["vacation", "internal"]); // 240 > 120
+    // ferie 09:00–13:00 = 240 a muro, ma scarta i 60 di pausa (12:00–13:00) → 180
+    expect(r.byOtherType.map((t) => t.type)).toEqual<EntryType[]>(["vacation", "internal"]); // 180 > 120
+    expect(r.byOtherType.find((t) => t.type === "vacation")?.minutes).toBe(180);
     const internal = r.byOtherType.find((t) => t.type === "internal");
     expect(internal?.bySubtype).toEqual([{ subtypeId: "admin", minutes: 120 }]);
   });

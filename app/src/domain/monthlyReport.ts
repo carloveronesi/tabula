@@ -1,5 +1,5 @@
 import type { Entry, EntryType, Id, ISODate, Location } from "@/data/types";
-import { durationMinutes } from "@/domain/time";
+import { workedMinutes } from "@/domain/time";
 import { minutesOfDay, buildSlots, type WorkHours } from "@/domain/slots";
 
 /**
@@ -116,7 +116,7 @@ export function monthlyReport(
   const typeMap = new Map<EntryType, { minutes: number; bySubtype: Map<Id | null, number> }>();
 
   for (const e of entries) {
-    const min = durationMinutes(e);
+    const min = workedMinutes(e, workHours);
     const day = e.startsAt.slice(0, 10);
     totalMin += min;
     activeDaySet.add(day);
@@ -149,7 +149,7 @@ export function monthlyReport(
   let registeredMin = 0;
   for (const date of workingDatesElapsed) {
     const dayEntries = entriesByDay.get(date) ?? [];
-    for (const e of dayEntries) registeredMin += durationMinutes(e);
+    for (const e of dayEntries) registeredMin += workedMinutes(e, workHours);
     if (isDayFilled(dayEntries, slots, slotMinutes)) filledDays += 1;
   }
   const workingDays = workingDatesElapsed.length;

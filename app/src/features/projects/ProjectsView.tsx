@@ -495,6 +495,7 @@ export function ProjectsView() {
   const contacts = useInventoryStore((s) => s.contacts);
   const people = useInventoryStore((s) => s.people);
   const clientColors = useSettingsStore((s) => s.settings.clientColors);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -505,7 +506,7 @@ export function ProjectsView() {
     void allEntries().then(setEntries);
   }, []);
 
-  const stats = useMemo(() => aggregateByProject(entries), [entries]);
+  const stats = useMemo(() => aggregateByProject(entries, workHours), [entries, workHours]);
 
   const colorOf = (clientId: Id | null) =>
     clientId ? (clientColors[clientId] ?? colorFromKey(clientId)) : INTERNAL_COLOR;
