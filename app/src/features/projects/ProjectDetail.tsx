@@ -145,9 +145,17 @@ export function ProjectDetail({
     return [...list].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   }, [entries, subtypeFilter]);
 
-  const refs = project.contactIds
+  // Referenti espliciti del progetto; se non ce ne sono, ripiega sui contatti
+  // del cliente (nei dati reali il link progetto→referente non è quasi mai
+  // popolato, ma il cliente ha i suoi contatti). `fromClient` marca il fallback.
+  const explicitRefs = project.contactIds
     .map((id) => contacts.find((k) => k.id === id))
     .filter((k): k is NonNullable<typeof k> => !!k);
+  const clientRefs = project.clientId
+    ? contacts.filter((k) => k.clientId === project.clientId)
+    : [];
+  const refs = explicitRefs.length > 0 ? explicitRefs : clientRefs;
+  const refsFromClient = explicitRefs.length === 0 && clientRefs.length > 0;
   const team = project.teamIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
@@ -343,7 +351,9 @@ export function ProjectDetail({
           )}
           {refs.length > 0 && (
             <div className={CARD}>
-              <div className={CARD_LABEL}>Referenti</div>
+              <div className={CARD_LABEL}>
+                Referenti{refsFromClient && " del cliente"}
+              </div>
               <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
                 {refs.map((k) => (
                   <div key={k.id} className="flex items-center gap-2.5">
