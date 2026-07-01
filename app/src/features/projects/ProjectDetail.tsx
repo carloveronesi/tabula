@@ -212,14 +212,17 @@ export function ProjectDetail({
                   {activity.byMonth.map((b) => (
                     <div
                       key={b.month}
-                      className="flex-1 rounded-t-sm"
-                      title={`${fmtMonth(b.month)}: ${formatHours(b.minutes)}`}
+                      className="group relative flex-1 rounded-t-sm"
                       style={{
                         height: `${(b.minutes / max) * 100}%`,
                         minHeight: b.minutes > 0 ? 2 : 0,
                         background: color,
                       }}
-                    />
+                    >
+                      <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
+                        {formatHours(b.minutes)}
+                      </span>
+                    </div>
                   ))}
                 </div>
                 <div className="mt-1.5 flex gap-1.5">
