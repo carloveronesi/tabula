@@ -3,6 +3,7 @@ import {
   PALETTE,
   colorFromKey,
   entryColor,
+  projectColor,
   textColorOn,
   withAlpha,
 } from "@/domain/colors";
@@ -39,38 +40,26 @@ describe("withAlpha", () => {
   });
 });
 
+describe("projectColor", () => {
+  it("usa il colore assegnato, o il fallback deterministico se assente", () => {
+    expect(projectColor({ id: "p1", color: "#123456" })).toBe("#123456");
+    expect(projectColor({ id: "p1", color: null })).toBe(colorFromKey("p1"));
+    expect(projectColor({ id: "p1" })).toBe(colorFromKey("p1"));
+  });
+});
+
 describe("entryColor", () => {
-  const maps = {
-    clientColors: { acme: "#ff0000" },
-    internalColors: { dev: "#00ff00" },
-  };
+  const projectColors = { p1: "#ff0000" };
 
-  it("usa il colore cliente assegnato", () => {
-    expect(
-      entryColor({ type: "client", clientId: "acme", subtypeId: null }, maps),
-    ).toBe("#ff0000");
+  it("usa il colore assegnato al progetto della entry", () => {
+    expect(entryColor({ projectId: "p1" }, projectColors)).toBe("#ff0000");
   });
 
-  it("ricade su un colore deterministico se il cliente non ha colore", () => {
-    const c = entryColor(
-      { type: "client", clientId: "globex", subtypeId: null },
-      maps,
-    );
-    expect(c).toBe(colorFromKey("globex"));
+  it("ricade su un colore deterministico se il progetto non ha colore", () => {
+    expect(entryColor({ projectId: "p2" }, projectColors)).toBe(colorFromKey("p2"));
   });
 
-  it("usa il colore del sottotipo per le attività interne", () => {
-    expect(
-      entryColor({ type: "internal", clientId: null, subtypeId: "dev" }, maps),
-    ).toBe("#00ff00");
-  });
-
-  it("ritorna null per ferie/evento o senza riferimento", () => {
-    expect(
-      entryColor({ type: "vacation", clientId: null, subtypeId: null }, maps),
-    ).toBeNull();
-    expect(
-      entryColor({ type: "client", clientId: null, subtypeId: null }, maps),
-    ).toBeNull();
+  it("ritorna null per una entry senza progetto (ferie/evento/non assegnata)", () => {
+    expect(entryColor({ projectId: null }, projectColors)).toBeNull();
   });
 });

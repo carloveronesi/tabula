@@ -57,6 +57,7 @@ export function AppShell() {
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
+  const projects = useInventoryStore((s) => s.projects);
   const locations = usePresenceStore((s) => s.metas);
   const setLocation = usePresenceStore((s) => s.setLocation);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
@@ -116,14 +117,13 @@ export function AppShell() {
     anchor?: { x: number; y: number },
   ) => openQuickAdd({ date: dateISO, startMin, endMin, anchor: anchor ?? null });
 
-  // Colore del blocco per cliente/sottotipo (memoizzato sulle mappe colore).
+  // Colore del blocco per progetto (colore assegnato al progetto, fallback
+  // deterministico sull'id; entry senza progetto → nessun colore).
   const colorOf = useMemo(() => {
-    const maps = {
-      clientColors: settings.clientColors,
-      internalColors: settings.internalColors,
-    };
-    return (entry: Entry) => entryColor(entry, maps);
-  }, [settings.clientColors, settings.internalColors]);
+    const projectColors: Record<string, string> = {};
+    for (const p of projects) if (p.color) projectColors[p.id] = p.color;
+    return (entry: Entry) => entryColor(entry, projectColors);
+  }, [projects]);
 
   // Resolver dei nomi cliente/sottotipo, condivisi da legenda e blocchi.
   const names = useMemo(() => {

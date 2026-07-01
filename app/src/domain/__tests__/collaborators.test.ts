@@ -20,6 +20,7 @@ function project(over: Partial<Project> = {}): Project {
     teamIds: [],
     contactIds: [],
     estimatedHours: 0,
+    color: null,
     ...over,
   };
 }

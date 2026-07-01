@@ -244,6 +244,7 @@ export function EntryEditor() {
       teamIds: [],
       contactIds: [],
       estimatedHours: 0,
+      color: null,
     });
     patch({ projectId: id, clientId });
   }

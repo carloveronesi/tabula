@@ -52,6 +52,7 @@ export interface Project {
   teamIds: Id[];
   contactIds: Id[];
   estimatedHours: number;
+  color: string | null; // colore del progetto; null ⇒ fallback deterministico
 }
 
 export interface Person {

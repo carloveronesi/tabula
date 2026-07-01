@@ -16,6 +16,7 @@ import {
   IconButton,
   Icons,
   Input,
+  Swatches,
   Textarea,
 } from "@/ui";
 import { STATUS_LABEL, STATUSES } from "./meta";
@@ -53,6 +54,7 @@ const editableOf = (p: Project): ProjectEditable => ({
   teamIds: p.teamIds,
   contactIds: p.contactIds,
   subtaskDefs: p.subtaskDefs,
+  color: p.color,
 });
 
 /**
@@ -194,6 +196,14 @@ export function ProjectEditor({
           </select>
         </Field>
       </div>
+
+      <Field label="Colore">
+        <Swatches
+          value={draft.color}
+          onPick={(color) => patch({ color })}
+          onClear={() => patch({ color: null })}
+        />
+      </Field>
 
       <Field label="Cliente">
         <select

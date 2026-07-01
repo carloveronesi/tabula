@@ -41,6 +41,7 @@ function project(id: string, clientId: string | null, name: string): Project {
     teamIds: [],
     contactIds: [],
     estimatedHours: 0,
+    color: null,
   };
 }
 function entry(over: Partial<Entry> = {}): Entry {

@@ -5,7 +5,7 @@ import { aggregateByProject } from "@/domain/projectStats";
 import { projectActivity } from "@/domain/projectActivity";
 import { newProject } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
-import { colorFromKey } from "@/domain/colors";
+import { colorFromKey, projectColor } from "@/domain/colors";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
@@ -226,7 +226,7 @@ export function ProjectsView() {
                   project={p}
                   totalMin={stats.get(p.id)?.totalMin ?? 0}
                   active={p.id === selectedId}
-                  color={colorFromKey(p.id)}
+                  color={projectColor(p)}
                   onSelect={() => select(p.id)}
                 />
               ))}
@@ -256,7 +256,7 @@ export function ProjectsView() {
                     project={p}
                     totalMin={stats.get(p.id)?.totalMin ?? 0}
                     active={p.id === selectedId}
-                    color={colorFromKey(p.id)}
+                    color={projectColor(p)}
                     onSelect={() => select(p.id)}
                   />
                 ))}
@@ -300,7 +300,7 @@ export function ProjectsView() {
           stat={stats.get(selected.id)}
           activity={activity}
           entries={selEntries}
-          color={colorFromKey(selected.id)}
+          color={projectColor(selected)}
           clientName={selClientName}
           onEdit={() => setEditing(true)}
         />

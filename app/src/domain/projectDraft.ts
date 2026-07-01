@@ -14,6 +14,7 @@ export type ProjectEditable = Pick<
   | "teamIds"
   | "contactIds"
   | "subtaskDefs"
+  | "color"
 >;
 
 const sameIds = (a: Id[], b: Id[]): boolean =>
@@ -40,6 +41,7 @@ export function projectEditableEqual(
     a.estimatedHours === b.estimatedHours &&
     a.startDate === b.startDate &&
     a.endDate === b.endDate &&
+    a.color === b.color &&
     sameIds(a.teamIds, b.teamIds) &&
     sameIds(a.contactIds, b.contactIds) &&
     sameSubtasks(a.subtaskDefs, b.subtaskDefs)
@@ -71,5 +73,6 @@ export function newProject(input: NewProjectInput, id: Id): Project {
     teamIds: [],
     contactIds: [],
     estimatedHours: 0,
+    color: null,
   };
 }

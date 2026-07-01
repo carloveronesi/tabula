@@ -21,6 +21,7 @@ function project(id: string, clientId: string | null, name: string): Project {
     teamIds: [],
     contactIds: [],
     estimatedHours: 0,
+    color: null,
   };
 }
 function entry(id: string, projectId: string, startsAt: ISODateTime, endsAt: ISODateTime): Entry {

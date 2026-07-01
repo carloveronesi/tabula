@@ -1,7 +1,7 @@
 import type { Entry, EntryType } from "@/data/types";
 import { workedMinutes } from "@/domain/time";
 import type { WorkHours } from "@/domain/slots";
-import { entryColor, type ColorMaps } from "@/domain/colors";
+import { colorFromKey, type ColorMaps } from "@/domain/colors";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -88,7 +88,16 @@ export function dayBreakdown(
     if (existing) {
       existing.minutes += min;
     } else {
-      const color = entryColor(e, maps) ?? TYPE_COLOR[e.type];
+      // La ripartizione raggruppa per cliente/sottotipo (dimensione propria,
+      // diversa dal colore-progetto dei blocchi in timeline).
+      let color: string;
+      if (e.type === "client" && e.clientId) {
+        color = maps.clientColors[e.clientId] ?? colorFromKey(e.clientId);
+      } else if (e.type === "internal" && e.subtypeId) {
+        color = maps.internalColors[e.subtypeId] ?? colorFromKey(e.subtypeId);
+      } else {
+        color = TYPE_COLOR[e.type];
+      }
       groups.set(key, { key, label, color, minutes: min });
     }
   }

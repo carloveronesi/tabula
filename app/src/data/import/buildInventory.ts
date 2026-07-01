@@ -76,6 +76,7 @@ export function buildInventory(
       teamIds,
       contactIds: [],
       estimatedHours: 0,
+      color: null,
     });
     projectIdBySourceId[sourceId] = id;
   }

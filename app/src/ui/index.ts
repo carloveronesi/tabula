@@ -26,4 +26,5 @@ export {
   type MarkdownEditorProps,
 } from "@/ui/MarkdownEditor";
 export { Toaster } from "@/ui/Toaster";
+export { Swatches } from "@/ui/Swatches";
 export * as Icons from "@/ui/icons";

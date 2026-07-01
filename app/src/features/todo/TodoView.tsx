@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Project, Todo } from "@/data/types";
 import { sortTodos, isOverdue, subtaskProgress } from "@/domain/todoDraft";
 import { isoDate } from "@/domain/calendarNav";
-import { colorFromKey } from "@/domain/colors";
+import { projectColor } from "@/domain/colors";
 import { useTodoStore } from "@/store/todo";
 import { useInventoryStore } from "@/store/inventory";
 import { Button } from "@/ui/Button";
@@ -168,9 +168,7 @@ function TodoRow({
               aria-hidden
               className="h-2 w-2 shrink-0 rounded-[3px]"
               style={{
-                backgroundColor: project
-                  ? colorFromKey(project.id)
-                  : "transparent",
+                backgroundColor: project ? projectColor(project) : "transparent",
                 outline: project ? undefined : "1px solid var(--line)",
               }}
             />

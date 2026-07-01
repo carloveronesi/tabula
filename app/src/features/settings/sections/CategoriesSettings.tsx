@@ -1,44 +1,11 @@
 import { nanoid } from "nanoid";
 import type { Settings } from "@/data/types";
-import { PALETTE, colorFromKey } from "@/domain/colors";
+import { colorFromKey } from "@/domain/colors";
 import { useSettingsStore } from "@/store/settings";
 import { useInventoryStore } from "@/store/inventory";
-import { Button, IconButton, Input, cn } from "@/ui";
+import { Button, IconButton, Input, Swatches } from "@/ui";
 import { IconClose, IconPlus } from "@/ui/icons";
 import { SettingsSection } from "@/features/settings/SettingsSection";
-
-function Swatches({
-  value,
-  onPick,
-}: {
-  value: string;
-  onPick: (color: string) => void;
-}) {
-  const v = value.toLowerCase();
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {PALETTE.map((c) => {
-        const active = c.toLowerCase() === v;
-        return (
-          <button
-            key={c}
-            type="button"
-            aria-label={`Colore ${c}`}
-            aria-pressed={active}
-            onClick={() => onPick(c)}
-            style={{ backgroundColor: c }}
-            className={cn(
-              "h-6 w-6 rounded-full ring-offset-2 ring-offset-surface transition-[box-shadow]",
-              active
-                ? "ring-2 ring-ink"
-                : "ring-1 ring-line hover:ring-line-strong",
-            )}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 /** Sottotipi (cliente/interni) e colori per cliente e per sottotipo interno. */
 export function CategoriesSettings() {
@@ -72,7 +39,7 @@ export function CategoriesSettings() {
     <div className="space-y-6">
       <SettingsSection
         title="Colori clienti"
-        description="Il colore con cui i blocchi di ogni cliente appaiono nel calendario."
+        description="Il colore del cliente nei riepiloghi giorno e mese (il calendario colora per progetto)."
       >
         {clients.length === 0 ? (
           <p className="text-sm text-muted">
@@ -99,7 +66,7 @@ export function CategoriesSettings() {
 
       <SettingsSection
         title="Sottotipi interni"
-        description="Le categorie del lavoro interno (non legato a un cliente), ognuna col suo colore."
+        description="Le categorie del lavoro interno (non legato a un cliente), col colore usato nei riepiloghi."
       >
         {internalSubs.length > 0 && (
           <ul className="space-y-3">

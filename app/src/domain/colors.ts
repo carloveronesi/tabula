@@ -54,27 +54,29 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** Mappe colore persistite (per cliente e per sottotipo interno). */
+/** Mappe colore persistite (per cliente e per sottotipo interno), usate dalle
+ * ripartizioni analitiche che raggruppano su quelle dimensioni. */
 export interface ColorMaps {
   clientColors: Record<string, string>;
   internalColors: Record<string, string>;
 }
 
+/** Colore di un progetto: assegnato a mano o fallback deterministico sull'id. */
+export function projectColor(p: { id: string; color?: string | null }): string {
+  return p.color ?? colorFromKey(p.id);
+}
+
 /**
- * Colore di un'attività per i blocchi-calendario: per cliente (`type=client`)
- * o per sottotipo interno (`type=internal`), con fallback deterministico se non
- * c'è un colore assegnato. `null` quando non c'è un riferimento colorabile
- * (ferie/evento senza cliente) → il chiamante usa l'accento di default.
+ * Colore di un blocco-calendario: dal progetto della entry (colore assegnato
+ * o fallback deterministico sull'id del progetto). `null` quando la entry non
+ * ha un progetto (ferie/evento o attività non assegnata) → il chiamante usa il
+ * colore-tipo di default.
  */
 export function entryColor(
-  entry: { type: string; clientId: string | null; subtypeId: string | null },
-  maps: ColorMaps,
+  entry: { projectId: string | null },
+  projectColors: Record<string, string>,
 ): string | null {
-  if (entry.type === "client" && entry.clientId) {
-    return maps.clientColors[entry.clientId] ?? colorFromKey(entry.clientId);
-  }
-  if (entry.type === "internal" && entry.subtypeId) {
-    return maps.internalColors[entry.subtypeId] ?? colorFromKey(entry.subtypeId);
-  }
-  return null;
+  return entry.projectId
+    ? (projectColors[entry.projectId] ?? colorFromKey(entry.projectId))
+    : null;
 }

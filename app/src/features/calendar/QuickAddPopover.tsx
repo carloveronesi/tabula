@@ -4,12 +4,11 @@ import type { ActivityTemplate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
-import { entryColor } from "@/domain/colors";
+import { colorFromKey } from "@/domain/colors";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useTemplateStore } from "@/store/templates";
-import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
 import { Button, cn, Combobox } from "@/ui";
 
@@ -49,7 +48,6 @@ export function QuickAddPopover() {
   const clients = useInventoryStore((s) => s.clients);
   const saveClient = useInventoryStore((s) => s.saveClient);
   const templates = useTemplateStore((s) => s.templates);
-  const clientColors = useSettingsStore((s) => s.settings.clientColors);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -125,12 +123,9 @@ export function QuickAddPopover() {
     [clients],
   );
   const selectedClient = clients.find((c) => c.id === clientId) ?? null;
-  const dotColor = selectedClient
-    ? entryColor(
-        { type: "client", clientId: selectedClient.id, subtypeId: null },
-        { clientColors, internalColors: {} },
-      )
-    : null;
+  // Pallino-indizio del cliente scelto (il colore del blocco vero è per progetto,
+  // qui non ancora selezionato): tinta deterministica sul cliente.
+  const dotColor = selectedClient ? colorFromKey(selectedClient.id) : null;
 
   if (!quickAdd) return null;
   const { date, startMin, endMin, anchor } = quickAdd;
