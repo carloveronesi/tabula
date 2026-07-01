@@ -339,7 +339,7 @@ export function DayView({
               }}
               className={`group relative flex touch-none overflow-hidden rounded bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 compact
-                  ? "items-baseline gap-2 py-1"
+                  ? "items-center gap-2"
                   : "flex-col gap-0.5 py-1.5"
               } ${active && dragConflict ? "ring-2 ring-danger" : ""}`}
             >
