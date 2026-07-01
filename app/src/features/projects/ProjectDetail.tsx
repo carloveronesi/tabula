@@ -207,28 +207,31 @@ export function ProjectDetail({
           {(() => {
             const max = Math.max(...activity.byMonth.map((b) => b.minutes), 1);
             return (
-              <div className="mt-4 flex h-24 items-end gap-1.5">
-                {activity.byMonth.map((b) => (
-                  <div
-                    key={b.month}
-                    className="flex flex-1 flex-col items-center gap-1.5"
-                    title={`${fmtMonth(b.month)}: ${formatHours(b.minutes)}`}
-                  >
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-sm"
-                        style={{
-                          height: `${(b.minutes / max) * 100}%`,
-                          minHeight: b.minutes > 0 ? 2 : 0,
-                          background: color,
-                        }}
-                      />
-                    </div>
-                    <span className="tnum text-[10px] leading-none text-muted">
+              <div className="mt-4">
+                <div className="flex h-24 items-end gap-1.5">
+                  {activity.byMonth.map((b) => (
+                    <div
+                      key={b.month}
+                      className="flex-1 rounded-t-sm"
+                      title={`${fmtMonth(b.month)}: ${formatHours(b.minutes)}`}
+                      style={{
+                        height: `${(b.minutes / max) * 100}%`,
+                        minHeight: b.minutes > 0 ? 2 : 0,
+                        background: color,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="mt-1.5 flex gap-1.5">
+                  {activity.byMonth.map((b) => (
+                    <span
+                      key={b.month}
+                      className="tnum flex-1 text-center text-[10px] leading-none text-muted"
+                    >
                       {fmtMonth(b.month)}
                     </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             );
           })()}
