@@ -1,108 +1,50 @@
 import { nanoid } from "nanoid";
-import type { Settings } from "@/data/types";
-import { colorFromKey } from "@/domain/colors";
 import { useSettingsStore } from "@/store/settings";
-import { useInventoryStore } from "@/store/inventory";
-import { Button, IconButton, Input, Swatches } from "@/ui";
+import { Button, IconButton, Input } from "@/ui";
 import { IconClose, IconPlus } from "@/ui/icons";
 import { SettingsSection } from "@/features/settings/SettingsSection";
 
-/** Sottotipi (cliente/interni) e colori per cliente e per sottotipo interno. */
+/** Sottotipi del lavoro (cliente/interni): solo etichette; il colore è per
+ * progetto (vedi editor del progetto), i riepiloghi usano un colore derivato. */
 export function CategoriesSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const saveSettings = useSettingsStore((s) => s.saveSettings);
-  const clients = useInventoryStore((s) => s.clients);
-  const save = (patch: Partial<Settings>) =>
-    void saveSettings({ ...settings, ...patch });
 
   const { client: clientSubs, internal: internalSubs } = settings.subtypes;
 
   const setClientSubs = (list: { id: string; label: string }[]) =>
-    save({ subtypes: { ...settings.subtypes, client: list } });
+    void saveSettings({ ...settings, subtypes: { ...settings.subtypes, client: list } });
   const setInternalSubs = (list: { id: string; label: string }[]) =>
-    save({ subtypes: { ...settings.subtypes, internal: list } });
-
-  const removeInternal = (id: string) => {
-    const internalColors = { ...settings.internalColors };
-    delete internalColors[id];
-    void saveSettings({
-      ...settings,
-      subtypes: {
-        ...settings.subtypes,
-        internal: internalSubs.filter((s) => s.id !== id),
-      },
-      internalColors,
-    });
-  };
+    void saveSettings({ ...settings, subtypes: { ...settings.subtypes, internal: list } });
 
   return (
     <div className="space-y-6">
       <SettingsSection
-        title="Colori clienti"
-        description="Il colore del cliente nei riepiloghi giorno e mese (il calendario colora per progetto)."
-      >
-        {clients.length === 0 ? (
-          <p className="text-sm text-muted">
-            Nessun cliente: importa i dati o creane uno dall'editor delle attività.
-          </p>
-        ) : (
-          <ul className="space-y-4">
-            {clients.map((c) => (
-              <li key={c.id} className="space-y-2">
-                <span className="text-sm text-ink">{c.name}</span>
-                <Swatches
-                  value={settings.clientColors[c.id] ?? colorFromKey(c.id)}
-                  onPick={(color) =>
-                    save({
-                      clientColors: { ...settings.clientColors, [c.id]: color },
-                    })
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </SettingsSection>
-
-      <SettingsSection
         title="Sottotipi interni"
-        description="Le categorie del lavoro interno (non legato a un cliente), col colore usato nei riepiloghi."
+        description="Le categorie del lavoro interno (non legato a un cliente)."
       >
         {internalSubs.length > 0 && (
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {internalSubs.map((s) => (
-              <li key={s.id} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    aria-label="Nome sottotipo interno"
-                    value={s.label}
-                    onChange={(e) =>
-                      setInternalSubs(
-                        internalSubs.map((x) =>
-                          x.id === s.id ? { ...x, label: e.target.value } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <IconButton
-                    label={`Elimina ${s.label}`}
-                    size="sm"
-                    onClick={() => removeInternal(s.id)}
-                  >
-                    <IconClose size={16} />
-                  </IconButton>
-                </div>
-                <Swatches
-                  value={settings.internalColors[s.id] ?? colorFromKey(s.id)}
-                  onPick={(color) =>
-                    save({
-                      internalColors: {
-                        ...settings.internalColors,
-                        [s.id]: color,
-                      },
-                    })
+              <li key={s.id} className="flex items-center gap-2">
+                <Input
+                  aria-label="Nome sottotipo interno"
+                  value={s.label}
+                  onChange={(e) =>
+                    setInternalSubs(
+                      internalSubs.map((x) =>
+                        x.id === s.id ? { ...x, label: e.target.value } : x,
+                      ),
+                    )
                   }
                 />
+                <IconButton
+                  label={`Elimina ${s.label}`}
+                  size="sm"
+                  onClick={() => setInternalSubs(internalSubs.filter((x) => x.id !== s.id))}
+                >
+                  <IconClose size={16} />
+                </IconButton>
               </li>
             ))}
           </ul>
@@ -111,10 +53,7 @@ export function CategoriesSettings() {
           variant="subtle"
           size="sm"
           onClick={() =>
-            setInternalSubs([
-              ...internalSubs,
-              { id: nanoid(), label: "Nuovo sottotipo" },
-            ])
+            setInternalSubs([...internalSubs, { id: nanoid(), label: "Nuovo sottotipo" }])
           }
         >
           <IconPlus size={15} />
@@ -144,9 +83,7 @@ export function CategoriesSettings() {
                 <IconButton
                   label={`Elimina ${s.label}`}
                   size="sm"
-                  onClick={() =>
-                    setClientSubs(clientSubs.filter((x) => x.id !== s.id))
-                  }
+                  onClick={() => setClientSubs(clientSubs.filter((x) => x.id !== s.id))}
                 >
                   <IconClose size={16} />
                 </IconButton>
@@ -158,10 +95,7 @@ export function CategoriesSettings() {
           variant="subtle"
           size="sm"
           onClick={() =>
-            setClientSubs([
-              ...clientSubs,
-              { id: nanoid(), label: "Nuovo sottotipo" },
-            ])
+            setClientSubs([...clientSubs, { id: nanoid(), label: "Nuovo sottotipo" }])
           }
         >
           <IconPlus size={15} />

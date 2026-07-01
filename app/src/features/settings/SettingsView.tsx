@@ -34,7 +34,7 @@ const SECTIONS: {
   { id: "general", label: "Generale", Icon: IconSettings },
   { id: "schedule", label: "Orario di lavoro", Icon: IconClock },
   { id: "presence", label: "Presenze", Icon: IconBuilding },
-  { id: "categories", label: "Categorie & colori", Icon: IconTag },
+  { id: "categories", label: "Categorie", Icon: IconTag },
   { id: "templates", label: "Template attività", Icon: IconBookmark },
   { id: "people", label: "Persone & referenti", Icon: IconUsers },
   { id: "data", label: "Dati", Icon: IconDatabase },
