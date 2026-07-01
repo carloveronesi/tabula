@@ -129,6 +129,7 @@ export function ProjectDetail({
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
   const workHours = useSettingsStore((s) => s.settings.workHours);
   const [subtypeFilter, setSubtypeFilter] = useState<Id | null | undefined>(undefined);
+  const [timeMode, setTimeMode] = useState<"hours" | "share">("hours");
 
   const subtypeList = project.kind === "client" ? subtypes.client : subtypes.internal;
   const subtypeLabel = (id: Id | null) =>
@@ -245,27 +246,50 @@ export function ProjectDetail({
 
       {activity && activity.byMonth.length > 0 && (
         <div className={CARD}>
-          <div className={CARD_LABEL}>Attività nel tempo</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className={CARD_LABEL}>Attività nel tempo</div>
+            <div className="flex gap-1.5">
+              <FilterChip active={timeMode === "hours"} onClick={() => setTimeMode("hours")}>
+                Ore
+              </FilterChip>
+              <FilterChip active={timeMode === "share"} onClick={() => setTimeMode("share")}>
+                Quota mese
+              </FilterChip>
+            </div>
+          </div>
           {(() => {
+            const share = timeMode === "share";
             const max = Math.max(...activity.byMonth.map((b) => b.minutes), 1);
             return (
               <div className="mt-4">
                 <div className="flex h-24 items-end gap-1.5">
-                  {activity.byMonth.map((b) => (
-                    <div
-                      key={b.month}
-                      className="group relative flex-1 rounded-t-sm"
-                      style={{
-                        height: `${(b.minutes / max) * 100}%`,
-                        minHeight: b.minutes > 0 ? 2 : 0,
-                        background: color,
-                      }}
-                    >
-                      <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
-                        {formatHours(b.minutes)}
-                      </span>
-                    </div>
-                  ))}
+                  {activity.byMonth.map((b) => {
+                    const pct = b.total > 0 ? (b.minutes / b.total) * 100 : 0;
+                    const h = share ? pct : (b.minutes / max) * 100;
+                    return (
+                      <div key={b.month} className="group relative h-full flex-1">
+                        {/* In quota, la traccia piena è il totale del mese; la parte
+                            colorata è il progetto, il resto grigio = altri progetti. */}
+                        {share && (
+                          <div aria-hidden className="absolute inset-0 rounded-sm bg-raised" />
+                        )}
+                        <div
+                          className="absolute inset-x-0 bottom-0 rounded-t-sm"
+                          style={{
+                            height: `${h}%`,
+                            minHeight: b.minutes > 0 ? 2 : 0,
+                            background: color,
+                          }}
+                        >
+                          <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
+                            {share
+                              ? `${Math.round(pct)}% del mese · ${formatHours(b.minutes)}/${formatHours(b.total)}`
+                              : formatHours(b.minutes)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-1.5 flex gap-1.5">
                   {activity.byMonth.map((b) => (
@@ -304,57 +328,6 @@ export function ProjectDetail({
                     }}
                   />
                 </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {entries.length > 0 && (
-        <div className={CARD}>
-          <div className="flex items-baseline justify-between gap-2">
-            <div className={CARD_LABEL}>Elenco attività</div>
-            <span className="tnum text-xs text-muted">{rows.length}</span>
-          </div>
-          {activity && activity.bySubtype.length > 1 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <FilterChip
-                active={subtypeFilter === undefined}
-                onClick={() => setSubtypeFilter(undefined)}
-              >
-                Tutti
-              </FilterChip>
-              {activity.bySubtype.map((s) => (
-                <FilterChip
-                  key={s.subtypeId ?? "_"}
-                  active={subtypeFilter === s.subtypeId}
-                  onClick={() => setSubtypeFilter(s.subtypeId)}
-                >
-                  {subtypeLabel(s.subtypeId)}
-                </FilterChip>
-              ))}
-            </div>
-          )}
-          <ul className="mt-3">
-            {rows.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-0"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm text-ink">
-                    {e.title.trim() || "Senza titolo"}
-                  </div>
-                  <div className="tnum mt-0.5 text-xs text-muted">
-                    {fmtDay(e.startsAt.slice(0, 10))}
-                    {e.subtypeId !== null && (
-                      <span className="text-faint"> · {subtypeLabel(e.subtypeId)}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="tnum shrink-0 text-sm font-semibold text-ink">
-                  {formatHours(workedMinutes(e, workHours))}
-                </span>
               </li>
             ))}
           </ul>
@@ -412,6 +385,57 @@ export function ProjectDetail({
               </Markdown>
             </div>
           )}
+        </div>
+      )}
+
+      {entries.length > 0 && (
+        <div className={CARD}>
+          <div className="flex items-baseline justify-between gap-2">
+            <div className={CARD_LABEL}>Elenco attività</div>
+            <span className="tnum text-xs text-muted">{rows.length}</span>
+          </div>
+          {activity && activity.bySubtype.length > 1 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <FilterChip
+                active={subtypeFilter === undefined}
+                onClick={() => setSubtypeFilter(undefined)}
+              >
+                Tutti
+              </FilterChip>
+              {activity.bySubtype.map((s) => (
+                <FilterChip
+                  key={s.subtypeId ?? "_"}
+                  active={subtypeFilter === s.subtypeId}
+                  onClick={() => setSubtypeFilter(s.subtypeId)}
+                >
+                  {subtypeLabel(s.subtypeId)}
+                </FilterChip>
+              ))}
+            </div>
+          )}
+          <ul className="mt-3">
+            {rows.map((e) => (
+              <li
+                key={e.id}
+                className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-0"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-ink">
+                    {e.title.trim() || "Senza titolo"}
+                  </div>
+                  <div className="tnum mt-0.5 text-xs text-muted">
+                    {fmtDay(e.startsAt.slice(0, 10))}
+                    {e.subtypeId !== null && (
+                      <span className="text-faint"> · {subtypeLabel(e.subtypeId)}</span>
+                    )}
+                  </div>
+                </div>
+                <span className="tnum shrink-0 text-sm font-semibold text-ink">
+                  {formatHours(workedMinutes(e, workHours))}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </section>

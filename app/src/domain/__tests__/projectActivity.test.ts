@@ -43,12 +43,26 @@ describe("projectActivity", () => {
       "p1",
       WH,
     );
-    // Da marzo a maggio: aprile è un buco a 0.
+    // Da marzo a maggio: aprile è un buco per p1 (0), ma il mese ha lavoro (p2).
     expect(a.byMonth).toEqual([
-      { month: "2026-03", minutes: 120 },
-      { month: "2026-04", minutes: 0 },
-      { month: "2026-05", minutes: 60 },
+      { month: "2026-03", minutes: 120, total: 120 },
+      { month: "2026-04", minutes: 0, total: 60 }, // solo p2 quel mese
+      { month: "2026-05", minutes: 60, total: 60 },
     ]);
+  });
+
+  it("il totale del mese somma tutti i progetti ma esclude le ferie", () => {
+    const a = projectActivity(
+      [
+        entry("a", "p1", "s1", "2026-03-10T09:00:00", "2026-03-10T10:00:00"), // p1 60
+        entry("b", "p2", "s1", "2026-03-11T09:00:00", "2026-03-11T10:00:00"), // altro prog 60
+        { ...entry("f", "p3", "s1", "2026-03-12T09:00:00", "2026-03-12T13:00:00"), type: "vacation" }, // ferie: esclusa
+      ],
+      "p1",
+      WH,
+    );
+    // total = 60 (p1) + 60 (p2), la ferie non conta; quota p1 = 50%.
+    expect(a.byMonth).toEqual([{ month: "2026-03", minutes: 60, total: 120 }]);
   });
 
   it("attraversa il confine d'anno", () => {

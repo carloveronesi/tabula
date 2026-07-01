@@ -5,7 +5,11 @@ import type { WorkHours } from "@/domain/slots";
 export interface MonthBucket {
   /** "YYYY-MM". */
   month: string;
+  /** Minuti del progetto in quel mese. */
   minutes: number;
+  /** Minuti lavorati totali del mese (tutti i progetti/tipi, ferie escluse):
+   * denominatore per la quota. `minutes / total` = fetta del mese sul progetto. */
+  total: number;
 }
 
 export interface SubtypeBucket {
@@ -39,11 +43,16 @@ export function projectActivity(
   wh: WorkHours,
 ): ProjectActivity {
   const months = new Map<string, number>();
+  const monthTotals = new Map<string, number>();
   const subtypes = new Map<Id | null, number>();
   for (const e of entries) {
+    const month = e.startsAt.slice(0, 7);
+    // Totale del mese: tutto il tempo lavorato, ferie escluse (non è lavoro).
+    if (e.type !== "vacation") {
+      monthTotals.set(month, (monthTotals.get(month) ?? 0) + workedMinutes(e, wh));
+    }
     if (e.projectId !== projectId) continue;
     const min = workedMinutes(e, wh);
-    const month = e.startsAt.slice(0, 7);
     months.set(month, (months.get(month) ?? 0) + min);
     subtypes.set(e.subtypeId, (subtypes.get(e.subtypeId) ?? 0) + min);
   }
@@ -52,7 +61,7 @@ export function projectActivity(
   const keys = [...months.keys()].sort();
   if (keys.length > 0) {
     for (let m = keys[0]; m <= keys[keys.length - 1]; m = nextMonth(m)) {
-      byMonth.push({ month: m, minutes: months.get(m) ?? 0 });
+      byMonth.push({ month: m, minutes: months.get(m) ?? 0, total: monthTotals.get(m) ?? 0 });
     }
   }
 
