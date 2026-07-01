@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { db } from "@/data/db";
 import type { Client, Contact, Entry, ISODateTime, Person, Project } from "@/data/types";
 import { useInventoryStore } from "@/store/inventory";
@@ -76,7 +76,9 @@ describe("ProjectsView", () => {
     await waitFor(() =>
       expect(screen.getAllByText("3h").length).toBeGreaterThan(0),
     );
-    expect(screen.getByText("2")).toBeInTheDocument(); // conteggio attività
+    // conteggio attività nella card statistica omonima
+    const statCard = screen.getByText("Attività").parentElement as HTMLElement;
+    expect(within(statCard).getByText("2")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sito" })).toBeInTheDocument();
 
     // selezionando il progetto interno cambia il dettaglio

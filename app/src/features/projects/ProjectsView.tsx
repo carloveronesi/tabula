@@ -150,6 +150,11 @@ export function ProjectsView() {
     [entries, selected, workHours],
   );
 
+  const selEntries = useMemo(
+    () => (selected ? entries.filter((e) => e.projectId === selected.id) : []),
+    [entries, selected],
+  );
+
   const select = (id: string) => {
     setSelectedId(id);
     setEditing(false);
@@ -290,6 +295,7 @@ export function ProjectsView() {
           project={selected}
           stat={stats.get(selected.id)}
           activity={activity}
+          entries={selEntries}
           color={colorOf(selected.clientId)}
           clientName={selClientName}
           onEdit={() => setEditing(true)}

@@ -1,12 +1,13 @@
-import { type ReactNode } from "react";
-import type { Id, Project, ProjectStatus } from "@/data/types";
+import { useMemo, useState, type ReactNode } from "react";
+import type { Entry, Id, Project, ProjectStatus } from "@/data/types";
 import type { ProjectStats } from "@/domain/projectStats";
 import type { ProjectActivity } from "@/domain/projectActivity";
+import { workedMinutes } from "@/domain/time";
 import { formatHours } from "@/domain/format";
 import { colorFromKey, withAlpha } from "@/domain/colors";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
-import { Button, Icons, Markdown } from "@/ui";
+import { Button, cn, Icons, Markdown } from "@/ui";
 import { STATUS_COLOR, STATUS_LABEL } from "./meta";
 
 const fmtDay = (iso: string) =>
@@ -36,6 +37,33 @@ const initials = (name: string) =>
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
+
+/** Chip di filtro attivabile (usato per filtrare l'elenco attività per sottotipo). */
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-[var(--dur-fast)]",
+        active
+          ? "border-accent bg-primary-wash text-accent"
+          : "border-line text-muted hover:text-ink",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 function StatCard({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -83,6 +111,7 @@ export function ProjectDetail({
   project,
   stat,
   activity,
+  entries,
   color,
   clientName,
   onEdit,
@@ -90,6 +119,7 @@ export function ProjectDetail({
   project: Project;
   stat: ProjectStats | undefined;
   activity: ProjectActivity | null;
+  entries: Entry[];
   color: string;
   clientName: string | null;
   onEdit: () => void;
@@ -97,10 +127,22 @@ export function ProjectDetail({
   const contacts = useInventoryStore((s) => s.contacts);
   const people = useInventoryStore((s) => s.people);
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
+  const [subtypeFilter, setSubtypeFilter] = useState<Id | null | undefined>(undefined);
 
   const subtypeList = project.kind === "client" ? subtypes.client : subtypes.internal;
   const subtypeLabel = (id: Id | null) =>
     id ? (subtypeList.find((s) => s.id === id)?.label ?? "Generico") : "Generico";
+
+  // Attività del progetto, più recenti prima; filtrate per sottotipo se scelto
+  // (`undefined` = tutti; `null` = "Generico"/senza sottotipo).
+  const rows = useMemo(() => {
+    const list =
+      subtypeFilter === undefined
+        ? entries
+        : entries.filter((e) => e.subtypeId === subtypeFilter);
+    return [...list].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+  }, [entries, subtypeFilter]);
 
   const refs = project.contactIds
     .map((id) => contacts.find((k) => k.id === id)?.name)
@@ -262,6 +304,57 @@ export function ProjectDetail({
                     }}
                   />
                 </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {entries.length > 0 && (
+        <div className={CARD}>
+          <div className="flex items-baseline justify-between gap-2">
+            <div className={CARD_LABEL}>Elenco attività</div>
+            <span className="tnum text-xs text-muted">{rows.length}</span>
+          </div>
+          {activity && activity.bySubtype.length > 1 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <FilterChip
+                active={subtypeFilter === undefined}
+                onClick={() => setSubtypeFilter(undefined)}
+              >
+                Tutti
+              </FilterChip>
+              {activity.bySubtype.map((s) => (
+                <FilterChip
+                  key={s.subtypeId ?? "_"}
+                  active={subtypeFilter === s.subtypeId}
+                  onClick={() => setSubtypeFilter(s.subtypeId)}
+                >
+                  {subtypeLabel(s.subtypeId)}
+                </FilterChip>
+              ))}
+            </div>
+          )}
+          <ul className="mt-3">
+            {rows.map((e) => (
+              <li
+                key={e.id}
+                className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-0"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-ink">
+                    {e.title.trim() || "Senza titolo"}
+                  </div>
+                  <div className="tnum mt-0.5 text-xs text-muted">
+                    {fmtDay(e.startsAt.slice(0, 10))}
+                    {e.subtypeId !== null && (
+                      <span className="text-faint"> · {subtypeLabel(e.subtypeId)}</span>
+                    )}
+                  </div>
+                </div>
+                <span className="tnum shrink-0 text-sm font-semibold text-ink">
+                  {formatHours(workedMinutes(e, workHours))}
+                </span>
               </li>
             ))}
           </ul>
