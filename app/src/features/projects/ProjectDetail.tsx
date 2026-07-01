@@ -146,8 +146,8 @@ export function ProjectDetail({
   }, [entries, subtypeFilter]);
 
   const refs = project.contactIds
-    .map((id) => contacts.find((k) => k.id === id)?.name)
-    .filter((n): n is string => !!n);
+    .map((id) => contacts.find((k) => k.id === id))
+    .filter((k): k is NonNullable<typeof k> => !!k);
   const team = project.teamIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
@@ -176,14 +176,6 @@ export function ProjectDetail({
               />
               {clientName ?? "Progetto interno"}
             </span>
-            {refs.length > 0 && (
-              <>
-                {dot}
-                <span>
-                  Referenti: <span className="text-ink">{refs.join(", ")}</span>
-                </span>
-              </>
-            )}
             {(project.startDate || project.endDate) && (
               <>
                 {dot}
@@ -334,16 +326,34 @@ export function ProjectDetail({
         </div>
       )}
 
-      {(team.length > 0 || subtasks.length > 0) && (
+      {(team.length > 0 || refs.length > 0 || subtasks.length > 0) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {team.length > 0 && (
             <div className={CARD}>
               <div className={CARD_LABEL}>Team</div>
-              <div className="mt-3 flex flex-col gap-2.5">
+              <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
                 {team.map((p) => (
                   <div key={p.id} className="flex items-center gap-2.5">
                     <Avatar id={p.id} name={p.name} />
                     <span className="text-sm text-ink">{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {refs.length > 0 && (
+            <div className={CARD}>
+              <div className={CARD_LABEL}>Referenti</div>
+              <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
+                {refs.map((k) => (
+                  <div key={k.id} className="flex items-center gap-2.5">
+                    <Avatar id={k.id} name={k.name} />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm text-ink">{k.name}</div>
+                      {k.role && (
+                        <div className="truncate text-xs text-muted">{k.role}</div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
