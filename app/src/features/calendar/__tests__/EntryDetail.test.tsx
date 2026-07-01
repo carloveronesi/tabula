@@ -78,7 +78,7 @@ describe("EntryDetail", () => {
     useSettingsStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
-        subtypes: { client: [{ id: "s1", label: "Riunione" }], internal: [] },
+        subtypes: [{ id: "s1", label: "Riunione" }],
       },
     });
     useEditorStore

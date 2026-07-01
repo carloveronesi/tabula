@@ -12,7 +12,6 @@ function project(id: string, clientId: string | null, name: string): Project {
     clientId,
     kind: clientId ? "client" : "internal",
     name,
-    subtaskDefs: [],
     status: "active",
     description: "",
     objectives: "",
@@ -154,26 +153,6 @@ describe("ProjectsView", () => {
     expect(screen.getByText("Mario Rossi")).toBeInTheDocument();
     // Il referente appare sia nel riepilogo sia come token modificabile.
     expect(screen.getAllByText("Lucia Bianchi").length).toBeGreaterThan(0);
-  });
-
-  it("aggiunge una sotto-attività e la salva nel progetto", async () => {
-    render(<ProjectsView />);
-
-    fireEvent.click(screen.getByRole("button", { name: /modifica/i }));
-    fireEvent.click(
-      screen.getByRole("button", { name: /aggiungi sotto-attività/i }),
-    );
-    fireEvent.change(screen.getByLabelText("Sotto-attività"), {
-      target: { value: "Analisi" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
-
-    await waitFor(() => {
-      const p = useInventoryStore.getState().projects.find((x) => x.id === "p1");
-      expect(p?.subtaskDefs).toEqual([
-        expect.objectContaining({ label: "Analisi" }),
-      ]);
-    });
   });
 
   it("assegna un cliente a un progetto interno", async () => {

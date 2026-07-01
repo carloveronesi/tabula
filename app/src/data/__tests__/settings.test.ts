@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_SETTINGS, normalizeSettings } from "@/data/settings";
+import type { Settings } from "@/data/types";
+import { DEFAULT_SETTINGS, migrateSettings, normalizeSettings } from "@/data/settings";
 
 describe("normalizeSettings", () => {
   it("source null → default", () => {
@@ -36,7 +37,7 @@ describe("normalizeSettings", () => {
     expect(normalizeSettings({ slotMinutes: 30 }).slotMinutes).toBe(30);
   });
 
-  it("mappa taskSubtypes su subtypes (solo client/internal)", () => {
+  it("fonde taskSubtypes client+internal in un'unica lista", () => {
     const s = normalizeSettings({
       taskSubtypes: {
         internal: [{ id: "te-ai", label: "TE AI" }],
@@ -44,10 +45,10 @@ describe("normalizeSettings", () => {
         vacation: [{ id: "x", label: "X" }],
       },
     });
-    expect(s.subtypes).toEqual({
-      client: [{ id: "sal", label: "SAL" }],
-      internal: [{ id: "te-ai", label: "TE AI" }],
-    });
+    expect(s.subtypes).toEqual([
+      { id: "sal", label: "SAL" },
+      { id: "te-ai", label: "TE AI" },
+    ]);
   });
 
   it("internalColors passa (subtypeId stabili); clientColors azzerati", () => {
@@ -68,5 +69,30 @@ describe("normalizeSettings", () => {
       officeTargetPct: 40,
       clientTargetPct: 0,
     });
+  });
+});
+
+describe("migrateSettings", () => {
+  it("null → default", () => {
+    expect(migrateSettings(null)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it("fonde la vecchia forma {client,internal} in un'unica lista (dedup per id)", () => {
+    const stored = {
+      ...DEFAULT_SETTINGS,
+      subtypes: {
+        client: [{ id: "sal", label: "SAL" }],
+        internal: [{ id: "sal", label: "SAL" }, { id: "kt", label: "KT" }],
+      },
+    } as unknown as Settings;
+    expect(migrateSettings(stored).subtypes).toEqual([
+      { id: "sal", label: "SAL" },
+      { id: "kt", label: "KT" },
+    ]);
+  });
+
+  it("lascia intatta la lista già piatta", () => {
+    const stored = { ...DEFAULT_SETTINGS, subtypes: [{ id: "kt", label: "KT" }] };
+    expect(migrateSettings(stored).subtypes).toEqual([{ id: "kt", label: "KT" }]);
   });
 });

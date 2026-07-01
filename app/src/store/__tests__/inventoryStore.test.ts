@@ -45,7 +45,6 @@ function project(id: string, clientId: string | null, name: string): Project {
     clientId,
     kind: clientId ? "client" : "internal",
     name,
-    subtaskDefs: [],
     status: "active",
     description: "",
     objectives: "",

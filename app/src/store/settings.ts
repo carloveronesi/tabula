@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Settings } from "@/data/types";
-import { DEFAULT_SETTINGS } from "@/data/settings";
+import { DEFAULT_SETTINGS, migrateSettings } from "@/data/settings";
 import { db } from "@/data/db";
 import { persist } from "@/store/persist";
 
@@ -21,6 +21,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }),
   loadSettings: async () => {
     const stored = await db.settings.get("app");
-    set({ settings: stored ?? DEFAULT_SETTINGS });
+    set({ settings: migrateSettings(stored) });
   },
 }));

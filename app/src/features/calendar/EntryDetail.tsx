@@ -58,12 +58,7 @@ export function EntryDetail() {
   const subtypeName =
     e &&
     e.subtypeId &&
-    (e.type === "client"
-      ? settings.subtypes.client
-      : e.type === "internal"
-        ? settings.subtypes.internal
-        : []
-    ).find((s) => s.id === e.subtypeId)?.label;
+    settings.subtypes.find((s) => s.id === e.subtypeId)?.label;
   const collaboratorNames = e
     ? e.collaboratorIds
         .map((id) => people.find((p) => p.id === id)?.name)

@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   workingDays: [0, 1, 2, 3, 4],
   slotMinutes: 15,
-  subtypes: { client: [], internal: [] },
+  subtypes: [],
   clientColors: {},
   internalColors: {},
   lastUsedByClient: {},
@@ -60,6 +60,34 @@ function subtypeList(value: unknown): { id: string; label: string }[] {
 }
 
 /**
+ * Coerce dei sottotipi al modello corrente (lista unica): accetta sia la nuova
+ * forma piatta sia la vecchia `{ client, internal }`, fondendole e deduplicando
+ * per id (le voci client-first, così l'ordine resta prevedibile).
+ */
+function flattenSubtypes(value: unknown): { id: string; label: string }[] {
+  const merged = Array.isArray(value)
+    ? subtypeList(value)
+    : (() => {
+        const o = asObject(value);
+        return [...subtypeList(o.client), ...subtypeList(o.internal)];
+      })();
+  const seen = new Set<string>();
+  return merged.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
+}
+
+/**
+ * Porta al modello corrente i settings salvati (DB) o da export nativo: unica
+ * responsabilità è fondere la vecchia forma dei sottotipi. Chiamato in lettura.
+ */
+export function migrateSettings(stored: Settings | null | undefined): Settings {
+  if (!stored) return DEFAULT_SETTINGS;
+  return {
+    ...stored,
+    subtypes: flattenSubtypes((stored as { subtypes?: unknown }).subtypes),
+  };
+}
+
+/**
  * Normalizza i settings del formato di import nel modello dell'app,
  * applicando i default ai campi mancanti o non validi.
  * Nota: `clientColors` e `lastUsedByClient` sono azzerati perché legati alla
@@ -69,7 +97,6 @@ function subtypeList(value: unknown): { id: string; label: string }[] {
 export function normalizeSettings(source: SourceSettings | null): Settings {
   const s = asObject(source);
   const wh = asObject(s.workHours);
-  const ts = asObject(s.taskSubtypes);
   const presence = asObject(s.presenceTracking);
   const d = DEFAULT_SETTINGS;
 
@@ -101,7 +128,7 @@ export function normalizeSettings(source: SourceSettings | null): Settings {
       s.slotMinutes === 15 || s.slotMinutes === 30
         ? s.slotMinutes
         : d.slotMinutes,
-    subtypes: { client: subtypeList(ts.client), internal: subtypeList(ts.internal) },
+    subtypes: flattenSubtypes(s.taskSubtypes),
     clientColors: {},
     internalColors: stringRecord(s.internalColors),
     lastUsedByClient: {},

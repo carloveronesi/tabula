@@ -16,7 +16,6 @@ const editable = (over: Partial<ProjectEditable> = {}): ProjectEditable => ({
   endDate: "",
   teamIds: ["u1", "u2"],
   contactIds: [],
-  subtaskDefs: [{ id: "s1", label: "Analisi" }],
   color: null,
   ...over,
 });
@@ -32,7 +31,6 @@ describe("newProject", () => {
       status: "active",
       description: "",
       objectives: "",
-      subtaskDefs: [],
       teamIds: [],
       contactIds: [],
     });
@@ -56,11 +54,8 @@ describe("projectEditableEqual", () => {
     expect(projectEditableEqual(editable(), editable({ color: "#f43f5e" }))).toBe(false);
   });
 
-  it("diverso su team/referenti (id) e su sotto-attività", () => {
+  it("diverso su team/referenti (id)", () => {
     expect(projectEditableEqual(editable(), editable({ teamIds: ["u1"] }))).toBe(false);
     expect(projectEditableEqual(editable(), editable({ contactIds: ["k1"] }))).toBe(false);
-    expect(
-      projectEditableEqual(editable(), editable({ subtaskDefs: [{ id: "s1", label: "Altro" }] })),
-    ).toBe(false);
   });
 });

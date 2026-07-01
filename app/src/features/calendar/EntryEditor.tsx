@@ -125,15 +125,13 @@ export function EntryEditor() {
   }, [open]);
 
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
-  const subtypeOptions = useMemo(() => {
-    const list =
-      draft.type === "client"
-        ? subtypes.client
-        : draft.type === "internal"
-          ? subtypes.internal
-          : [];
-    return list.map((s) => ({ id: s.id, label: s.label }));
-  }, [subtypes, draft.type]);
+  const subtypeOptions = useMemo(
+    () =>
+      draft.type === "client" || draft.type === "internal"
+        ? subtypes.map((s) => ({ id: s.id, label: s.label }))
+        : [],
+    [subtypes, draft.type],
+  );
 
   const clientOptions = useMemo(
     () => clients.map((c) => ({ id: c.id, label: c.name })),
@@ -235,7 +233,6 @@ export function EntryEditor() {
       clientId,
       kind: clientId ? "client" : "internal",
       name,
-      subtaskDefs: [],
       status: "active",
       description: "",
       objectives: "",

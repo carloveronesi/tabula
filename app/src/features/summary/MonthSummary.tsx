@@ -210,10 +210,9 @@ export function MonthSummary({
   const clientColor = (id: Id) => settings.clientColors[id] ?? colorFromKey(id);
   const internalColor = (id: Id | null) =>
     id ? settings.internalColors[id] ?? colorFromKey(id) : null;
-  const subtypeLabel = (kind: "client" | "internal", id: Id | null) => {
+  const subtypeLabel = (id: Id | null) => {
     if (!id) return "Generico";
-    const list = kind === "client" ? settings.subtypes.client : settings.subtypes.internal;
-    return list.find((s) => s.id === id)?.label ?? "Generico";
+    return settings.subtypes.find((s) => s.id === id)?.label ?? "Generico";
   };
 
   const cov = report.coverage;
@@ -332,7 +331,7 @@ export function MonthSummary({
                   minutes={c.minutes}
                   max={total}
                   subtypes={c.bySubtype}
-                  subtypeLabel={(id) => subtypeLabel("client", id)}
+                  subtypeLabel={subtypeLabel}
                   filter={filter}
                   active={sameFilter(activeFilter, filter)}
                   faded={!!fixedFilter && !sameFilter(fixedFilter, filter)}
@@ -360,7 +359,7 @@ export function MonthSummary({
                   minutes={t.minutes}
                   max={total}
                   subtypes={t.bySubtype}
-                  subtypeLabel={(id) => subtypeLabel("internal", id)}
+                  subtypeLabel={subtypeLabel}
                   subtypeColor={t.type === "internal" ? internalColor : undefined}
                   filter={filter}
                   active={sameFilter(activeFilter, filter)}

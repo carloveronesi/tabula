@@ -67,7 +67,6 @@ export function buildInventory(
       clientId,
       kind: project.kind,
       name: project.name,
-      subtaskDefs: [],
       status: normalizeStatus(project.status),
       description: project.description ?? "",
       objectives: project.objectives ?? "",

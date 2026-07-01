@@ -53,15 +53,14 @@ const editableOf = (p: Project): ProjectEditable => ({
   endDate: p.endDate,
   teamIds: p.teamIds,
   contactIds: p.contactIds,
-  subtaskDefs: p.subtaskDefs,
   color: p.color,
 });
 
 /**
  * Editor inline del progetto selezionato (CRUD): anagrafica, pianificazione
  * (ore stimate, date), **team** (colleghi) e **referenti** (contatti del
- * cliente) modificabili, e **sotto-attività**. Lo stato locale parte dal
- * progetto ed è riavviato dal `key={project.id}` di chi lo monta.
+ * cliente) modificabili. Lo stato locale parte dal progetto ed è riavviato dal
+ * `key={project.id}` di chi lo monta.
  */
 export function ProjectEditor({
   project,
@@ -90,10 +89,7 @@ export function ProjectEditor({
     const merged = { ...draft, ...over };
     const trimmed = merged.name.trim();
     if (!trimmed) return false;
-    const subtaskDefs = merged.subtaskDefs
-      .map((s) => ({ ...s, label: s.label.trim() }))
-      .filter((s) => s.label);
-    const next: ProjectEditable = { ...merged, name: trimmed, subtaskDefs };
+    const next: ProjectEditable = { ...merged, name: trimmed };
     await saveProject({
       ...project,
       ...next,
@@ -157,13 +153,6 @@ export function ProjectEditor({
     if (!existing) await saveContact({ id, clientId: draft.clientId, name, role: "" });
     addContact(id);
   };
-
-  const addSubtask = () =>
-    patch({ subtaskDefs: [...draft.subtaskDefs, { id: nanoid(), label: "" }] });
-  const patchSubtask = (id: Id, label: string) =>
-    patch({ subtaskDefs: draft.subtaskDefs.map((s) => (s.id === id ? { ...s, label } : s)) });
-  const removeSubtask = (id: Id) =>
-    patch({ subtaskDefs: draft.subtaskDefs.filter((s) => s.id !== id) });
 
   return (
     <form
@@ -304,28 +293,6 @@ export function ProjectEditor({
           </div>
         </Field>
       )}
-
-      <Field label="Sotto-attività">
-        <div className="space-y-2">
-          {draft.subtaskDefs.map((s) => (
-            <div key={s.id} className="flex items-center gap-2">
-              <Input
-                aria-label="Sotto-attività"
-                value={s.label}
-                onChange={(e) => patchSubtask(s.id, e.target.value)}
-                placeholder="Es. Analisi, Sviluppo…"
-              />
-              <IconButton label="Rimuovi sotto-attività" size="sm" onClick={() => removeSubtask(s.id)}>
-                <Icons.IconClose size={16} />
-              </IconButton>
-            </div>
-          ))}
-          <Button variant="ghost" onClick={addSubtask}>
-            <Icons.IconPlus size={16} />
-            Aggiungi sotto-attività
-          </Button>
-        </div>
-      </Field>
 
       <Field label="Descrizione">
         <Textarea

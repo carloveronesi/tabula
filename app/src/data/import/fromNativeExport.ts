@@ -11,7 +11,7 @@ import type {
 } from "@/data/types";
 import type { ImportResult } from "@/data/import/importer";
 import { EXPORT_FORMAT, EXPORT_VERSION } from "@/data/export/buildExport";
-import { DEFAULT_SETTINGS } from "@/data/settings";
+import { migrateSettings } from "@/data/settings";
 
 /** Vero se l'oggetto è un export nativo di Tabula (non il formato legacy). */
 export function isNativeExport(raw: unknown): boolean {
@@ -45,6 +45,6 @@ export function importFromNative(raw: Record<string, unknown>): ImportResult {
     recurrences: arr<Recurrence>(raw.recurrences),
     todos: arr<Todo>(raw.todos),
     days: arr<DayMeta>(raw.days),
-    settings: (raw.settings as Settings | null) ?? DEFAULT_SETTINGS,
+    settings: migrateSettings(raw.settings as Settings | null),
   };
 }

@@ -13,19 +13,11 @@ export type ProjectEditable = Pick<
   | "endDate"
   | "teamIds"
   | "contactIds"
-  | "subtaskDefs"
   | "color"
 >;
 
 const sameIds = (a: Id[], b: Id[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i]);
-
-const sameSubtasks = (
-  a: Project["subtaskDefs"],
-  b: Project["subtaskDefs"],
-): boolean =>
-  a.length === b.length &&
-  a.every((s, i) => s.id === b[i].id && s.label === b[i].label);
 
 /** Vero se i campi modificabili di due progetti coincidono (per il "dirty"). Pura. */
 export function projectEditableEqual(
@@ -43,8 +35,7 @@ export function projectEditableEqual(
     a.endDate === b.endDate &&
     a.color === b.color &&
     sameIds(a.teamIds, b.teamIds) &&
-    sameIds(a.contactIds, b.contactIds) &&
-    sameSubtasks(a.subtaskDefs, b.subtaskDefs)
+    sameIds(a.contactIds, b.contactIds)
   );
 }
 
@@ -64,7 +55,6 @@ export function newProject(input: NewProjectInput, id: Id): Project {
     clientId: input.clientId,
     kind: input.clientId ? "client" : "internal",
     name: input.name.trim(),
-    subtaskDefs: [],
     status: "active",
     description: "",
     objectives: "",

@@ -127,7 +127,7 @@ export function AppShell() {
 
   // Resolver dei nomi cliente/sottotipo, condivisi da legenda e blocchi.
   const names = useMemo(() => {
-    const subtypes = [...settings.subtypes.client, ...settings.subtypes.internal];
+    const subtypes = settings.subtypes;
     return {
       clientName: (id: string) =>
         clients.find((c) => c.id === id)?.name ?? "Cliente",

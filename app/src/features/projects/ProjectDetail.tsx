@@ -104,7 +104,7 @@ function Avatar({ id, name }: { id: string; name: string }) {
 
 /**
  * Pannello di dettaglio (sola lettura) del progetto selezionato: anagrafica,
- * statistiche aggregate, avanzamento sulle ore stimate, team, sotto-attività e
+ * statistiche aggregate, avanzamento sulle ore stimate, team, referenti e
  * testi (descrizione/obiettivi). `clientName` è `null` per i progetti interni.
  */
 export function ProjectDetail({
@@ -131,9 +131,8 @@ export function ProjectDetail({
   const [subtypeFilter, setSubtypeFilter] = useState<Id | null | undefined>(undefined);
   const [timeMode, setTimeMode] = useState<"hours" | "share">("hours");
 
-  const subtypeList = project.kind === "client" ? subtypes.client : subtypes.internal;
   const subtypeLabel = (id: Id | null) =>
-    id ? (subtypeList.find((s) => s.id === id)?.label ?? "Generico") : "Generico";
+    id ? (subtypes.find((s) => s.id === id)?.label ?? "Generico") : "Generico";
 
   // Attività del progetto, più recenti prima; filtrate per sottotipo se scelto
   // (`undefined` = tutti; `null` = "Generico"/senza sottotipo).
@@ -159,7 +158,6 @@ export function ProjectDetail({
   const team = project.teamIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
-  const subtasks = project.subtaskDefs;
   const estMin = project.estimatedHours * 60;
   const progressPct =
     estMin > 0 ? Math.min(100, Math.round(((stat?.totalMin ?? 0) / estMin) * 100)) : 0;
@@ -334,7 +332,7 @@ export function ProjectDetail({
         </div>
       )}
 
-      {(team.length > 0 || refs.length > 0 || subtasks.length > 0) && (
+      {(team.length > 0 || refs.length > 0) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {team.length > 0 && (
             <div className={CARD}>
@@ -365,21 +363,6 @@ export function ProjectDetail({
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {subtasks.length > 0 && (
-            <div className={CARD}>
-              <div className={CARD_LABEL}>Sotto-attività</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {subtasks.map((s) => (
-                  <span
-                    key={s.id}
-                    className="rounded-md bg-primary-wash px-3 py-1 text-xs font-medium text-accent"
-                  >
-                    {s.label}
-                  </span>
                 ))}
               </div>
             </div>

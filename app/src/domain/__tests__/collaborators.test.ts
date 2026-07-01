@@ -11,7 +11,6 @@ function project(over: Partial<Project> = {}): Project {
     clientId: null,
     kind: "internal",
     name: "P",
-    subtaskDefs: [],
     status: "active",
     description: "",
     objectives: "",

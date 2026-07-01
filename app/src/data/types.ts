@@ -43,7 +43,6 @@ export interface Project {
   clientId: Id | null; // null ⇒ progetto interno
   kind: "client" | "internal";
   name: string;
-  subtaskDefs: { id: Id; label: string }[];
   status: ProjectStatus;
   description: string;
   objectives: string;
@@ -133,10 +132,7 @@ export interface Settings {
   };
   workingDays: number[]; // 0=Lun..6=Dom
   slotMinutes: 15 | 30;
-  subtypes: {
-    client: { id: Id; label: string }[];
-    internal: { id: Id; label: string }[];
-  };
+  subtypes: { id: Id; label: string }[]; // lista unica, condivisa da cliente e interno
   clientColors: Record<Id, string>;
   internalColors: Record<Id, string>;
   lastUsedByClient: Record<
