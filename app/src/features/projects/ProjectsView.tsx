@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
 import type { Entry, Id, Project } from "@/data/types";
 import { aggregateByProject } from "@/domain/projectStats";
+import { projectActivity } from "@/domain/projectActivity";
 import { newProject } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
 import { colorFromKey } from "@/domain/colors";
@@ -144,6 +145,11 @@ export function ProjectsView() {
     ? (clients.find((c) => c.id === selected.clientId)?.name ?? "Cliente")
     : null;
 
+  const activity = useMemo(
+    () => (selected ? projectActivity(entries, selected.id, workHours) : null),
+    [entries, selected, workHours],
+  );
+
   const select = (id: string) => {
     setSelectedId(id);
     setEditing(false);
@@ -283,6 +289,7 @@ export function ProjectsView() {
         <ProjectDetail
           project={selected}
           stat={stats.get(selected.id)}
+          activity={activity}
           color={colorOf(selected.clientId)}
           clientName={selClientName}
           onEdit={() => setEditing(true)}

@@ -1,9 +1,11 @@
 import { type ReactNode } from "react";
-import type { Project, ProjectStatus } from "@/data/types";
+import type { Id, Project, ProjectStatus } from "@/data/types";
 import type { ProjectStats } from "@/domain/projectStats";
+import type { ProjectActivity } from "@/domain/projectActivity";
 import { formatHours } from "@/domain/format";
 import { colorFromKey, withAlpha } from "@/domain/colors";
 import { useInventoryStore } from "@/store/inventory";
+import { useSettingsStore } from "@/store/settings";
 import { Button, Icons, Markdown } from "@/ui";
 import { STATUS_COLOR, STATUS_LABEL } from "./meta";
 
@@ -13,6 +15,15 @@ const fmtDay = (iso: string) =>
     month: "short",
     year: "numeric",
   }).format(new Date(iso));
+
+/** "YYYY-MM" → "giu" / "gen '27" (anno solo a gennaio, per orientarsi). */
+function fmtMonth(m: string): string {
+  const [y, mo] = m.split("-");
+  const short = new Intl.DateTimeFormat("it-IT", { month: "short" }).format(
+    new Date(Number(y), Number(mo) - 1, 1),
+  );
+  return mo === "01" ? `${short} '${y.slice(2)}` : short;
+}
 
 const CARD = "rounded-lg border border-line bg-surface p-4 shadow-sm";
 const CARD_LABEL =
@@ -71,18 +82,25 @@ function Avatar({ id, name }: { id: string; name: string }) {
 export function ProjectDetail({
   project,
   stat,
+  activity,
   color,
   clientName,
   onEdit,
 }: {
   project: Project;
   stat: ProjectStats | undefined;
+  activity: ProjectActivity | null;
   color: string;
   clientName: string | null;
   onEdit: () => void;
 }) {
   const contacts = useInventoryStore((s) => s.contacts);
   const people = useInventoryStore((s) => s.people);
+  const subtypes = useSettingsStore((s) => s.settings.subtypes);
+
+  const subtypeList = project.kind === "client" ? subtypes.client : subtypes.internal;
+  const subtypeLabel = (id: Id | null) =>
+    id ? (subtypeList.find((s) => s.id === id)?.label ?? "Generico") : "Generico";
 
   const refs = project.contactIds
     .map((id) => contacts.find((k) => k.id === id)?.name)
@@ -180,6 +198,67 @@ export function ProjectDetail({
               style={{ width: `${progressPct}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {activity && activity.byMonth.length > 0 && (
+        <div className={CARD}>
+          <div className={CARD_LABEL}>Attività nel tempo</div>
+          {(() => {
+            const max = Math.max(...activity.byMonth.map((b) => b.minutes), 1);
+            return (
+              <div className="mt-4 flex h-24 items-end gap-1.5">
+                {activity.byMonth.map((b) => (
+                  <div
+                    key={b.month}
+                    className="flex flex-1 flex-col items-center gap-1.5"
+                    title={`${fmtMonth(b.month)}: ${formatHours(b.minutes)}`}
+                  >
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className="w-full rounded-t-sm"
+                        style={{
+                          height: `${(b.minutes / max) * 100}%`,
+                          minHeight: b.minutes > 0 ? 2 : 0,
+                          background: color,
+                        }}
+                      />
+                    </div>
+                    <span className="tnum text-[10px] leading-none text-muted">
+                      {fmtMonth(b.month)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {activity && activity.bySubtype.length > 1 && (
+        <div className={CARD}>
+          <div className={CARD_LABEL}>Ore per sottotipo</div>
+          <ul className="mt-3 space-y-2">
+            {activity.bySubtype.map((s) => (
+              <li key={s.subtypeId ?? "_"}>
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="truncate text-ink">{subtypeLabel(s.subtypeId)}</span>
+                  <span className="tnum shrink-0 font-semibold text-ink">
+                    {formatHours(s.minutes)}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-pill bg-raised">
+                  <div
+                    className="h-full rounded-pill"
+                    style={{
+                      width: `${(s.minutes / activity.bySubtype[0].minutes) * 100}%`,
+                      background: color,
+                    }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
