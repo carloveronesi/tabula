@@ -46,6 +46,10 @@ function ProjectItem({
           />
         )}
         <span
+          className="h-2 w-2 flex-none rounded-sm"
+          style={{ background: color }}
+        />
+        <span
           className={cn(
             "min-w-0 flex-1 truncate",
             active ? "font-semibold text-ink" : "text-ink",
@@ -222,7 +226,7 @@ export function ProjectsView() {
                   project={p}
                   totalMin={stats.get(p.id)?.totalMin ?? 0}
                   active={p.id === selectedId}
-                  color={g.color}
+                  color={colorFromKey(p.id)}
                   onSelect={() => select(p.id)}
                 />
               ))}
@@ -252,7 +256,7 @@ export function ProjectsView() {
                     project={p}
                     totalMin={stats.get(p.id)?.totalMin ?? 0}
                     active={p.id === selectedId}
-                    color={colorOf(p.clientId)}
+                    color={colorFromKey(p.id)}
                     onSelect={() => select(p.id)}
                   />
                 ))}
@@ -296,7 +300,7 @@ export function ProjectsView() {
           stat={stats.get(selected.id)}
           activity={activity}
           entries={selEntries}
-          color={colorOf(selected.clientId)}
+          color={colorFromKey(selected.id)}
           clientName={selClientName}
           onEdit={() => setEditing(true)}
         />
