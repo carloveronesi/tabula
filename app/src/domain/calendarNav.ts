@@ -58,6 +58,15 @@ export function isHoliday(date: Date, patronDay: string): boolean {
   return holidayLabel(date, patronDay) !== null;
 }
 
+/** Vero se la data è un giorno lavorativo: è in `workingDays` e non è festivo. */
+export function isWorkingDate(
+  date: Date,
+  workingDays: number[],
+  patronDay: string,
+): boolean {
+  return workingDays.includes(dowMon0(date)) && !isHoliday(date, patronDay);
+}
+
 /**
  * Date feriali (lavorative) del mese di `date`: i giorni in `workingDays`
  * (lun=0…dom=6) esclusi i festivi (nazionali e patrono). Usato per il
@@ -74,7 +83,7 @@ export function workingDatesOfMonth(
   const out: ISODate[] = [];
   for (let day = 1; day <= last; day++) {
     const d = new Date(year, month, day);
-    if (workingDays.includes(dowMon0(d)) && !isHoliday(d, patronDay)) {
+    if (isWorkingDate(d, workingDays, patronDay)) {
       out.push(isoDate(d));
     }
   }

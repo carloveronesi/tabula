@@ -3,7 +3,8 @@ import type { Entry, Location } from "@/data/types";
 import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
 import { entryColor } from "@/domain/colors";
-import { isoDate, workingDatesOfMonth } from "@/domain/calendarNav";
+import { isoDate, workingDatesOfMonth, isWorkingDate } from "@/domain/calendarNav";
+import { availableMinutes } from "@/domain/capacity";
 import { dayBreakdown, entryLabel } from "@/domain/dayBreakdown";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
@@ -186,6 +187,14 @@ export function AppShell() {
     settings.workHours,
   ]);
 
+  // Capacità del giorno attivo: giornata piena solo se feriale, meno le ferie.
+  // 0 nei weekend/festivi → il riepilogo non mostra la barra "su Nh".
+  const dayExpectedMin = useMemo(() => {
+    if (!isWorkingDate(activeDate, settings.workingDays, settings.patronDay)) return 0;
+    const dayEntries = entries.filter((e) => e.startsAt.slice(0, 10) === dayKey);
+    return availableMinutes([dayKey], dayEntries, settings.workHours);
+  }, [activeDate, dayKey, entries, settings.workingDays, settings.patronDay, settings.workHours]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-bg text-ink">
       <Sidebar />
@@ -235,6 +244,7 @@ export function AppShell() {
               ) : (
                 <DaySummary
                   breakdown={breakdown}
+                  expectedMin={dayExpectedMin}
                   onAdd={(anchor) =>
                     openQuickAdd({
                       date: dayKey,

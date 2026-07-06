@@ -15,6 +15,9 @@ interface DaySummaryProps {
   onImportCalls?: () => void;
   /** Apre l'import dei meeting da screenshot del calendario per questa giornata. */
   onImportCalendar?: () => void;
+  /** Minuti attesi del giorno (giornata piena feriale meno ferie); 0 = non
+   * feriale/festivo → niente barra capacità. */
+  expectedMin?: number;
   /** Mostra il selettore della sede (tracciamento presenze attivo). */
   presenceEnabled?: boolean;
   location?: Location | null;
@@ -38,6 +41,7 @@ export function DaySummary({
   onPaste,
   onImportCalls,
   onImportCalendar,
+  expectedMin = 0,
   presenceEnabled = false,
   location = null,
   onSetLocation,
@@ -58,6 +62,28 @@ export function DaySummary({
             ? "Nessuna attività"
             : `${count} ${count === 1 ? "attività" : "attività"}`}
         </div>
+
+        {expectedMin > 0 && (
+          <div className="mt-3">
+            <div className="h-1.5 overflow-hidden rounded-pill bg-line">
+              <div
+                className="h-full rounded-pill bg-accent"
+                style={{ width: `${Math.min(100, (totalMin / expectedMin) * 100)}%` }}
+              />
+            </div>
+            <div className="mt-1.5 text-[11.5px] text-faint">
+              <span className="tnum text-muted">{formatHours(totalMin)}</span> su{" "}
+              <span className="tnum text-muted">{formatHours(expectedMin)}</span>
+              {totalMin < expectedMin && (
+                <>
+                  {" · "}
+                  <span className="tnum">{formatHours(expectedMin - totalMin)}</span> da
+                  compilare
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {presenceEnabled && onSetLocation && (
           <>

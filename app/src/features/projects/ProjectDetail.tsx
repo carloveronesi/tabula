@@ -262,29 +262,52 @@ export function ProjectDetail({
               <div className="mt-4">
                 <div className="flex h-24 items-end gap-1.5">
                   {activity.byMonth.map((b) => {
-                    const pct = b.total > 0 ? (b.minutes / b.total) * 100 : 0;
-                    const h = share ? pct : (b.minutes / max) * 100;
+                    // Quota: la traccia piena è la capacità del mese; dal basso
+                    // progetto (colore) · altro lavoro (grigio) · resto scoperto =
+                    // tempo non compilato (la traccia che resta a vista).
+                    const denom = b.capacity > 0 ? b.capacity : b.total;
+                    const projPct =
+                      denom > 0 ? Math.min(100, (b.minutes / denom) * 100) : 0;
+                    const otherPct =
+                      denom > 0
+                        ? Math.min(
+                            100 - projPct,
+                            (Math.max(0, b.total - b.minutes) / denom) * 100,
+                          )
+                        : 0;
+                    const gapMin = Math.max(0, denom - b.total);
+                    const hoursH = (b.minutes / max) * 100;
                     return (
                       <div key={b.month} className="group relative h-full flex-1">
-                        {/* In quota, la traccia piena è il totale del mese; la parte
-                            colorata è il progetto, il resto grigio = altri progetti. */}
-                        {share && (
-                          <div aria-hidden className="absolute inset-0 rounded-sm bg-raised" />
+                        {share ? (
+                          <>
+                            <div aria-hidden className="absolute inset-0 rounded-sm bg-raised" />
+                            <div className="absolute inset-0 flex flex-col-reverse overflow-hidden rounded-sm">
+                              <div
+                                style={{
+                                  height: `${projPct}%`,
+                                  minHeight: b.minutes > 0 ? 2 : 0,
+                                  background: color,
+                                }}
+                              />
+                              <div className="bg-ink/15" style={{ height: `${otherPct}%` }} />
+                            </div>
+                          </>
+                        ) : (
+                          <div
+                            className="absolute inset-x-0 bottom-0 rounded-t-sm"
+                            style={{
+                              height: `${hoursH}%`,
+                              minHeight: b.minutes > 0 ? 2 : 0,
+                              background: color,
+                            }}
+                          />
                         )}
-                        <div
-                          className="absolute inset-x-0 bottom-0 rounded-t-sm"
-                          style={{
-                            height: `${h}%`,
-                            minHeight: b.minutes > 0 ? 2 : 0,
-                            background: color,
-                          }}
-                        >
-                          <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
-                            {share
-                              ? `${Math.round(pct)}% del mese · ${formatHours(b.minutes)}/${formatHours(b.total)}`
-                              : formatHours(b.minutes)}
-                          </span>
-                        </div>
+                        <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
+                          {share
+                            ? `${Math.round(projPct)}% · ${formatHours(b.minutes)} su ${formatHours(denom)}${gapMin > 0 ? ` · ${formatHours(gapMin)} da compilare` : ""}`
+                            : formatHours(b.minutes)}
+                        </span>
                       </div>
                     );
                   })}
@@ -299,6 +322,22 @@ export function ProjectDetail({
                     </span>
                   ))}
                 </div>
+                {share && (
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-sm" style={{ background: color }} />
+                      Progetto
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-sm bg-ink/15" />
+                      Altro lavoro
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-sm bg-raised" />
+                      Non compilato
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })()}

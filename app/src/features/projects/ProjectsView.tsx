@@ -5,6 +5,8 @@ import { aggregateByProject } from "@/domain/projectStats";
 import { projectActivity } from "@/domain/projectActivity";
 import { newProject } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
+import { availableMinutes } from "@/domain/capacity";
+import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
 import { colorFromKey, projectColor } from "@/domain/colors";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
@@ -80,6 +82,8 @@ export function ProjectsView() {
   const projects = useInventoryStore((s) => s.projects);
   const clientColors = useSettingsStore((s) => s.settings.clientColors);
   const workHours = useSettingsStore((s) => s.settings.workHours);
+  const workingDays = useSettingsStore((s) => s.settings.workingDays);
+  const patronDay = useSettingsStore((s) => s.settings.patronDay);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -149,10 +153,20 @@ export function ProjectsView() {
     ? (clients.find((c) => c.id === selected.clientId)?.name ?? "Cliente")
     : null;
 
-  const activity = useMemo(
-    () => (selected ? projectActivity(entries, selected.id, workHours) : null),
-    [entries, selected, workHours],
-  );
+  const activity = useMemo(() => {
+    if (!selected) return null;
+    const todayISO = isoDate(new Date());
+    // Capacità del mese = feriali trascorsi (≤ oggi) meno le ferie; così il mese
+    // corrente non mostra come "non compilati" i giorni ancora da venire.
+    const capacityOf = (month: string) => {
+      const first = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1);
+      const dates = workingDatesOfMonth(first, workingDays, patronDay).filter(
+        (d) => d <= todayISO,
+      );
+      return availableMinutes(dates, entries, workHours);
+    };
+    return projectActivity(entries, selected.id, workHours, capacityOf);
+  }, [entries, selected, workHours, workingDays, patronDay]);
 
   const selEntries = useMemo(
     () => (selected ? entries.filter((e) => e.projectId === selected.id) : []),

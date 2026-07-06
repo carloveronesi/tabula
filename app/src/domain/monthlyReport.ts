@@ -1,6 +1,7 @@
 import type { Entry, EntryType, Id, ISODate, Location } from "@/data/types";
 import { workedMinutes } from "@/domain/time";
 import { minutesOfDay, buildSlots, type WorkHours } from "@/domain/slots";
+import { dailyWorkMinutes } from "@/domain/capacity";
 
 /**
  * Report mensile per il pannello di riepilogo: totali, copertura della giornata
@@ -65,11 +66,6 @@ export function entryMatchesFilter(e: Entry, f: SummaryFilter): boolean {
   if (f.kind === "client") return e.clientId === f.clientId;
   if (f.kind === "type") return e.type === f.type;
   return false;
-}
-
-/** Durata della giornata lavorativa in minuti (mattino + pomeriggio). */
-function dailyWorkMinutes(wh: WorkHours): number {
-  return wh.morningEnd - wh.morningStart + (wh.afternoonEnd - wh.afternoonStart);
 }
 
 /** Vero se ogni slot lavorativo del giorno è coperto da almeno un'entry. */
