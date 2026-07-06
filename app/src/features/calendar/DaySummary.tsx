@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import type { DayBreakdown } from "@/domain/dayBreakdown";
 import type { Location } from "@/data/types";
 import { formatHours } from "@/domain/format";
-import { IconPlus } from "@/ui/icons";
+import { Button } from "@/ui/Button";
+import { IconPlus, IconUsers, IconCalendar } from "@/ui/icons";
 import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 
 interface DaySummaryProps {
@@ -125,46 +126,39 @@ export function DaySummary({
         )}
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        className="w-full"
         onClick={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           onAdd({ x: r.left, y: r.top + r.height / 2 });
         }}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent/40 bg-accent-wash/50 px-4 py-3.5 text-[12.5px] font-semibold text-accent transition-colors duration-[var(--dur-fast)] ease-out hover:bg-accent-wash"
       >
-        <IconPlus size={15} />
+        <IconPlus size={16} />
         Aggiungi attività
-      </button>
+      </Button>
 
       {onPaste && (
-        <button
-          type="button"
-          onClick={onPaste}
-          className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
-        >
+        <Button variant="ghost" size="sm" className="-mt-1 w-full" onClick={onPaste}>
           Incolla attività
-        </button>
+        </Button>
       )}
 
-      {onImportCalls && (
-        <button
-          type="button"
-          onClick={onImportCalls}
-          className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
-        >
-          Importa chiamate…
-        </button>
-      )}
-
-      {onImportCalendar && (
-        <button
-          type="button"
-          onClick={onImportCalendar}
-          className="-mt-1 flex w-full items-center justify-center rounded-lg px-4 py-2 text-[12px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:bg-raised hover:text-ink"
-        >
-          Importa dal calendario…
-        </button>
+      {(onImportCalls || onImportCalendar) && (
+        <div className="flex flex-col gap-2">
+          {onImportCalls && (
+            <Button variant="subtle" size="sm" className="w-full justify-start" onClick={onImportCalls}>
+              <IconUsers size={15} className="text-muted" />
+              Importa chiamate…
+            </Button>
+          )}
+          {onImportCalendar && (
+            <Button variant="subtle" size="sm" className="w-full justify-start" onClick={onImportCalendar}>
+              <IconCalendar size={15} className="text-muted" />
+              Importa dal calendario…
+            </Button>
+          )}
+        </div>
       )}
 
       {children}
