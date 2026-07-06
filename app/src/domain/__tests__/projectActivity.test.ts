@@ -45,9 +45,9 @@ describe("projectActivity", () => {
     );
     // Da marzo a maggio: aprile è un buco per p1 (0), ma il mese ha lavoro (p2).
     expect(a.byMonth).toEqual([
-      { month: "2026-03", minutes: 120, total: 120 },
-      { month: "2026-04", minutes: 0, total: 60 }, // solo p2 quel mese
-      { month: "2026-05", minutes: 60, total: 60 },
+      { month: "2026-03", minutes: 120, total: 120, capacity: 0 },
+      { month: "2026-04", minutes: 0, total: 60, capacity: 0 }, // solo p2 quel mese
+      { month: "2026-05", minutes: 60, total: 60, capacity: 0 },
     ]);
   });
 
@@ -62,7 +62,19 @@ describe("projectActivity", () => {
       WH,
     );
     // total = 60 (p1) + 60 (p2), la ferie non conta; quota p1 = 50%.
-    expect(a.byMonth).toEqual([{ month: "2026-03", minutes: 60, total: 120 }]);
+    expect(a.byMonth).toEqual([{ month: "2026-03", minutes: 60, total: 120, capacity: 0 }]);
+  });
+
+  it("riporta la capacità del mese fornita da capacityOf", () => {
+    const a = projectActivity(
+      [entry("a", "p1", "s1", "2026-03-10T09:00:00", "2026-03-10T11:00:00")],
+      "p1",
+      WH,
+      (m) => (m === "2026-03" ? 9600 : 0), // 20 giorni feriali × 8h
+    );
+    expect(a.byMonth).toEqual([
+      { month: "2026-03", minutes: 120, total: 120, capacity: 9600 },
+    ]);
   });
 
   it("attraversa il confine d'anno", () => {

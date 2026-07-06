@@ -7,9 +7,11 @@ export interface MonthBucket {
   month: string;
   /** Minuti del progetto in quel mese. */
   minutes: number;
-  /** Minuti lavorati totali del mese (tutti i progetti/tipi, ferie escluse):
-   * denominatore per la quota. `minutes / total` = fetta del mese sul progetto. */
+  /** Minuti lavorati totali del mese (tutti i progetti/tipi, ferie escluse). */
   total: number;
+  /** Minuti disponibili del mese (feriali × giornata − ferie): denominatore
+   * della quota. `total` sotto `capacity` = tempo non compilato. */
+  capacity: number;
 }
 
 export interface SubtypeBucket {
@@ -35,12 +37,15 @@ function nextMonth(m: string): string {
  * Attività di un singolo progetto per il pannello di dettaglio: distribuzione
  * temporale (per mese) e ripartizione per sottotipo. Le entry di altri progetti
  * sono ignorate; i buchi fra primo e ultimo mese sono riempiti a 0 così la
- * timeline mostra anche i periodi fermi. Pura.
+ * timeline mostra anche i periodi fermi. `capacityOf` dà i minuti disponibili
+ * di un mese ("YYYY-MM"): il chiamante lo calcola dal calendario lavorativo.
+ * Pura.
  */
 export function projectActivity(
   entries: Entry[],
   projectId: Id,
   wh: WorkHours,
+  capacityOf: (month: string) => number = () => 0,
 ): ProjectActivity {
   const months = new Map<string, number>();
   const monthTotals = new Map<string, number>();
@@ -61,7 +66,12 @@ export function projectActivity(
   const keys = [...months.keys()].sort();
   if (keys.length > 0) {
     for (let m = keys[0]; m <= keys[keys.length - 1]; m = nextMonth(m)) {
-      byMonth.push({ month: m, minutes: months.get(m) ?? 0, total: monthTotals.get(m) ?? 0 });
+      byMonth.push({
+        month: m,
+        minutes: months.get(m) ?? 0,
+        total: monthTotals.get(m) ?? 0,
+        capacity: capacityOf(m),
+      });
     }
   }
 
