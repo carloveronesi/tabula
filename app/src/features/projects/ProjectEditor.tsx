@@ -6,6 +6,7 @@ import {
   type ProjectEditable,
 } from "@/domain/projectDraft";
 import { findByName } from "@/domain/dedupeName";
+import { collaboratorCandidateIds } from "@/domain/collaborators";
 import { useInventoryStore } from "@/store/inventory";
 import { useToastStore } from "@/store/toast";
 import {
@@ -72,6 +73,7 @@ export function ProjectEditor({
   onClose: () => void;
 }) {
   const clients = useInventoryStore((s) => s.clients);
+  const projects = useInventoryStore((s) => s.projects);
   const people = useInventoryStore((s) => s.people);
   const contacts = useInventoryStore((s) => s.contacts);
   const saveProject = useInventoryStore((s) => s.saveProject);
@@ -118,12 +120,20 @@ export function ProjectEditor({
     onDeleted();
   };
 
-  // Team (colleghi): tutte le persone; crea al volo le nuove.
+  // Team (colleghi): tutte le persone, ma prima chi è già nei team di altri
+  // progetti dello stesso cliente; crea al volo le nuove.
   const teamPeople = draft.teamIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
-  const teamAddOptions = people
+  const teamRank = new Map(
+    collaboratorCandidateIds(projects, null, draft.clientId).map((id, i) => [id, i]),
+  );
+  const teamAddOptions = [...people]
     .filter((p) => !draft.teamIds.includes(p.id))
+    .sort(
+      (a, b) =>
+        (teamRank.get(a.id) ?? Infinity) - (teamRank.get(b.id) ?? Infinity),
+    )
     .map((p) => ({ id: p.id, label: p.name }));
   const addTeam = (id: Id) =>
     patch({ teamIds: draft.teamIds.includes(id) ? draft.teamIds : [...draft.teamIds, id] });
