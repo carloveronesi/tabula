@@ -39,6 +39,7 @@ export async function pasteEntry(target?: PasteTarget): Promise<void> {
     preferredStart,
     { startMin: settings.workHours.morningStart, endMin: settings.workHours.afternoonEnd },
     settings.slotMinutes,
+    target != null, // incollo mirato: accorcia per stare nel buco cliccato
   );
   if (!range) {
     notify("Nessuno spazio libero in giornata");

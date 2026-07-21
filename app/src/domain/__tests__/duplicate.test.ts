@@ -92,6 +92,26 @@ describe("pastePlacement", () => {
     const full = entry("a", "2026-06-15", 540, 1080);
     expect(pastePlacement([full], "2026-06-15", 60, 540, bounds, 30)).toBeNull();
   });
+
+  it("con allowShrink accorcia la copia per stare nel buco cliccato", () => {
+    // buco 10:00–10:30 tra due entry; copia da 60 → incollata come 30
+    const es = [
+      entry("a", "2026-06-15", 540, 600),
+      entry("b", "2026-06-15", 630, 690),
+    ];
+    const r = pastePlacement(es, "2026-06-15", 60, 600, bounds, 30, true);
+    expect(r).toEqual({ startMin: 600, endMin: 630 });
+  });
+
+  it("senza allowShrink ripiega invece di accorciare", () => {
+    const es = [
+      entry("a", "2026-06-15", 540, 600),
+      entry("b", "2026-06-15", 630, 690),
+    ];
+    // buco a 10:00 troppo corto: ripiega sul primo libero pieno dopo b
+    const r = pastePlacement(es, "2026-06-15", 60, 600, bounds, 30, false);
+    expect(r).toEqual({ startMin: 690, endMin: 750 });
+  });
 });
 
 describe("duplicateEntry", () => {
