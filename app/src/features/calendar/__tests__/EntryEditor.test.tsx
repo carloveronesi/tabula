@@ -197,10 +197,13 @@ describe("EntryEditor", () => {
       .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
     render(<EntryEditor />);
 
-    // Senza cliente, il progetto mostra solo quelli interni.
+    // Tipo cliente senza cliente scelto: nessun progetto (gli interni
+    // appartengono al tipo "Interno", non devono spuntare qui).
     const projectBox = screen.getByRole("combobox", { name: "Progetto" });
     fireEvent.focus(projectBox);
-    expect(screen.getByRole("option", { name: "Interno" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Interno" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("option", { name: "Sito" }),
     ).not.toBeInTheDocument();
@@ -212,6 +215,25 @@ describe("EntryEditor", () => {
 
     fireEvent.focus(projectBox);
     expect(screen.getByRole("option", { name: "Sito" })).toBeInTheDocument();
+  });
+
+  it("i progetti interni compaiono solo sul tipo Interno", () => {
+    useEditorStore
+      .getState()
+      .openCreate({ date: "2026-06-12", startMin: 540, endMin: 600 });
+    render(<EntryEditor />);
+
+    const projectBox = screen.getByRole("combobox", { name: "Progetto" });
+    // Tipo cliente (default): il progetto interno non c'è.
+    fireEvent.focus(projectBox);
+    expect(
+      screen.queryByRole("option", { name: "Interno" }),
+    ).not.toBeInTheDocument();
+
+    // Passando a Interno, il progetto interno compare.
+    fireEvent.click(screen.getByRole("button", { name: "Interno" }));
+    fireEvent.focus(projectBox);
+    expect(screen.getByRole("option", { name: "Interno" })).toBeInTheDocument();
   });
 
   it("modifica: precompila il titolo e salva sulla stessa entry", async () => {

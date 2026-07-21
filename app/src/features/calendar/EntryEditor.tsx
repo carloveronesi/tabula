@@ -138,12 +138,14 @@ export function EntryEditor() {
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
   );
-  // Progetti del cliente/interni: archiviati nascosti (salvo quello già scelto,
-  // così un'attività su progetto archiviato resta modificabile) e ordinati per
-  // frequenza d'uso.
+  // Progetti coerenti col tipo: su "cliente" solo i progetti del cliente scelto,
+  // su "interno" solo gli interni (senza cui gli interni — clientId null —
+  // spuntavano sotto "cliente" con nessun cliente ancora scelto). Archiviati
+  // nascosti (salvo quello già scelto) e ordinati per frequenza d'uso.
   const projectOptions = useMemo(() => {
     const visible = projects.filter(
       (p) =>
+        p.kind === draft.type &&
         p.clientId === draft.clientId &&
         (p.status !== "archived" || p.id === draft.projectId),
     );
@@ -151,7 +153,7 @@ export function EntryEditor() {
       id: p.id,
       label: p.name,
     }));
-  }, [projects, draft.clientId, draft.projectId, archive]);
+  }, [projects, draft.type, draft.clientId, draft.projectId, archive]);
 
   const valid = isDraftValid(draft);
   const conflict =
