@@ -14,6 +14,7 @@ import {
   collaboratorCandidateIds,
   rankCandidatesByHistory,
 } from "@/domain/collaborators";
+import { rankProjectsByUsage } from "@/domain/projectUsage";
 import { allEntries } from "@/data/repositories";
 import { findByName } from "@/domain/dedupeName";
 import { useEditorStore, type EditorSeed } from "@/store/editor";
@@ -137,13 +138,20 @@ export function EntryEditor() {
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
   );
-  const projectOptions = useMemo(
-    () =>
-      projects
-        .filter((p) => p.clientId === draft.clientId)
-        .map((p) => ({ id: p.id, label: p.name })),
-    [projects, draft.clientId],
-  );
+  // Progetti del cliente/interni: archiviati nascosti (salvo quello già scelto,
+  // così un'attività su progetto archiviato resta modificabile) e ordinati per
+  // frequenza d'uso.
+  const projectOptions = useMemo(() => {
+    const visible = projects.filter(
+      (p) =>
+        p.clientId === draft.clientId &&
+        (p.status !== "archived" || p.id === draft.projectId),
+    );
+    return rankProjectsByUsage(visible, archive).map((p) => ({
+      id: p.id,
+      label: p.name,
+    }));
+  }, [projects, draft.clientId, draft.projectId, archive]);
 
   const valid = isDraftValid(draft);
   const conflict =
