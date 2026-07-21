@@ -10,7 +10,13 @@ import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useTemplateStore } from "@/store/templates";
 import { useToastStore } from "@/store/toast";
-import { Button, cn, Combobox } from "@/ui";
+import { Button, cn, Combobox, Segmented } from "@/ui";
+
+type Mode = "client" | "internal";
+const MODES = [
+  { id: "client" as const, label: "Cliente" },
+  { id: "internal" as const, label: "Interno" },
+];
 
 const WIDTH = 340;
 const MARGIN = 12;
@@ -54,10 +60,12 @@ export function QuickAddPopover() {
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
+  // Il segmento sceglie la classificazione: "client" abilita cliente + progetto
+  // del cliente, "internal" abilita il solo progetto interno.
+  const [mode, setMode] = useState<Mode>("client");
   const [clientId, setClientId] = useState<string | null>(null);
-  // Progetto interno: alternativo al cliente (i due si escludono).
-  const [internalId, setInternalId] = useState<string | null>(null);
-  // Template applicato: porta tipo/progetto/sottotipo (non visibili qui) al salvataggio.
+  const [projectId, setProjectId] = useState<string | null>(null);
+  // Template applicato: porta tipo/sottotipo (non visibili qui) al salvataggio.
   const [tpl, setTpl] = useState<ActivityTemplate | null>(null);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
@@ -66,8 +74,9 @@ export function QuickAddPopover() {
   useEffect(() => {
     if (!quickAdd) return;
     setTitle("");
+    setMode("client");
     setClientId(null);
-    setInternalId(null);
+    setProjectId(null);
     setTpl(null);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -127,6 +136,14 @@ export function QuickAddPopover() {
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
   );
+  // Progetti del cliente scelto (modalità cliente).
+  const clientProjectOptions = useMemo(
+    () =>
+      projects
+        .filter((p) => p.clientId === clientId)
+        .map((p) => ({ id: p.id, label: p.name })),
+    [projects, clientId],
+  );
   const internalOptions = useMemo(
     () =>
       projects
@@ -135,26 +152,25 @@ export function QuickAddPopover() {
     [projects],
   );
   const selectedClient = clients.find((c) => c.id === clientId) ?? null;
-  const selectedInternal = projects.find((p) => p.id === internalId) ?? null;
-  // Pallino-indizio della classificazione scelta (tinta del cliente o del
-  // progetto interno).
-  const dotColor = selectedClient
-    ? colorFromKey(selectedClient.id)
-    : selectedInternal
-      ? projectColor(selectedInternal)
-      : null;
+  const selectedProject = projects.find((p) => p.id === projectId) ?? null;
+  // Pallino-indizio della classificazione scelta.
+  const dotColor =
+    mode === "internal"
+      ? (selectedProject ? projectColor(selectedProject) : null)
+      : (selectedClient ? colorFromKey(selectedClient.id) : null);
 
-  // Cliente e progetto interno si escludono: scegliere l'uno azzera l'altro.
+  // Il segmento resetta le selezioni: gli id di una modalità non valgono
+  // nell'altra.
+  const changeMode = (m: Mode) => {
+    setMode(m);
+    setClientId(null);
+    setProjectId(null);
+    setTpl(null);
+  };
+  // Il progetto dipende dal cliente: cambiando cliente si azzera.
   const pickClient = (id: string | null) => {
     setClientId(id);
-    if (id) setInternalId(null);
-  };
-  const pickInternal = (id: string | null) => {
-    setInternalId(id);
-    if (id) {
-      setClientId(null);
-      setTpl(null);
-    }
+    setProjectId(null);
   };
 
   if (!quickAdd) return null;
@@ -168,12 +184,15 @@ export function QuickAddPopover() {
     pickClient(id);
   }
 
-  async function createInternal(name: string) {
+  // Crea un progetto per la modalità corrente: legato al cliente (modalità
+  // cliente) o interno. In modalità cliente serve prima un cliente.
+  async function createProject(name: string) {
+    if (mode === "client" && !clientId) return;
     const id = nanoid();
     await saveProject({
       id,
-      clientId: null,
-      kind: "internal",
+      clientId: mode === "client" ? clientId : null,
+      kind: mode === "client" ? "client" : "internal",
       name,
       status: "active",
       description: "",
@@ -185,23 +204,34 @@ export function QuickAddPopover() {
       estimatedHours: 0,
       color: null,
     });
-    pickInternal(id);
+    setProjectId(id);
   }
 
   function applyTpl(t: ActivityTemplate) {
     setTpl(t);
     setTitle(t.title);
-    setClientId(t.clientId);
-    setInternalId(null);
+    // Le sole classificazioni con selettori qui sono cliente/interno; ferie ed
+    // eventi passano al salvataggio via il tipo del template.
+    setMode(t.type === "internal" ? "internal" : "client");
+    setClientId(t.type === "internal" ? null : t.clientId);
+    setProjectId(t.projectId);
     inputRef.current?.focus();
   }
+
+  // Un template ferie/evento porta un tipo senza selettore qui: al salvataggio
+  // vince il tipo del template.
+  const specialTpl =
+    tpl && tpl.type !== "client" && tpl.type !== "internal" ? tpl : null;
 
   async function save() {
     if (!valid) return;
     const base = emptyDraft(date, startMin, endMin);
-    const draft = internalId
-      ? { ...base, type: "internal" as const, projectId: internalId, title }
-      : { ...(tpl ? applyTemplate(base, tpl) : base), title, clientId };
+    const t = tpl ? applyTemplate(base, tpl) : base;
+    const draft = specialTpl
+      ? { ...t, title }
+      : mode === "internal"
+        ? { ...t, type: "internal" as const, clientId: null, projectId, title }
+        : { ...t, type: "client" as const, clientId, projectId, title };
     await saveEntry(applyDraft(draft, { id: nanoid(), now: Date.now() }));
     closeQuickAdd();
     notify("Attività creata", {
@@ -210,20 +240,16 @@ export function QuickAddPopover() {
   }
 
   function moreDetails() {
-    openCreate(
-      internalId
-        ? { date, startMin, endMin, title, type: "internal", projectId: internalId }
-        : {
-            date,
-            startMin,
-            endMin,
-            title,
-            clientId,
-            type: tpl?.type,
-            projectId: tpl?.projectId,
-            subtypeId: tpl?.subtypeId,
-          },
-    );
+    openCreate({
+      date,
+      startMin,
+      endMin,
+      title,
+      type: specialTpl ? specialTpl.type : mode,
+      clientId: mode === "client" && !specialTpl ? clientId : null,
+      projectId: specialTpl ? specialTpl.projectId : projectId,
+      subtypeId: tpl?.subtypeId,
+    });
   }
 
   return (
@@ -284,24 +310,46 @@ export function QuickAddPopover() {
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Combobox
-          label="Cliente"
-          placeholder="Cliente…"
-          options={clientOptions}
-          value={clientId}
-          onChange={pickClient}
-          onCreate={(name) => void createClient(name)}
-        />
-        <Combobox
-          label="Progetto interno"
-          placeholder="Interno…"
-          options={internalOptions}
-          value={internalId}
-          onChange={pickInternal}
-          onCreate={(name) => void createInternal(name)}
+      <div className="mt-3">
+        <Segmented
+          label="Classificazione"
+          options={MODES}
+          value={mode}
+          onChange={changeMode}
         />
       </div>
+
+      {mode === "client" ? (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Combobox
+            label="Cliente"
+            placeholder="Cliente…"
+            options={clientOptions}
+            value={clientId}
+            onChange={pickClient}
+            onCreate={(name) => void createClient(name)}
+          />
+          <Combobox
+            label="Progetto"
+            placeholder={clientId ? "Progetto…" : "Prima il cliente"}
+            options={clientProjectOptions}
+            value={projectId}
+            onChange={setProjectId}
+            onCreate={(name) => void createProject(name)}
+          />
+        </div>
+      ) : (
+        <div className="mt-2">
+          <Combobox
+            label="Progetto interno"
+            placeholder="Interno…"
+            options={internalOptions}
+            value={projectId}
+            onChange={setProjectId}
+            onCreate={(name) => void createProject(name)}
+          />
+        </div>
+      )}
 
       {templates.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
