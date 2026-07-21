@@ -101,6 +101,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   obiettivi, e ripartizione **per cliente** con scomposizione per sottotipo.
 - Vive nella **sidebar della vista Mese** (con evidenziazione della griglia al
   passaggio sui filtri); la voce **«Riepilogo»** del menu porta direttamente lì.
+- **Esporta report**: scarica il mese come file Excel (fogli *Giornaliero* e
+  *Totale* con ore per cliente/progetto), generato in locale senza dipendenze.
 
 ### 🔍 Ricerca
 
