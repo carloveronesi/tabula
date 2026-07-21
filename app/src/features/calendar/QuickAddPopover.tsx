@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { ActivityTemplate } from "@/data/types";
+import type { ActivityTemplate, Entry } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
 import { colorFromKey, projectColor } from "@/domain/colors";
+import { rankProjectsByUsage } from "@/domain/projectUsage";
+import { allEntries } from "@/data/repositories";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -67,6 +69,10 @@ export function QuickAddPopover() {
   const [projectId, setProjectId] = useState<string | null>(null);
   // Template applicato: porta tipo/sottotipo (non visibili qui) al salvataggio.
   const [tpl, setTpl] = useState<ActivityTemplate | null>(null);
+  // Storico completo, solo per ordinare i progetti per frequenza d'uso.
+  // ponytail: scan dell'intera tabella entries a ogni apertura, come l'editor;
+  // se pesa, cache in uno store o un indice per progetto.
+  const [archive, setArchive] = useState<Entry[]>([]);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -78,6 +84,7 @@ export function QuickAddPopover() {
     setClientId(null);
     setProjectId(null);
     setTpl(null);
+    void allEntries().then(setArchive);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
     return () => {
@@ -144,13 +151,16 @@ export function QuickAddPopover() {
         .map((p) => ({ id: p.id, label: p.name })),
     [projects, clientId],
   );
-  const internalOptions = useMemo(
-    () =>
-      projects
-        .filter((p) => p.kind === "internal")
-        .map((p) => ({ id: p.id, label: p.name })),
-    [projects],
-  );
+  // Progetti interni non archiviati, ordinati per frequenza d'uso.
+  const internalOptions = useMemo(() => {
+    const actives = projects.filter(
+      (p) => p.kind === "internal" && p.status !== "archived",
+    );
+    return rankProjectsByUsage(actives, archive).map((p) => ({
+      id: p.id,
+      label: p.name,
+    }));
+  }, [projects, archive]);
   const selectedClient = clients.find((c) => c.id === clientId) ?? null;
   const selectedProject = projects.find((p) => p.id === projectId) ?? null;
   // Pallino-indizio della classificazione scelta.

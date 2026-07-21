@@ -17,13 +17,18 @@ function client(id: string, name: string): Client {
   return { id, name, color: null, createdAt: 0 };
 }
 
-function project(id: string, name: string, clientId: string | null): Project {
+function project(
+  id: string,
+  name: string,
+  clientId: string | null,
+  status: Project["status"] = "active",
+): Project {
   return {
     id,
     clientId,
     kind: clientId ? "client" : "internal",
     name,
-    status: "active",
+    status,
     description: "",
     objectives: "",
     startDate: "",
@@ -180,6 +185,22 @@ describe("QuickAddPopover", () => {
     expect(saved.type).toBe("client");
     expect(saved.clientId).toBe("c1");
     expect(saved.projectId).toBe("p1");
+  });
+
+  it("il selettore interno nasconde i progetti archiviati", () => {
+    useInventoryStore.setState({
+      projects: [
+        project("p1", "Team AI", null),
+        project("p2", "Vecchio interno", null, "archived"),
+      ],
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Interno" }));
+    fireEvent.focus(screen.getByRole("combobox", { name: "Progetto interno" }));
+    expect(screen.getByRole("option", { name: "Team AI" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Vecchio interno" })).toBeNull();
   });
 
   it("passare a Interno azzera il cliente scelto in modalità Cliente", async () => {
