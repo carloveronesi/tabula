@@ -143,11 +143,12 @@ export function QuickAddPopover() {
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
   );
-  // Progetti del cliente scelto (modalità cliente).
+  // Progetti del cliente scelto (modalità cliente). Il guard su kind evita che
+  // gli interni (clientId null) spuntino qui quando nessun cliente è scelto.
   const clientProjectOptions = useMemo(
     () =>
       projects
-        .filter((p) => p.clientId === clientId)
+        .filter((p) => p.kind === "client" && p.clientId === clientId)
         .map((p) => ({ id: p.id, label: p.name })),
     [projects, clientId],
   );
