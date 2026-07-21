@@ -161,6 +161,18 @@ describe("QuickAddPopover", () => {
     expect(saved.clientId).toBeNull();
   });
 
+  it("in modalità Cliente senza cliente scelto il progetto non mostra gli interni", () => {
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [project("p2", "Interno", null)],
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.focus(screen.getByRole("combobox", { name: "Progetto" }));
+    expect(screen.queryByRole("option", { name: "Interno" })).toBeNull();
+  });
+
   it("in modalità Cliente il selettore progetto elenca i progetti del cliente", async () => {
     useInventoryStore.setState({
       clients: [client("c1", "Acme")],
