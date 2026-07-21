@@ -2,7 +2,7 @@
  * Serializza fogli tabellari nel formato SpreadsheetML 2003 (XML piano che Excel
  * apre con più fogli). Zero dipendenze: solo generazione di stringhe. I numeri
  * finiscono in celle `Number` (Excel li mostra secondo la locale dell'utente),
- * le stringhe in celle `String` con escaping di `& < >`.
+ * le stringhe in celle `String` con escaping di `& < > "`.
  */
 export type Cell = string | number;
 
@@ -13,7 +13,7 @@ export interface Sheet {
 }
 
 const esc = (s: string): string =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function cellXml(c: Cell): string {
   return typeof c === "number"

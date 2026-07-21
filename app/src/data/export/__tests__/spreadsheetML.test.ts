@@ -22,4 +22,10 @@ describe("sheetsToXls", () => {
     const xml = sheetsToXls([{ name: "S", headers: ["h"], rows: [["a & b < c > d"]] }]);
     expect(xml).toContain("a &amp; b &lt; c &gt; d");
   });
+
+  it("fa escaping di \" nei nomi foglio", () => {
+    const xml = sheetsToXls([{ name: 'A "x" B', headers: ["h"], rows: [] }]);
+    expect(xml).toContain('ss:Name="A &quot;x&quot; B"');
+    expect(xml).not.toContain('ss:Name="A "x" B"');
+  });
 });
