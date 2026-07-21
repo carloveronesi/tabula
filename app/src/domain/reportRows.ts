@@ -39,7 +39,9 @@ function labelFor(
   switch (e.type) {
     case "client": {
       const client = e.clientId ? clientById.get(e.clientId)?.name ?? "" : "";
-      return { key: `client:${e.clientId ?? ""}:${e.subtypeId ?? ""}`, client, project: "(senza progetto)" };
+      // Il label ignora il sottotipo: la chiave non deve includerlo, così le
+      // voci senza progetto dello stesso cliente collassano in una riga sola.
+      return { key: `client:${e.clientId ?? ""}`, client, project: "(senza progetto)" };
     }
     case "internal":
       return { key: `internal:${e.subtypeId ?? ""}`, client: "", project: `Interno${suffix}` };

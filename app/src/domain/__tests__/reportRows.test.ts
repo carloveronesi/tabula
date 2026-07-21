@@ -57,6 +57,17 @@ describe("reportRows", () => {
     });
   });
 
+  it("client senza progetto, sottotipi diversi ⇒ una riga sola (label ignora il sottotipo)", () => {
+    const { totals } = reportRows(
+      [
+        entry({ type: "client", clientId: "c1", subtypeId: "s1", startsAt: "2026-07-01T09:00:00", endsAt: "2026-07-01T10:00:00" }),
+        entry({ type: "client", clientId: "c1", subtypeId: "s2", startsAt: "2026-07-02T09:00:00", endsAt: "2026-07-02T10:00:00" }),
+      ],
+      [], [acme], [{ id: "s1", label: "A" }, { id: "s2", label: "B" }], WH,
+    );
+    expect(totals).toEqual([{ client: "Acme", project: "(senza progetto)", minutes: 120 }]);
+  });
+
   it("stesso giorno stesso progetto ⇒ una riga giornaliera sommata", () => {
     const { daily } = reportRows(
       [
