@@ -375,27 +375,27 @@ export function MonthSummary({
           </ul>
         </div>
       )}
-
-      <Button
-        variant="subtle"
-        size="sm"
-        onClick={exportMonthReport}
-        className="mt-1 w-full"
-      >
-        Esporta report
-      </Button>
     </>
   );
 
   return (
     <aside
-      className="hidden w-72 flex-none flex-col gap-5 overflow-y-auto rounded-xl border border-line bg-surface p-[18px] shadow-card lg:flex"
+      className="hidden w-72 flex-none flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-card lg:flex"
       onMouseLeave={interactive ? () => onHover(null) : undefined}
     >
-      {empty ? (
-        <p className="text-[12.5px] text-muted">Nessuna attività in questo mese.</p>
-      ) : (
-        sections
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-[18px]">
+        {empty ? (
+          <p className="text-[12.5px] text-muted">Nessuna attività in questo mese.</p>
+        ) : (
+          sections
+        )}
+      </div>
+      {!empty && (
+        <div className="flex-none border-t border-line p-3">
+          <Button variant="subtle" size="sm" onClick={exportMonthReport} className="w-full">
+            Esporta report
+          </Button>
+        </div>
       )}
     </aside>
   );
