@@ -17,11 +17,11 @@ function client(id: string, name: string): Client {
   return { id, name, color: null, createdAt: 0 };
 }
 
-function internalProject(id: string, name: string): Project {
+function project(id: string, name: string, clientId: string | null): Project {
   return {
     id,
-    clientId: null,
-    kind: "internal",
+    clientId,
+    kind: clientId ? "client" : "internal",
     name,
     status: "active",
     description: "",
@@ -133,14 +133,15 @@ describe("QuickAddPopover", () => {
     expect(saved.type).toBe("client");
   });
 
-  it("salva il progetto interno scelto come attività di tipo interno", async () => {
-    useInventoryStore.setState({ projects: [internalProject("p1", "Team AI")] });
+  it("in modalità Interno salva un'attività interna col progetto scelto", async () => {
+    useInventoryStore.setState({ projects: [project("p1", "Team AI", null)] });
     openSlot();
     render(<QuickAddPopover />);
 
     fireEvent.change(screen.getByLabelText("Titolo"), {
       target: { value: "Allineamento" },
     });
+    fireEvent.click(screen.getByRole("button", { name: "Interno" }));
     const box = screen.getByRole("combobox", { name: "Progetto interno" });
     fireEvent.focus(box);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Team AI" }));
@@ -155,10 +156,36 @@ describe("QuickAddPopover", () => {
     expect(saved.clientId).toBeNull();
   });
 
-  it("scegliere un progetto interno azzera il cliente (si escludono)", async () => {
+  it("in modalità Cliente il selettore progetto elenca i progetti del cliente", async () => {
     useInventoryStore.setState({
       clients: [client("c1", "Acme")],
-      projects: [internalProject("p1", "Team AI")],
+      projects: [project("p1", "Sito Acme", "c1")],
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "Call" } });
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+    const projectBox = screen.getByRole("combobox", { name: "Progetto" });
+    fireEvent.focus(projectBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Sito Acme" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    expect(saved.type).toBe("client");
+    expect(saved.clientId).toBe("c1");
+    expect(saved.projectId).toBe("p1");
+  });
+
+  it("passare a Interno azzera il cliente scelto in modalità Cliente", async () => {
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [project("p1", "Team AI", null)],
     });
     openSlot();
     render(<QuickAddPopover />);
@@ -167,9 +194,9 @@ describe("QuickAddPopover", () => {
     const clientBox = screen.getByRole("combobox", { name: "Cliente" });
     fireEvent.focus(clientBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
-    const internalBox = screen.getByRole("combobox", { name: "Progetto interno" });
-    fireEvent.focus(internalBox);
-    fireEvent.mouseDown(screen.getByRole("option", { name: "Team AI" }));
+    fireEvent.click(screen.getByRole("button", { name: "Interno" }));
+    // In modalità Interno non c'è più il selettore cliente.
+    expect(screen.queryByRole("combobox", { name: "Cliente" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
 
     await waitFor(() =>
