@@ -10,11 +10,13 @@ import { colorFromKey } from "@/domain/colors";
 import { presenceBreakdown, LOCATION_LABEL } from "@/domain/presence";
 import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
 import { cn } from "@/ui/cn";
+import { Button } from "@/ui/Button";
 import { useUiStore } from "@/store";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { usePresenceStore } from "@/store/presence";
 import { useSettingsStore } from "@/store/settings";
+import { exportMonthReport } from "./exportReport";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -373,6 +375,15 @@ export function MonthSummary({
           </ul>
         </div>
       )}
+
+      <Button
+        variant="subtle"
+        size="sm"
+        onClick={exportMonthReport}
+        className="mt-1 w-full"
+      >
+        Esporta report
+      </Button>
     </>
   );
 
