@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   PALETTE,
   colorFromKey,
-  entryColor,
+  entryGroupColor,
   projectColor,
   textColorOn,
   withAlpha,
@@ -48,18 +48,34 @@ describe("projectColor", () => {
   });
 });
 
-describe("entryColor", () => {
-  const projectColors = { p1: "#ff0000" };
+describe("entryGroupColor", () => {
+  const maps = {
+    clientColors: { acme: "#ff0000" },
+    internalColors: { form: "#00ff00" },
+  };
 
-  it("usa il colore assegnato al progetto della entry", () => {
-    expect(entryColor({ projectId: "p1" }, projectColors)).toBe("#ff0000");
+  it("cliente: colore assegnato al cliente, o fallback deterministico", () => {
+    expect(
+      entryGroupColor({ type: "client", clientId: "acme", subtypeId: null }, maps),
+    ).toBe("#ff0000");
+    expect(
+      entryGroupColor({ type: "client", clientId: "x", subtypeId: null }, maps),
+    ).toBe(colorFromKey("x"));
   });
 
-  it("ricade su un colore deterministico se il progetto non ha colore", () => {
-    expect(entryColor({ projectId: "p2" }, projectColors)).toBe(colorFromKey("p2"));
+  it("interno: colore per sottotipo, o fallback deterministico", () => {
+    expect(
+      entryGroupColor({ type: "internal", clientId: null, subtypeId: "form" }, maps),
+    ).toBe("#00ff00");
+    expect(
+      entryGroupColor({ type: "internal", clientId: null, subtypeId: "y" }, maps),
+    ).toBe(colorFromKey("y"));
   });
 
-  it("ritorna null per una entry senza progetto (ferie/evento/non assegnata)", () => {
-    expect(entryColor({ projectId: null }, projectColors)).toBeNull();
+  it("senza cliente/sottotipo ricade sulla tinta del tipo (stabile)", () => {
+    const client = entryGroupColor({ type: "client", clientId: null, subtypeId: null }, maps);
+    const internal = entryGroupColor({ type: "internal", clientId: null, subtypeId: null }, maps);
+    expect(client).not.toBe(internal);
+    expect(client).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

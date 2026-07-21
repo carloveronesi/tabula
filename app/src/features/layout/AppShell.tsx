@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Entry, Location } from "@/data/types";
 import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
-import { entryColor } from "@/domain/colors";
+import { entryGroupColor } from "@/domain/colors";
 import { isoDate, workingDatesOfMonth, isWorkingDate } from "@/domain/calendarNav";
 import { availableMinutes } from "@/domain/capacity";
 import { dayBreakdown, entryLabel } from "@/domain/dayBreakdown";
@@ -58,7 +58,6 @@ export function AppShell() {
   const settings = useSettingsStore((s) => s.settings);
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
-  const projects = useInventoryStore((s) => s.projects);
   const locations = usePresenceStore((s) => s.metas);
   const setLocation = usePresenceStore((s) => s.setLocation);
   const saveEntry = useCalendarStore((s) => s.saveEntry);
@@ -118,13 +117,15 @@ export function AppShell() {
     anchor?: { x: number; y: number },
   ) => openQuickAdd({ date: dateISO, startMin, endMin, anchor: anchor ?? null });
 
-  // Colore del blocco per progetto (colore assegnato al progetto, fallback
-  // deterministico sull'id; entry senza progetto → nessun colore).
+  // Colore del blocco per cliente/sottotipo: stessa dimensione della legenda del
+  // giorno, così timeline e riepilogo concordano.
   const colorOf = useMemo(() => {
-    const projectColors: Record<string, string> = {};
-    for (const p of projects) if (p.color) projectColors[p.id] = p.color;
-    return (entry: Entry) => entryColor(entry, projectColors);
-  }, [projects]);
+    const maps = {
+      clientColors: settings.clientColors,
+      internalColors: settings.internalColors,
+    };
+    return (entry: Entry) => entryGroupColor(entry, maps);
+  }, [settings.clientColors, settings.internalColors]);
 
   // Resolver dei nomi cliente/sottotipo, condivisi da legenda e blocchi.
   const names = useMemo(() => {

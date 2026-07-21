@@ -4,7 +4,7 @@ import type { ActivityTemplate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
-import { colorFromKey } from "@/domain/colors";
+import { colorFromKey, projectColor } from "@/domain/colors";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -47,12 +47,16 @@ export function QuickAddPopover() {
   const notify = useToastStore((s) => s.notify);
   const clients = useInventoryStore((s) => s.clients);
   const saveClient = useInventoryStore((s) => s.saveClient);
+  const projects = useInventoryStore((s) => s.projects);
+  const saveProject = useInventoryStore((s) => s.saveProject);
   const templates = useTemplateStore((s) => s.templates);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
+  // Progetto interno: alternativo al cliente (i due si escludono).
+  const [internalId, setInternalId] = useState<string | null>(null);
   // Template applicato: porta tipo/progetto/sottotipo (non visibili qui) al salvataggio.
   const [tpl, setTpl] = useState<ActivityTemplate | null>(null);
 
@@ -63,6 +67,7 @@ export function QuickAddPopover() {
     if (!quickAdd) return;
     setTitle("");
     setClientId(null);
+    setInternalId(null);
     setTpl(null);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -122,10 +127,35 @@ export function QuickAddPopover() {
     () => clients.map((c) => ({ id: c.id, label: c.name })),
     [clients],
   );
+  const internalOptions = useMemo(
+    () =>
+      projects
+        .filter((p) => p.kind === "internal")
+        .map((p) => ({ id: p.id, label: p.name })),
+    [projects],
+  );
   const selectedClient = clients.find((c) => c.id === clientId) ?? null;
-  // Pallino-indizio del cliente scelto (il colore del blocco vero è per progetto,
-  // qui non ancora selezionato): tinta deterministica sul cliente.
-  const dotColor = selectedClient ? colorFromKey(selectedClient.id) : null;
+  const selectedInternal = projects.find((p) => p.id === internalId) ?? null;
+  // Pallino-indizio della classificazione scelta (tinta del cliente o del
+  // progetto interno).
+  const dotColor = selectedClient
+    ? colorFromKey(selectedClient.id)
+    : selectedInternal
+      ? projectColor(selectedInternal)
+      : null;
+
+  // Cliente e progetto interno si escludono: scegliere l'uno azzera l'altro.
+  const pickClient = (id: string | null) => {
+    setClientId(id);
+    if (id) setInternalId(null);
+  };
+  const pickInternal = (id: string | null) => {
+    setInternalId(id);
+    if (id) {
+      setClientId(null);
+      setTpl(null);
+    }
+  };
 
   if (!quickAdd) return null;
   const { date, startMin, endMin, anchor } = quickAdd;
@@ -135,24 +165,43 @@ export function QuickAddPopover() {
   async function createClient(name: string) {
     const id = nanoid();
     await saveClient({ id, name, color: null, createdAt: Date.now() });
-    setClientId(id);
+    pickClient(id);
+  }
+
+  async function createInternal(name: string) {
+    const id = nanoid();
+    await saveProject({
+      id,
+      clientId: null,
+      kind: "internal",
+      name,
+      status: "active",
+      description: "",
+      objectives: "",
+      startDate: "",
+      endDate: "",
+      teamIds: [],
+      contactIds: [],
+      estimatedHours: 0,
+      color: null,
+    });
+    pickInternal(id);
   }
 
   function applyTpl(t: ActivityTemplate) {
     setTpl(t);
     setTitle(t.title);
     setClientId(t.clientId);
+    setInternalId(null);
     inputRef.current?.focus();
   }
 
   async function save() {
     if (!valid) return;
     const base = emptyDraft(date, startMin, endMin);
-    const draft = {
-      ...(tpl ? applyTemplate(base, tpl) : base),
-      title,
-      clientId,
-    };
+    const draft = internalId
+      ? { ...base, type: "internal" as const, projectId: internalId, title }
+      : { ...(tpl ? applyTemplate(base, tpl) : base), title, clientId };
     await saveEntry(applyDraft(draft, { id: nanoid(), now: Date.now() }));
     closeQuickAdd();
     notify("Attività creata", {
@@ -161,16 +210,20 @@ export function QuickAddPopover() {
   }
 
   function moreDetails() {
-    openCreate({
-      date,
-      startMin,
-      endMin,
-      title,
-      clientId,
-      type: tpl?.type,
-      projectId: tpl?.projectId,
-      subtypeId: tpl?.subtypeId,
-    });
+    openCreate(
+      internalId
+        ? { date, startMin, endMin, title, type: "internal", projectId: internalId }
+        : {
+            date,
+            startMin,
+            endMin,
+            title,
+            clientId,
+            type: tpl?.type,
+            projectId: tpl?.projectId,
+            subtypeId: tpl?.subtypeId,
+          },
+    );
   }
 
   return (
@@ -216,22 +269,12 @@ export function QuickAddPopover() {
         )}
       />
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex items-center gap-2">
         <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
           {minutesToLabel(startMin)}
           <span className="text-faint">–</span>
           {minutesToLabel(endMin)}
         </span>
-        <div className="min-w-0 flex-1">
-          <Combobox
-            label="Cliente"
-            placeholder="Cliente…"
-            options={clientOptions}
-            value={clientId}
-            onChange={setClientId}
-            onCreate={(name) => void createClient(name)}
-          />
-        </div>
         {dotColor && (
           <span
             aria-hidden
@@ -239,6 +282,25 @@ export function QuickAddPopover() {
             style={{ backgroundColor: dotColor }}
           />
         )}
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Combobox
+          label="Cliente"
+          placeholder="Cliente…"
+          options={clientOptions}
+          value={clientId}
+          onChange={pickClient}
+          onCreate={(name) => void createClient(name)}
+        />
+        <Combobox
+          label="Progetto interno"
+          placeholder="Interno…"
+          options={internalOptions}
+          value={internalId}
+          onChange={pickInternal}
+          onCreate={(name) => void createInternal(name)}
+        />
       </div>
 
       {templates.length > 0 && (

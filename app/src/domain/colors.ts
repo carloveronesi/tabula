@@ -1,3 +1,5 @@
+import type { EntryType } from "@/data/types";
+
 /** Palette base per l'assegnazione deterministica dei colori. */
 export const PALETTE: string[] = [
   "#6366f1", // indigo
@@ -67,16 +69,30 @@ export function projectColor(p: { id: string; color?: string | null }): string {
 }
 
 /**
- * Colore di un blocco-calendario: dal progetto della entry (colore assegnato
- * o fallback deterministico sull'id del progetto). `null` quando la entry non
- * ha un progetto (ferie/evento o attività non assegnata) → il chiamante usa il
- * colore-tipo di default.
+ * Tinta dei gruppi-per-tipo (entry senza cliente/sottotipo, quindi senza
+ * colore proprio). Valori distinti dalla palette così righe come "Interno" e
+ * "Cliente" non collidono tutte sull'accento.
  */
-export function entryColor(
-  entry: { projectId: string | null },
-  projectColors: Record<string, string>,
-): string | null {
-  return entry.projectId
-    ? (projectColors[entry.projectId] ?? colorFromKey(entry.projectId))
-    : null;
+const TYPE_COLOR: Record<EntryType, string> = {
+  internal: "#6366f1", // indigo (vicino all'accento)
+  client: "#f43f5e", // rose
+  event: "#ec4899", // pink
+  vacation: "#06b6d4", // cyan
+};
+
+/**
+ * Colore-gruppo di una entry: per cliente (`type=client`), per sottotipo
+ * (`type=internal`), altrimenti tinta del tipo (ferie/evento o non assegnata).
+ * È la stessa dimensione-colore della legenda del giorno (`dayBreakdown`), così
+ * blocchi in timeline e riepilogo concordano.
+ */
+export function entryGroupColor(
+  entry: { type: EntryType; clientId: string | null; subtypeId: string | null },
+  maps: ColorMaps,
+): string {
+  if (entry.type === "client" && entry.clientId)
+    return maps.clientColors[entry.clientId] ?? colorFromKey(entry.clientId);
+  if (entry.type === "internal" && entry.subtypeId)
+    return maps.internalColors[entry.subtypeId] ?? colorFromKey(entry.subtypeId);
+  return TYPE_COLOR[entry.type];
 }
