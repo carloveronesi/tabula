@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
-import type { Client } from "@/data/types";
+import type { Client, Project } from "@/data/types";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
@@ -15,6 +15,24 @@ import { QuickAddPopover } from "@/features/calendar/QuickAddPopover";
 
 function client(id: string, name: string): Client {
   return { id, name, color: null, createdAt: 0 };
+}
+
+function internalProject(id: string, name: string): Project {
+  return {
+    id,
+    clientId: null,
+    kind: "internal",
+    name,
+    status: "active",
+    description: "",
+    objectives: "",
+    startDate: "",
+    endDate: "",
+    teamIds: [],
+    contactIds: [],
+    estimatedHours: 0,
+    color: null,
+  };
 }
 
 const SLOT = {
@@ -113,6 +131,53 @@ describe("QuickAddPopover", () => {
     const saved = useCalendarStore.getState().entries[0];
     expect(saved.clientId).toBe("c1");
     expect(saved.type).toBe("client");
+  });
+
+  it("salva il progetto interno scelto come attività di tipo interno", async () => {
+    useInventoryStore.setState({ projects: [internalProject("p1", "Team AI")] });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), {
+      target: { value: "Allineamento" },
+    });
+    const box = screen.getByRole("combobox", { name: "Progetto interno" });
+    fireEvent.focus(box);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Team AI" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    expect(saved.type).toBe("internal");
+    expect(saved.projectId).toBe("p1");
+    expect(saved.clientId).toBeNull();
+  });
+
+  it("scegliere un progetto interno azzera il cliente (si escludono)", async () => {
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [internalProject("p1", "Team AI")],
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "X" } });
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme" }));
+    const internalBox = screen.getByRole("combobox", { name: "Progetto interno" });
+    fireEvent.focus(internalBox);
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Team AI" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    expect(saved.type).toBe("internal");
+    expect(saved.clientId).toBeNull();
   });
 
   it("crea un cliente al volo dal combobox e lo salva", async () => {

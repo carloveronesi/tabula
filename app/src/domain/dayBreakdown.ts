@@ -1,25 +1,13 @@
 import type { Entry, EntryType } from "@/data/types";
 import { workedMinutes } from "@/domain/time";
 import type { WorkHours } from "@/domain/slots";
-import { colorFromKey, type ColorMaps } from "@/domain/colors";
+import { entryGroupColor, type ColorMaps } from "@/domain/colors";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
   internal: "Interno",
   event: "Evento",
   vacation: "Ferie",
-};
-
-/**
- * Tinta dei gruppi-per-tipo (entry senza cliente/sottotipo, quindi senza
- * colore proprio). Valori distinti dalla palette così righe come "Interno" e
- * "Cliente" non collidono tutte sull'accento.
- */
-const TYPE_COLOR: Record<EntryType, string> = {
-  internal: "#6366f1", // indigo (vicino all'accento)
-  client: "#f43f5e", // rose
-  event: "#ec4899", // pink
-  vacation: "#06b6d4", // cyan
 };
 
 export interface BreakdownRow {
@@ -88,17 +76,8 @@ export function dayBreakdown(
     if (existing) {
       existing.minutes += min;
     } else {
-      // La ripartizione raggruppa per cliente/sottotipo (dimensione propria,
-      // diversa dal colore-progetto dei blocchi in timeline).
-      let color: string;
-      if (e.type === "client" && e.clientId) {
-        color = maps.clientColors[e.clientId] ?? colorFromKey(e.clientId);
-      } else if (e.type === "internal" && e.subtypeId) {
-        color = maps.internalColors[e.subtypeId] ?? colorFromKey(e.subtypeId);
-      } else {
-        color = TYPE_COLOR[e.type];
-      }
-      groups.set(key, { key, label, color, minutes: min });
+      // Stessa dimensione-colore dei blocchi in timeline (per cliente/sottotipo).
+      groups.set(key, { key, label, color: entryGroupColor(e, maps), minutes: min });
     }
   }
 
