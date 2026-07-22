@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Settings } from "@/data/types";
 import { useSettingsStore } from "@/store/settings";
 import { Button, Field, Input, TimeField, cn } from "@/ui";
@@ -28,16 +29,22 @@ export function ScheduleSettings() {
     });
   };
 
-  const [pm, pd] = settings.patronDay
-    ? settings.patronDay.split("-").map(Number)
-    : [0, 0];
-  const setPatron = (month: number, day: number) =>
+  // Stato locale: consente di digitare mese e giorno uno alla volta senza
+  // perdere il valore parziale. Persiste solo quando entrambi sono validi.
+  const [[pm, pd], setPmd] = useState<[number, number]>(() =>
+    settings.patronDay
+      ? (settings.patronDay.split("-").map(Number) as [number, number])
+      : [0, 0],
+  );
+  const setPatron = (month: number, day: number) => {
+    setPmd([month, day]);
     save({
       patronDay:
         month >= 1 && month <= 12 && day >= 1 && day <= 31
           ? `${pad2(month)}-${pad2(day)}`
           : "",
     });
+  };
 
   return (
     <div className="space-y-6">
@@ -144,7 +151,7 @@ export function ScheduleSettings() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => save({ patronDay: "" })}
+              onClick={() => setPatron(0, 0)}
             >
               Rimuovi
             </Button>
