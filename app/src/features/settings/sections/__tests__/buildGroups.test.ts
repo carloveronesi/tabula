@@ -26,35 +26,31 @@ const entry = (over: Partial<Entry>): Entry =>
 
 const base = {
   entities: [
+    { id: "e", name: "Élodie" },
     { id: "a", name: "Anna" },
     { id: "b", name: "Bruno" },
-    { id: "c", name: "Carla" },
+    { id: "1", name: "1° collaboratore" },
   ],
   pickIds: (e: Entry) => e.collaboratorIds,
-  groupKeyOf: (e: Entry) => e.clientId ?? "Interno",
-  fallbackOf: () => "Senza attività",
 };
 
 describe("buildGroups", () => {
-  const entries = [
-    entry({ id: "1", clientId: "Acme", collaboratorIds: ["a", "b"] }),
-    entry({ id: "2", clientId: null, projectId: "P1", collaboratorIds: ["a"] }),
-  ];
-
-  it("raggruppa per contesto e mette in coda i gruppi 'senza'", () => {
-    const g = buildGroups({ ...base, entries, query: "", projectId: null });
-    expect(g.map((x) => x.label)).toEqual(["Acme", "Interno", "Senza attività"]);
-    expect(g[0].ids).toEqual(["a", "b"]); // Anna, Bruno sotto Acme
-    expect(g[2].ids).toEqual(["c"]); // Carla mai usata
+  it("indice a rubrica: iniziale accento-insensibile, «#» in coda", () => {
+    const g = buildGroups({ ...base, entries: [], query: "", projectId: null });
+    expect(g.map((x) => x.label)).toEqual(["A", "B", "E", "#"]);
+    expect(g[0].ids).toEqual(["a"]); // Anna
+    expect(g[2].ids).toEqual(["e"]); // Élodie sotto E, non accento
+    expect(g[3].ids).toEqual(["1"]); // non-lettera in coda
   });
 
   it("cerca per nome (case-insensitive)", () => {
-    const g = buildGroups({ ...base, entries, query: "car", projectId: null });
-    expect(g).toEqual([{ label: "Senza attività", ids: ["c"] }]);
+    const g = buildGroups({ ...base, entries: [], query: "ann", projectId: null });
+    expect(g).toEqual([{ label: "A", ids: ["a"] }]);
   });
 
-  it("filtra per progetto: solo le entry di quel progetto contano, niente fallback", () => {
+  it("filtra per progetto: solo chi compare in un'attività di quel progetto", () => {
+    const entries = [entry({ projectId: "P1", collaboratorIds: ["a", "b"] })];
     const g = buildGroups({ ...base, entries, query: "", projectId: "P1" });
-    expect(g).toEqual([{ label: "Interno", ids: ["a"] }]);
+    expect(g.map((x) => x.label)).toEqual(["A", "B"]);
   });
 });

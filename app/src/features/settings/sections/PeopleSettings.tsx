@@ -33,79 +33,70 @@ interface Group {
   ids: string[];
 }
 
-/** Etichette "coda" (senza contesto reale) ordinate in fondo alla lista. */
-const TAIL_GROUPS = new Set(["Interno", "Senza attività", "Senza cliente"]);
+/** Iniziale accento-insensibile per l'indice a rubrica; non-lettere → «#». */
+function firstLetter(name: string): string {
+  const c = name
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .charAt(0)
+    .toUpperCase();
+  return /[A-Z]/.test(c) ? c : "#";
+}
 
 /**
- * Costruisce i gruppi da mostrare: cerca per nome, filtra per progetto (solo le
- * entry di quel progetto contano) e raggruppa ogni entità per contesto ricavato
- * dalle sue entry. Le entità senza entry finiscono nel gruppo `fallbackOf` (solo
- * quando non è attivo il filtro progetto).
+ * Costruisce l'indice a rubrica: cerca per nome, filtra per progetto (solo chi
+ * compare in un'attività di quel progetto) e raggruppa per iniziale. «#» in coda.
  */
 export function buildGroups(opts: {
   entities: { id: string; name: string }[];
   entries: Entry[];
   pickIds: (e: Entry) => string[];
-  groupKeyOf: (e: Entry) => string;
-  fallbackOf: (e: { id: string; name: string }) => string;
   query: string;
   projectId: string | null;
 }): Group[] {
   const q = opts.query.trim().toLowerCase();
-  const byId = new Map(opts.entities.map((e) => [e.id, e] as const));
-  const match = (id: string) => {
-    const e = byId.get(id);
-    return !!e && (!q || e.name.toLowerCase().includes(q));
-  };
-  const groups = new Map<string, Set<string>>();
-  const add = (label: string, id: string) => {
-    const set = groups.get(label);
-    if (set) set.add(id);
-    else groups.set(label, new Set([id]));
-  };
-
-  const placed = new Set<string>();
-  for (const e of opts.entries) {
-    if (opts.projectId && e.projectId !== opts.projectId) continue;
-    const label = opts.groupKeyOf(e);
-    for (const id of opts.pickIds(e)) {
-      if (!match(id)) continue;
-      placed.add(id);
-      add(label, id);
-    }
+  let visible = opts.entities.filter((e) => !q || e.name.toLowerCase().includes(q));
+  if (opts.projectId) {
+    const inProject = new Set<string>();
+    for (const e of opts.entries)
+      if (e.projectId === opts.projectId) for (const id of opts.pickIds(e)) inProject.add(id);
+    visible = visible.filter((e) => inProject.has(e.id));
   }
-  if (!opts.projectId)
-    for (const ent of opts.entities)
-      if (!placed.has(ent.id) && match(ent.id)) add(opts.fallbackOf(ent), ent.id);
 
-  const rank = (label: string) => (TAIL_GROUPS.has(label) ? 1 : 0);
+  const groups = new Map<string, { id: string; name: string }[]>();
+  for (const e of visible) {
+    const k = firstLetter(e.name);
+    const arr = groups.get(k);
+    if (arr) arr.push(e);
+    else groups.set(k, [e]);
+  }
   return [...groups.entries()]
-    .map(([label, set]) => ({
+    .map(([label, arr]) => ({
       label,
-      ids: [...set].sort((a, b) => byId.get(a)!.name.localeCompare(byId.get(b)!.name)),
+      ids: arr.sort((a, b) => a.name.localeCompare(b.name)).map((e) => e.id),
     }))
-    .sort((a, b) => rank(a.label) - rank(b.label) || a.label.localeCompare(b.label));
+    .sort(
+      (a, b) =>
+        (a.label === "#" ? 1 : 0) - (b.label === "#" ? 1 : 0) || a.label.localeCompare(b.label),
+    );
 }
 
 interface GroupedListProps {
   entities: { id: string; name: string }[];
   entries: Entry[];
   pickIds: (e: Entry) => string[];
-  groupKeyOf: (e: Entry) => string;
-  fallbackOf: (e: { id: string; name: string }) => string;
   /** Progetti per il filtro (senza l'opzione «Tutti», aggiunta qui). */
   projectOptions: ComboboxOption[];
   searchPlaceholder: string;
   renderRow: (id: string) => React.ReactNode;
 }
 
-/** Lista con barra cerca + filtro progetto e intestazioni di gruppo. */
+/** Rubrica: barra cerca + filtro progetto, indice alfabetico in un riquadro scrollabile. */
 function GroupedEntityList({
   entities,
   entries,
   pickIds,
-  groupKeyOf,
-  fallbackOf,
   projectOptions,
   searchPlaceholder,
   renderRow,
@@ -114,12 +105,12 @@ function GroupedEntityList({
   const [projectId, setProjectId] = useState<string | null>(null);
 
   const groups = useMemo(
-    () => buildGroups({ entities, entries, pickIds, groupKeyOf, fallbackOf, query, projectId }),
-    [entities, entries, pickIds, groupKeyOf, fallbackOf, query, projectId],
+    () => buildGroups({ entities, entries, pickIds, query, projectId }),
+    [entities, entries, pickIds, query, projectId],
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Input
           className="min-w-40 flex-1"
@@ -129,29 +120,35 @@ function GroupedEntityList({
           onChange={(e) => setQuery(e.target.value)}
         />
         {projectOptions.length > 0 && (
-          <div className="w-56 shrink-0">
-            <Combobox
-              label="Filtra per progetto"
-              placeholder="Tutti i progetti"
-              options={[{ id: "", label: "Tutti i progetti" }, ...projectOptions]}
-              value={projectId ?? ""}
-              onChange={(id) => setProjectId(id || null)}
-            />
-          </div>
+          <select
+            aria-label="Filtra per progetto"
+            className="h-9 w-56 shrink-0 rounded border border-line bg-bg px-3 text-sm text-ink focus:border-primary focus:outline-none"
+            value={projectId ?? ""}
+            onChange={(e) => setProjectId(e.target.value || null)}
+          >
+            <option value="">Tutti i progetti</option>
+            {projectOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         )}
       </div>
 
       {groups.length === 0 ? (
         <p className="text-sm text-muted">Nessun risultato.</p>
       ) : (
-        groups.map((g) => (
-          <div key={g.label}>
-            <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">
-              {g.label}
-            </h4>
-            <ul className="divide-y divide-line">{g.ids.map((id) => renderRow(id))}</ul>
-          </div>
-        ))
+        <div className="max-h-96 overflow-y-auto rounded-lg border border-line">
+          {groups.map((g) => (
+            <div key={g.label}>
+              <h4 className="sticky top-0 z-10 bg-surface px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted">
+                {g.label}
+              </h4>
+              <ul className="divide-y divide-line px-3">{g.ids.map((id) => renderRow(id))}</ul>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -358,8 +355,6 @@ export function PeopleSettings() {
             entities={people}
             entries={archive}
             pickIds={pickCollaborators}
-            groupKeyOf={entryContext}
-            fallbackOf={() => "Senza attività"}
             projectOptions={projectFilterOptions}
             searchPlaceholder="Cerca collaboratore…"
             renderRow={(id) => {
@@ -405,11 +400,6 @@ export function PeopleSettings() {
             entities={sortedContacts}
             entries={archive}
             pickIds={pickContacts}
-            groupKeyOf={entryContext}
-            fallbackOf={(e) => {
-              const k = contacts.find((x) => x.id === e.id);
-              return `Cliente: ${clientName(k?.clientId ?? null) || "—"}`;
-            }}
             projectOptions={projectFilterOptions}
             searchPlaceholder="Cerca referente…"
             renderRow={(id) => {
