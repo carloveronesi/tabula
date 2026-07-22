@@ -54,10 +54,8 @@ describe("TodoView", () => {
     await useTodoStore.getState().addTodo("Task");
     render(<TodoView />);
 
-    const select = (await screen.findByLabelText(
-      "Progetto Task",
-    )) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "p1" } });
+    fireEvent.click(await screen.findByLabelText("Progetto Task"));
+    fireEvent.click(await screen.findByRole("option", { name: "Sito web" }));
 
     await waitFor(() =>
       expect(useTodoStore.getState().todos[0].projectId).toBe("p1"),

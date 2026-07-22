@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import type { Project, Todo } from "@/data/types";
 import { sortTodos, isOverdue, subtaskProgress } from "@/domain/todoDraft";
 import { isoDate } from "@/domain/calendarNav";
@@ -8,6 +16,7 @@ import { useInventoryStore } from "@/store/inventory";
 import { Button } from "@/ui/Button";
 import { Input } from "@/ui/Input";
 import { Segmented, type SegmentedOption } from "@/ui/Segmented";
+import { IconChevronDown } from "@/ui/icons";
 import { cn } from "@/ui/cn";
 
 type Filter = "open" | "all" | "done";
@@ -45,6 +54,171 @@ const IconCal = () => (
     <path d="M4 9h16M8 3v4M16 3v4" />
   </svg>
 );
+
+/** Pastiglia colore del progetto (o segnaposto neutro se nessuno). */
+function Dot({ color }: { color: string | null }) {
+  return (
+    <span
+      aria-hidden
+      className="h-2 w-2 shrink-0 rounded-[3px]"
+      style={{
+        backgroundColor: color ?? "transparent",
+        outline: color ? undefined : "1px solid var(--line)",
+      }}
+    />
+  );
+}
+
+/**
+ * Selettore progetto compatto: un chip come trigger e una lista stilizzata resa
+ * in un portale (così sfugge all'`overflow-hidden` della riga). Navigabile da
+ * tastiera (↑/↓/Invio/Esc); la riga vuota "— progetto" scollega il progetto.
+ */
+function ProjectPicker({
+  label,
+  value,
+  projects,
+  selected,
+  onChange,
+}: {
+  label: string;
+  value: string | null;
+  projects: Project[];
+  selected: Project | null;
+  onChange: (id: string | null) => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [highlight, setHighlight] = useState(0);
+
+  const options = useMemo(
+    () => [
+      { id: "", name: "— progetto", color: null as string | null },
+      ...projects.map((p) => ({ id: p.id, name: p.name, color: projectColor(p) })),
+    ],
+    [projects],
+  );
+  const activeId = value ?? "";
+
+  // Apre allineando l'evidenza alla voce selezionata.
+  useEffect(() => {
+    if (open) setHighlight(Math.max(0, options.findIndex((o) => o.id === activeId)));
+  }, [open, options, activeId]);
+
+  // Posiziona sotto il chip; ripiega verso l'alto e rientra nei bordi.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current || !listRef.current) return;
+    const MARGIN = 8;
+    const b = btnRef.current.getBoundingClientRect();
+    const l = listRef.current.getBoundingClientRect();
+    let top = b.bottom + 4;
+    if (top + l.height > window.innerHeight - MARGIN) {
+      top = Math.max(MARGIN, b.top - l.height - 4);
+    }
+    const left = Math.min(b.left, window.innerWidth - l.width - MARGIN);
+    setPos({ top, left: Math.max(MARGIN, left) });
+    listRef.current.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!btnRef.current?.contains(t) && !listRef.current?.contains(t)) close();
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  const choose = (id: string) => {
+    onChange(id || null);
+    setOpen(false);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, options.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      choose(options[highlight].id);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      btnRef.current?.focus();
+    }
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-raised pl-2 pr-1.5 text-xs text-muted hover:text-ink"
+      >
+        <Dot color={selected ? projectColor(selected) : null} />
+        <span className="max-w-[8.5rem] truncate">
+          {selected ? selected.name : "— progetto"}
+        </span>
+        <IconChevronDown
+          size={13}
+          aria-hidden
+          className={cn("text-faint transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open &&
+        createPortal(
+          <ul
+            ref={listRef}
+            role="listbox"
+            aria-label={label}
+            tabIndex={-1}
+            onKeyDown={onKeyDown}
+            style={
+              pos
+                ? { position: "fixed", top: pos.top, left: pos.left }
+                : { position: "fixed", visibility: "hidden" }
+            }
+            className="z-dropdown max-h-64 min-w-[12rem] overflow-auto rounded-lg border border-line bg-surface p-1 shadow-card focus:outline-none"
+          >
+            {options.map((o, i) => (
+              <li
+                key={o.id || "none"}
+                role="option"
+                aria-selected={o.id === activeId}
+                onMouseEnter={() => setHighlight(i)}
+                onClick={() => choose(o.id)}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm",
+                  i === highlight && "bg-raised",
+                  o.id === activeId ? "font-medium text-ink" : "text-muted",
+                )}
+              >
+                <Dot color={o.color} />
+                <span className="truncate">{o.name}</span>
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
+    </>
+  );
+}
 
 function TodoRow({
   todo: t,
@@ -91,16 +265,12 @@ function TodoRow({
       data-testid={`todo-${t.id}`}
       data-overdue={overdue ? "true" : undefined}
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-surface shadow-card",
-        overdue ? "border-danger/35" : "border-line",
+        "relative overflow-hidden rounded-xl border border-line bg-surface shadow-card",
         t.done && "bg-raised/40",
       )}
     >
       {overdue && (
-        <span
-          aria-hidden
-          className="absolute inset-y-2.5 left-0 w-[3px] rounded-r-pill bg-danger"
-        />
+        <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-danger" />
       )}
       <div className="flex items-center gap-3 px-3.5 py-3">
         <input
@@ -163,29 +333,13 @@ function TodoRow({
         </button>
 
         {projects.length > 0 && (
-          <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-raised pl-2 pr-1">
-            <span
-              aria-hidden
-              className="h-2 w-2 shrink-0 rounded-[3px]"
-              style={{
-                backgroundColor: project ? projectColor(project) : "transparent",
-                outline: project ? undefined : "1px solid var(--line)",
-              }}
-            />
-            <select
-              aria-label={`Progetto ${t.title}`}
-              value={t.projectId ?? ""}
-              onChange={(e) => void setProject(t.id, e.target.value || null)}
-              className="h-7 max-w-[8.5rem] bg-transparent pr-1 text-xs text-muted focus:outline-none"
-            >
-              <option value="">— progetto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </span>
+          <ProjectPicker
+            label={`Progetto ${t.title}`}
+            value={t.projectId ?? null}
+            projects={projects}
+            selected={project}
+            onChange={(id) => void setProject(t.id, id)}
+          />
         )}
 
         <label
