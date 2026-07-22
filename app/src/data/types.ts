@@ -140,6 +140,7 @@ export interface Settings {
     { subtypeId: Id | null; milestone: string | null }
   >;
   patronDay: string; // "MM-GG"
+  lastBackupAt?: number; // epoch ms dell'ultimo export riuscito, per il promemoria
   presenceTracking: {
     enabled: boolean;
     officeTargetPct: number;

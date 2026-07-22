@@ -1,9 +1,7 @@
 import { useRef, useState } from "react";
 import { db } from "@/data/db";
 import { importExportFile, type ImportSummary } from "@/data/importExportFile";
-import { collectExport } from "@/data/export/collectExport";
-import { exportFilename } from "@/data/export/buildExport";
-import { triggerDownload } from "@/data/export/triggerDownload";
+import { runBackup } from "@/features/settings/backup";
 import { viewRange } from "@/domain/calendarNav";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
@@ -44,9 +42,8 @@ export function DataSettings() {
   async function onExport() {
     setExporting(true);
     try {
-      const doc = await collectExport();
-      triggerDownload(exportFilename(new Date()), JSON.stringify(doc, null, 2));
-      notify(`Esportate ${doc.entries.length} attività`);
+      const count = await runBackup();
+      notify(`Esportate ${count} attività`);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Errore imprevisto durante l'export.",
