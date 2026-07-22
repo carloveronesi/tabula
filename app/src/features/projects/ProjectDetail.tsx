@@ -4,6 +4,7 @@ import type { ProjectStats } from "@/domain/projectStats";
 import type { ProjectActivity } from "@/domain/projectActivity";
 import { workedMinutes } from "@/domain/time";
 import { formatHours } from "@/domain/format";
+import { budgetProgress } from "@/domain/budget";
 import { colorFromKey, withAlpha } from "@/domain/colors";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
@@ -158,9 +159,11 @@ export function ProjectDetail({
   const team = project.teamIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
-  const estMin = project.estimatedHours * 60;
-  const progressPct =
-    estMin > 0 ? Math.min(100, Math.round(((stat?.totalMin ?? 0) / estMin) * 100)) : 0;
+  const loggedMin = stat?.totalMin ?? 0;
+  const { pct: realPct, overBudget, overMin } = budgetProgress(
+    loggedMin,
+    project.estimatedHours,
+  );
 
   const dot = <span className="text-line">·</span>;
 
@@ -227,18 +230,25 @@ export function ProjectDetail({
             <span className={CARD_LABEL}>Avanzamento</span>
             <span className="text-sm text-muted">
               <span className="tnum font-semibold text-ink">
-                {formatHours(stat?.totalMin ?? 0)}
+                {formatHours(loggedMin)}
               </span>{" "}
               / {project.estimatedHours}h stimate ·{" "}
-              <span className="font-semibold text-accent">{progressPct}%</span>
+              <span className={cn("font-semibold", overBudget ? "text-danger" : "text-accent")}>
+                {realPct}%
+              </span>
             </span>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-pill bg-raised">
             <div
-              className="h-full rounded-pill bg-accent"
-              style={{ width: `${progressPct}%` }}
+              className={cn("h-full rounded-pill", overBudget ? "bg-danger" : "bg-accent")}
+              style={{ width: `${Math.min(100, realPct)}%` }}
             />
           </div>
+          {overBudget && (
+            <div className="mt-2 text-xs font-medium text-danger">
+              {formatHours(overMin)} oltre le {project.estimatedHours}h stimate
+            </div>
+          )}
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { aggregateByProject } from "@/domain/projectStats";
 import { projectActivity } from "@/domain/projectActivity";
 import { newProject } from "@/domain/projectDraft";
 import { formatHours } from "@/domain/format";
+import { budgetProgress } from "@/domain/budget";
 import { availableMinutes } from "@/domain/capacity";
 import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
 import { colorFromKey, projectColor } from "@/domain/colors";
@@ -29,6 +30,10 @@ function ProjectItem({
   color: string;
   onSelect: () => void;
 }) {
+  const { hasEstimate, pct, overBudget, overMin } = budgetProgress(
+    totalMin,
+    project.estimatedHours,
+  );
   return (
     <li>
       <button
@@ -36,7 +41,7 @@ function ProjectItem({
         onClick={onSelect}
         aria-pressed={active}
         className={cn(
-          "relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm",
+          "relative flex w-full flex-col gap-1.5 rounded-lg px-3 py-2 text-left text-sm",
           "transition-colors duration-[var(--dur-fast)] ease-out",
           active ? "bg-raised shadow-sm" : "hover:bg-raised",
         )}
@@ -47,26 +52,49 @@ function ProjectItem({
             style={{ background: color }}
           />
         )}
-        <span
-          className="h-2 w-2 flex-none rounded-sm"
-          style={{ background: color }}
-        />
-        <span
-          className={cn(
-            "min-w-0 flex-1 truncate",
-            active ? "font-semibold text-ink" : "text-ink",
-          )}
-        >
-          {project.name}
+        <span className="flex w-full items-center gap-2.5">
+          <span
+            className="h-2 w-2 flex-none rounded-sm"
+            style={{ background: color }}
+          />
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate",
+              active ? "font-semibold text-ink" : "text-ink",
+            )}
+          >
+            {project.name}
+          </span>
+          <span
+            className={cn(
+              "tnum shrink-0 text-xs",
+              active ? "font-medium text-accent" : "text-muted",
+            )}
+          >
+            {formatHours(totalMin)}
+          </span>
         </span>
-        <span
-          className={cn(
-            "tnum shrink-0 text-xs",
-            active ? "font-medium text-accent" : "text-muted",
-          )}
-        >
-          {formatHours(totalMin)}
-        </span>
+        {hasEstimate && (
+          <span
+            className="flex w-full items-center gap-1.5"
+            title={`${formatHours(totalMin)} su ${project.estimatedHours}h stimate · ${pct}%`}
+          >
+            <span className="h-1 flex-1 overflow-hidden rounded-pill bg-raised">
+              <span
+                className={cn("block h-full rounded-pill", overBudget && "bg-danger")}
+                style={{
+                  width: `${Math.min(100, pct)}%`,
+                  background: overBudget ? undefined : color,
+                }}
+              />
+            </span>
+            {overBudget && (
+              <span className="tnum shrink-0 text-[10px] font-semibold text-danger">
+                +{formatHours(overMin)}
+              </span>
+            )}
+          </span>
+        )}
       </button>
     </li>
   );
