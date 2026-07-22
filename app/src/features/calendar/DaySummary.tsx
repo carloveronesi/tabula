@@ -58,15 +58,22 @@ export function DaySummary({
         <div className="tnum mt-1 text-2xl font-semibold leading-tight tracking-tight text-ink">
           {formatHours(totalMin)}
         </div>
-        <div className="mt-1 text-[12.5px] text-muted">
-          {count === 0
-            ? "Nessuna attività"
-            : `${count} ${count === 1 ? "attività" : "attività"}`}
-        </div>
 
-        {expectedMin > 0 && (
-          <div className="mt-3">
-            <div className="h-1.5 overflow-hidden rounded-pill bg-line">
+        {expectedMin > 0 ? (
+          <>
+            {totalMin < expectedMin ? (
+              <div className="mt-1 text-[13px] font-medium text-muted">
+                Mancano{" "}
+                <span className="tnum text-ink">
+                  {formatHours(expectedMin - totalMin)}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-1 text-[13px] font-medium text-accent">
+                Giornata completa
+              </div>
+            )}
+            <div className="mt-2.5 h-1.5 overflow-hidden rounded-pill bg-line">
               <div
                 className="h-full rounded-pill bg-accent"
                 style={{ width: `${Math.min(100, (totalMin / expectedMin) * 100)}%` }}
@@ -75,14 +82,12 @@ export function DaySummary({
             <div className="mt-1.5 text-[11.5px] text-faint">
               <span className="tnum text-muted">{formatHours(totalMin)}</span> su{" "}
               <span className="tnum text-muted">{formatHours(expectedMin)}</span>
-              {totalMin < expectedMin && (
-                <>
-                  {" · "}
-                  <span className="tnum">{formatHours(expectedMin - totalMin)}</span> da
-                  compilare
-                </>
-              )}
+              {count > 0 && ` · ${count} ${count === 1 ? "attività" : "attività"}`}
             </div>
+          </>
+        ) : (
+          <div className="mt-1 text-[12.5px] text-muted">
+            {count === 0 ? "Nessuna attività" : `${count} attività`}
           </div>
         )}
 
