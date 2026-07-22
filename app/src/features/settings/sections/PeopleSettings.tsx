@@ -6,7 +6,7 @@ import { useToastStore } from "@/store/toast";
 import { useUiStore } from "@/store";
 import { Button, Combobox, IconButton, Input } from "@/ui";
 import type { ComboboxOption } from "@/ui/Combobox";
-import { IconClose, IconMerge, IconSearch } from "@/ui/icons";
+import { IconClose, IconEdit, IconMerge, IconSearch } from "@/ui/icons";
 import { SettingsSection } from "@/features/settings/SettingsSection";
 
 /** Raggruppa le entry per ciascun id presente nella lista estratta da ogni entry. */
@@ -160,8 +160,9 @@ interface RowProps {
   usage: number;
   /** Riga di contesto sotto il nome (clienti/progetti collegati): disambigua i doppioni. */
   meta?: string;
-  /** Campo extra a destra del nome (es. ruolo del contatto). */
-  extra?: React.ReactNode;
+  /** Ruolo del referente: se definito, la riga lo mostra e lo rende editabile con il nome. */
+  role?: string;
+  onRole?: (role: string) => void;
   /** Apre la Ricerca filtrata su questo record (solo se ci sono attività). */
   onViewActivities: () => void;
   /** Altri record in cui fondere questo (per il merge). */
@@ -171,45 +172,92 @@ interface RowProps {
   onDelete: () => void;
 }
 
-/** Riga gestita: rinomina (onBlur), vedi attività, unione (inline), eliminazione (due passi). */
+/**
+ * Riga gestita: in lettura mostra nome (e ruolo) come testo; la matitina apre la
+ * modifica inline di nome e ruolo. Più vedi attività, unione (inline) ed
+ * eliminazione (due passi).
+ */
 function EntityRow({
   id,
   name,
   usage,
   meta,
-  extra,
+  role,
+  onRole,
   onViewActivities,
   mergeOptions,
   onRename,
   onMerge,
   onDelete,
 }: RowProps) {
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+  const [roleDraft, setRoleDraft] = useState(role ?? "");
   const [merging, setMerging] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => setDraft(name), [name]);
+  useEffect(() => setRoleDraft(role ?? ""), [role]);
 
+  const startEdit = () => {
+    setEditing(true);
+    setMerging(false);
+    setConfirming(false);
+  };
+  const cancel = () => {
+    setDraft(name);
+    setRoleDraft(role ?? "");
+    setEditing(false);
+  };
   const commit = () => {
     const v = draft.trim();
     if (v && v !== name) onRename(v);
     else setDraft(name);
+    if (role !== undefined && roleDraft.trim() !== role) onRole?.(roleDraft.trim());
+    setEditing(false);
   };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") commit();
+    else if (e.key === "Escape") cancel();
+  };
+
+  if (editing)
+    return (
+      <li className="py-1">
+        <div className="flex items-center gap-2">
+          <Input
+            aria-label="Nome"
+            autoFocus
+            className="min-w-0 flex-1"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+          />
+          {role !== undefined && (
+            <div className="w-36 shrink-0">
+              <Input
+                aria-label="Ruolo"
+                placeholder="Ruolo"
+                value={roleDraft}
+                onChange={(e) => setRoleDraft(e.target.value)}
+                onKeyDown={onKeyDown}
+              />
+            </div>
+          )}
+          <Button size="sm" onClick={commit}>
+            Salva
+          </Button>
+          <IconButton label="Annulla" size="sm" onClick={cancel}>
+            <IconClose size={16} />
+          </IconButton>
+        </div>
+      </li>
+    );
 
   return (
     <li className="space-y-2 py-1">
       <div className="flex items-center gap-2">
-        <Input
-          aria-label="Nome"
-          className="min-w-0 flex-1"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          }}
-        />
-        {extra}
+        <span className="min-w-0 flex-1 truncate text-sm text-ink">{name}</span>
         <span className="w-28 shrink-0 text-right text-xs text-muted">
           {usageLabel(usage)}
         </span>
@@ -233,6 +281,9 @@ function EntityRow({
         >
           <IconMerge size={16} />
         </IconButton>
+        <IconButton label={`Modifica ${name}`} size="sm" onClick={startEdit}>
+          <IconEdit size={16} />
+        </IconButton>
         {confirming ? (
           <Button variant="danger" size="sm" onClick={onDelete}>
             Conferma
@@ -252,6 +303,7 @@ function EntityRow({
       </div>
 
       {meta && <p className="pl-1 text-xs text-muted">{meta}</p>}
+      {role ? <p className="pl-1 text-xs text-muted">Ruolo: {role}</p> : null}
 
       {merging && (
         <div className="pl-1">
@@ -414,20 +466,9 @@ export function PeopleSettings() {
                   name={k.name}
                   usage={entries?.length ?? 0}
                   meta={`Cliente: ${clientName(k.clientId) || "—"}`}
+                  role={k.role}
+                  onRole={(role) => void saveContact({ ...k, role })}
                   onViewActivities={() => openSearch({ contactId: k.id })}
-                  extra={
-                    <div className="w-36 shrink-0">
-                      <Input
-                        aria-label="Ruolo"
-                        placeholder="Ruolo"
-                        defaultValue={k.role}
-                        onBlur={(e) => {
-                          const role = e.target.value.trim();
-                          if (role !== k.role) void saveContact({ ...k, role });
-                        }}
-                      />
-                    </div>
-                  }
                   mergeOptions={contactOptions}
                   onRename={(name) => void saveContact({ ...k, name })}
                   onMerge={(intoId) => {
