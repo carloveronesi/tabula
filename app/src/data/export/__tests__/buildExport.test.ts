@@ -8,6 +8,7 @@ import {
   type ExportData,
 } from "@/data/export/buildExport";
 import type { Client, Entry } from "@/data/types";
+import { DEFAULT_SETTINGS } from "@/data/settings";
 
 const entry = (id: string): Entry => ({
   id,
@@ -82,6 +83,17 @@ describe("buildExport", () => {
     const data: ExportData = { ...emptyExportData(), entries: [entry("e1")] };
     const out = buildExport(data, 0);
     expect(JSON.parse(JSON.stringify(out))).toEqual(out);
+  });
+
+  it("non esporta la apiKey dell'AI", () => {
+    const data = emptyExportData();
+    data.settings = {
+      ...DEFAULT_SETTINGS,
+      ai: { enabled: true, baseUrl: "https://x/v1", apiKey: "segreto", model: "m" },
+    };
+    const doc = buildExport(data, 0);
+    expect(doc.settings?.ai.apiKey).toBe("");
+    expect(doc.settings?.ai.baseUrl).toBe("https://x/v1");
   });
 });
 
