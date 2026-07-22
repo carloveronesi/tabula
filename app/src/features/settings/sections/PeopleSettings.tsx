@@ -5,6 +5,7 @@ import { useInventoryStore } from "@/store/inventory";
 import { useToastStore } from "@/store/toast";
 import { useUiStore } from "@/store";
 import { Button, Combobox, IconButton, Input } from "@/ui";
+import type { ComboboxOption } from "@/ui/Combobox";
 import { IconClose, IconMerge, IconSearch } from "@/ui/icons";
 import { SettingsSection } from "@/features/settings/SettingsSection";
 
@@ -22,6 +23,138 @@ function groupByRef(entries: Entry[], pick: (e: Entry) => string[]): Map<string,
 
 function usageLabel(n: number): string {
   return n ? `in ${n} attività` : "mai usato";
+}
+
+const pickCollaborators = (e: Entry) => e.collaboratorIds;
+const pickContacts = (e: Entry) => e.contactIds;
+
+interface Group {
+  label: string;
+  ids: string[];
+}
+
+/** Etichette "coda" (senza contesto reale) ordinate in fondo alla lista. */
+const TAIL_GROUPS = new Set(["Interno", "Senza attività", "Senza cliente"]);
+
+/**
+ * Costruisce i gruppi da mostrare: cerca per nome, filtra per progetto (solo le
+ * entry di quel progetto contano) e raggruppa ogni entità per contesto ricavato
+ * dalle sue entry. Le entità senza entry finiscono nel gruppo `fallbackOf` (solo
+ * quando non è attivo il filtro progetto).
+ */
+export function buildGroups(opts: {
+  entities: { id: string; name: string }[];
+  entries: Entry[];
+  pickIds: (e: Entry) => string[];
+  groupKeyOf: (e: Entry) => string;
+  fallbackOf: (e: { id: string; name: string }) => string;
+  query: string;
+  projectId: string | null;
+}): Group[] {
+  const q = opts.query.trim().toLowerCase();
+  const byId = new Map(opts.entities.map((e) => [e.id, e] as const));
+  const match = (id: string) => {
+    const e = byId.get(id);
+    return !!e && (!q || e.name.toLowerCase().includes(q));
+  };
+  const groups = new Map<string, Set<string>>();
+  const add = (label: string, id: string) => {
+    const set = groups.get(label);
+    if (set) set.add(id);
+    else groups.set(label, new Set([id]));
+  };
+
+  const placed = new Set<string>();
+  for (const e of opts.entries) {
+    if (opts.projectId && e.projectId !== opts.projectId) continue;
+    const label = opts.groupKeyOf(e);
+    for (const id of opts.pickIds(e)) {
+      if (!match(id)) continue;
+      placed.add(id);
+      add(label, id);
+    }
+  }
+  if (!opts.projectId)
+    for (const ent of opts.entities)
+      if (!placed.has(ent.id) && match(ent.id)) add(opts.fallbackOf(ent), ent.id);
+
+  const rank = (label: string) => (TAIL_GROUPS.has(label) ? 1 : 0);
+  return [...groups.entries()]
+    .map(([label, set]) => ({
+      label,
+      ids: [...set].sort((a, b) => byId.get(a)!.name.localeCompare(byId.get(b)!.name)),
+    }))
+    .sort((a, b) => rank(a.label) - rank(b.label) || a.label.localeCompare(b.label));
+}
+
+interface GroupedListProps {
+  entities: { id: string; name: string }[];
+  entries: Entry[];
+  pickIds: (e: Entry) => string[];
+  groupKeyOf: (e: Entry) => string;
+  fallbackOf: (e: { id: string; name: string }) => string;
+  /** Progetti per il filtro (senza l'opzione «Tutti», aggiunta qui). */
+  projectOptions: ComboboxOption[];
+  searchPlaceholder: string;
+  renderRow: (id: string) => React.ReactNode;
+}
+
+/** Lista con barra cerca + filtro progetto e intestazioni di gruppo. */
+function GroupedEntityList({
+  entities,
+  entries,
+  pickIds,
+  groupKeyOf,
+  fallbackOf,
+  projectOptions,
+  searchPlaceholder,
+  renderRow,
+}: GroupedListProps) {
+  const [query, setQuery] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  const groups = useMemo(
+    () => buildGroups({ entities, entries, pickIds, groupKeyOf, fallbackOf, query, projectId }),
+    [entities, entries, pickIds, groupKeyOf, fallbackOf, query, projectId],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          className="min-w-40 flex-1"
+          aria-label="Cerca"
+          placeholder={searchPlaceholder}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {projectOptions.length > 0 && (
+          <div className="w-56 shrink-0">
+            <Combobox
+              label="Filtra per progetto"
+              placeholder="Tutti i progetti"
+              options={[{ id: "", label: "Tutti i progetti" }, ...projectOptions]}
+              value={projectId ?? ""}
+              onChange={(id) => setProjectId(id || null)}
+            />
+          </div>
+        )}
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted">Nessun risultato.</p>
+      ) : (
+        groups.map((g) => (
+          <div key={g.label}>
+            <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">
+              {g.label}
+            </h4>
+            <ul className="divide-y divide-line">{g.ids.map((id) => renderRow(id))}</ul>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 
 interface RowProps {
@@ -200,6 +333,16 @@ export function PeopleSettings() {
     [contacts],
   );
 
+  // Opzioni del filtro progetto: «Cliente · Progetto», ordinate per nome.
+  const projectFilterOptions = useMemo(
+    () =>
+      [...projects]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((p) => ({ id: p.id, label: `${clientName(p.clientId) || "Interno"} · ${p.name}` })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projects, clients],
+  );
+
   return (
     <div className="space-y-6">
       <SettingsSection
@@ -211,8 +354,17 @@ export function PeopleSettings() {
             Nessuna persona: si creano al volo dal campo «Collaboratori» dell'editor.
           </p>
         ) : (
-          <ul className="divide-y divide-line">
-            {people.map((p) => {
+          <GroupedEntityList
+            entities={people}
+            entries={archive}
+            pickIds={pickCollaborators}
+            groupKeyOf={entryContext}
+            fallbackOf={() => "Senza attività"}
+            projectOptions={projectFilterOptions}
+            searchPlaceholder="Cerca collaboratore…"
+            renderRow={(id) => {
+              const p = people.find((x) => x.id === id);
+              if (!p) return null;
               const entries = byPerson.get(p.id);
               return (
                 <EntityRow
@@ -235,8 +387,8 @@ export function PeopleSettings() {
                   }}
                 />
               );
-            })}
-          </ul>
+            }}
+          />
         )}
       </SettingsSection>
 
@@ -249,8 +401,20 @@ export function PeopleSettings() {
             Nessun referente: si creano al volo dal campo «Referenti» dell'editor.
           </p>
         ) : (
-          <ul className="divide-y divide-line">
-            {sortedContacts.map((k) => {
+          <GroupedEntityList
+            entities={sortedContacts}
+            entries={archive}
+            pickIds={pickContacts}
+            groupKeyOf={entryContext}
+            fallbackOf={(e) => {
+              const k = contacts.find((x) => x.id === e.id);
+              return `Cliente: ${clientName(k?.clientId ?? null) || "—"}`;
+            }}
+            projectOptions={projectFilterOptions}
+            searchPlaceholder="Cerca referente…"
+            renderRow={(id) => {
+              const k = contacts.find((x) => x.id === id);
+              if (!k) return null;
               const entries = byContact.get(k.id);
               return (
                 <EntityRow
@@ -285,8 +449,8 @@ export function PeopleSettings() {
                   }}
                 />
               );
-            })}
-          </ul>
+            }}
+          />
         )}
       </SettingsSection>
     </div>
