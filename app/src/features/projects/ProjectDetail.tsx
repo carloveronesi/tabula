@@ -8,6 +8,7 @@ import { budgetProgress } from "@/domain/budget";
 import { colorFromKey, withAlpha } from "@/domain/colors";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
+import { useEditorStore } from "@/store/editor";
 import { Button, cn, Icons, Markdown } from "@/ui";
 import { STATUS_COLOR, STATUS_LABEL } from "./meta";
 
@@ -127,6 +128,7 @@ export function ProjectDetail({
 }) {
   const contacts = useInventoryStore((s) => s.contacts);
   const people = useInventoryStore((s) => s.people);
+  const showDetail = useEditorStore((s) => s.showDetail);
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
   const workHours = useSettingsStore((s) => s.settings.workHours);
   const [subtypeFilter, setSubtypeFilter] = useState<Id | null | undefined>(undefined);
@@ -465,26 +467,29 @@ export function ProjectDetail({
               ))}
             </div>
           )}
-          <ul className="mt-3">
+          <ul className="mt-3 max-h-96 overflow-y-auto">
             {rows.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-0"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm text-ink">
-                    {e.title.trim() || "Senza titolo"}
+              <li key={e.id} className="border-b border-line last:border-0">
+                <button
+                  type="button"
+                  onClick={() => showDetail(e)}
+                  className="flex w-full items-baseline justify-between gap-3 rounded-md px-2 py-2 text-left transition-colors duration-[var(--dur-fast)] hover:bg-raised"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-ink">
+                      {e.title.trim() || "Senza titolo"}
+                    </div>
+                    <div className="tnum mt-0.5 text-xs text-muted">
+                      {fmtDay(e.startsAt.slice(0, 10))}
+                      {e.subtypeId !== null && (
+                        <span className="text-faint"> · {subtypeLabel(e.subtypeId)}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="tnum mt-0.5 text-xs text-muted">
-                    {fmtDay(e.startsAt.slice(0, 10))}
-                    {e.subtypeId !== null && (
-                      <span className="text-faint"> · {subtypeLabel(e.subtypeId)}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="tnum shrink-0 text-sm font-semibold text-ink">
-                  {formatHours(workedMinutes(e, workHours))}
-                </span>
+                  <span className="tnum shrink-0 text-sm font-semibold text-ink">
+                    {formatHours(workedMinutes(e, workHours))}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
