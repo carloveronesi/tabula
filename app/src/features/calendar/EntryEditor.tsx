@@ -24,6 +24,7 @@ import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
 import { useToastStore } from "@/store/toast";
+import { AiField } from "@/features/ai/AiField";
 import {
   Button,
   cn,
@@ -596,6 +597,11 @@ export function EntryEditor() {
                 rows={8}
                 grow
                 placeholder="Dettagli, contesto… (Markdown supportato)"
+              />
+              <AiField
+                value={draft.notes}
+                systemPrompt="Riformula queste note di lavoro rendendole chiare e concise. Mantieni la stessa lingua e non inventare fatti. Rispondi solo con il testo riformulato, senza preamboli."
+                onApply={(notes) => patch({ notes })}
               />
             </Field>
 

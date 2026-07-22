@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastUsedByClient: {},
   patronDay: "",
   presenceTracking: { enabled: false, officeTargetPct: 0, clientTargetPct: 0 },
+  ai: { enabled: false, baseUrl: "", apiKey: "", model: "" },
 };
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], def: T): T {
@@ -59,6 +60,16 @@ function subtypeList(value: unknown): { id: string; label: string }[] {
     .filter((s) => s.id);
 }
 
+function aiSettings(value: unknown): Settings["ai"] {
+  const o = asObject(value);
+  return {
+    enabled: o.enabled === true,
+    baseUrl: typeof o.baseUrl === "string" ? o.baseUrl : "",
+    apiKey: typeof o.apiKey === "string" ? o.apiKey : "",
+    model: typeof o.model === "string" ? o.model : "",
+  };
+}
+
 /**
  * Coerce dei sottotipi al modello corrente (lista unica): accetta sia la nuova
  * forma piatta sia la vecchia `{ client, internal }`, fondendole e deduplicando
@@ -84,6 +95,7 @@ export function migrateSettings(stored: Settings | null | undefined): Settings {
   return {
     ...stored,
     subtypes: flattenSubtypes((stored as { subtypes?: unknown }).subtypes),
+    ai: aiSettings((stored as { ai?: unknown }).ai),
   };
 }
 
@@ -138,5 +150,6 @@ export function normalizeSettings(source: SourceSettings | null): Settings {
       officeTargetPct: num(presence.officeTargetPct, 0),
       clientTargetPct: num(presence.clientTargetPct, 0),
     },
+    ai: aiSettings(s.ai),
   };
 }

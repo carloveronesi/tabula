@@ -62,7 +62,10 @@ export function buildExport(data: ExportData, now: number): TabulaExport {
     recurrences: data.recurrences,
     todos: data.todos,
     days: data.days,
-    settings: data.settings,
+    settings:
+      data.settings === null
+        ? null
+        : { ...data.settings, ai: { ...data.settings.ai, apiKey: "" } },
   };
 }
 
