@@ -15,6 +15,8 @@ import {
   rankCandidatesByHistory,
 } from "@/domain/collaborators";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
+import { nameOptions, projectsFor } from "@/domain/pickers";
+import { newProject } from "@/domain/projectDraft";
 import { allEntries } from "@/data/repositories";
 import { findByName } from "@/domain/dedupeName";
 import { useEditorStore, type EditorSeed } from "@/store/editor";
@@ -134,26 +136,23 @@ export function EntryEditor() {
     [subtypes, draft.type],
   );
 
-  const clientOptions = useMemo(
-    () => clients.map((c) => ({ id: c.id, label: c.name })),
-    [clients],
+  const clientOptions = useMemo(() => nameOptions(clients), [clients]);
+  // Progetti coerenti col tipo e col cliente, archiviati nascosti (salvo quello
+  // già scelto), ordinati per frequenza d'uso. Vedi projectsFor.
+  const projectOptions = useMemo(
+    () =>
+      nameOptions(
+        rankProjectsByUsage(
+          projectsFor(projects, {
+            kind: draft.type,
+            clientId: draft.clientId,
+            keepId: draft.projectId,
+          }),
+          archive,
+        ),
+      ),
+    [projects, draft.type, draft.clientId, draft.projectId, archive],
   );
-  // Progetti coerenti col tipo: su "cliente" solo i progetti del cliente scelto,
-  // su "interno" solo gli interni (senza cui gli interni — clientId null —
-  // spuntavano sotto "cliente" con nessun cliente ancora scelto). Archiviati
-  // nascosti (salvo quello già scelto) e ordinati per frequenza d'uso.
-  const projectOptions = useMemo(() => {
-    const visible = projects.filter(
-      (p) =>
-        p.kind === draft.type &&
-        p.clientId === draft.clientId &&
-        (p.status !== "archived" || p.id === draft.projectId),
-    );
-    return rankProjectsByUsage(visible, archive).map((p) => ({
-      id: p.id,
-      label: p.name,
-    }));
-  }, [projects, draft.type, draft.clientId, draft.projectId, archive]);
 
   const valid = isDraftValid(draft);
   const conflict =
@@ -206,11 +205,12 @@ export function EntryEditor() {
     .filter((p): p is NonNullable<typeof p> => !!p);
   const collaboratorAddOptions = useMemo(
     () =>
-      candidateIds
-        .filter((id) => !draft.collaboratorIds.includes(id))
-        .map((id) => people.find((p) => p.id === id))
-        .filter((p): p is NonNullable<typeof p> => !!p)
-        .map((p) => ({ id: p.id, label: p.name })),
+      nameOptions(
+        candidateIds
+          .filter((id) => !draft.collaboratorIds.includes(id))
+          .map((id) => people.find((p) => p.id === id))
+          .filter((p): p is NonNullable<typeof p> => !!p),
+      ),
     [people, candidateIds, draft.collaboratorIds],
   );
 
@@ -220,12 +220,12 @@ export function EntryEditor() {
     .filter((k): k is NonNullable<typeof k> => !!k);
   const contactAddOptions = useMemo(
     () =>
-      contacts
-        .filter(
+      nameOptions(
+        contacts.filter(
           (k) =>
             k.clientId === draft.clientId && !draft.contactIds.includes(k.id),
-        )
-        .map((k) => ({ id: k.id, label: k.name })),
+        ),
+      ),
     [contacts, draft.clientId, draft.contactIds],
   );
 
@@ -237,23 +237,8 @@ export function EntryEditor() {
 
   async function createProject(name: string) {
     const id = nanoid();
-    const clientId = draft.clientId;
-    await saveProject({
-      id,
-      clientId,
-      kind: clientId ? "client" : "internal",
-      name,
-      status: "active",
-      description: "",
-      objectives: "",
-      startDate: "",
-      endDate: "",
-      teamIds: [],
-      contactIds: [],
-      estimatedHours: 0,
-      color: null,
-    });
-    patch({ projectId: id, clientId });
+    await saveProject(newProject({ name, clientId: draft.clientId }, id));
+    patch({ projectId: id, clientId: draft.clientId });
   }
 
   async function createCollaborator(name: string) {

@@ -6,6 +6,8 @@ import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
 import { colorFromKey, projectColor } from "@/domain/colors";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
+import { nameOptions, projectsFor } from "@/domain/pickers";
+import { newProject } from "@/domain/projectDraft";
 import { allEntries } from "@/data/repositories";
 import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
@@ -139,29 +141,30 @@ export function QuickAddPopover() {
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [quickAdd, closeQuickAdd]);
 
-  const clientOptions = useMemo(
-    () => clients.map((c) => ({ id: c.id, label: c.name })),
-    [clients],
-  );
-  // Progetti del cliente scelto (modalità cliente). Il guard su kind evita che
-  // gli interni (clientId null) spuntino qui quando nessun cliente è scelto.
+  const clientOptions = useMemo(() => nameOptions(clients), [clients]);
+  // Progetti del cliente scelto (modalità cliente). Vedi projectsFor.
   const clientProjectOptions = useMemo(
     () =>
-      projects
-        .filter((p) => p.kind === "client" && p.clientId === clientId)
-        .map((p) => ({ id: p.id, label: p.name })),
-    [projects, clientId],
+      nameOptions(
+        projectsFor(projects, { kind: "client", clientId, keepId: projectId }),
+      ),
+    [projects, clientId, projectId],
   );
-  // Progetti interni non archiviati, ordinati per frequenza d'uso.
-  const internalOptions = useMemo(() => {
-    const actives = projects.filter(
-      (p) => p.kind === "internal" && p.status !== "archived",
-    );
-    return rankProjectsByUsage(actives, archive).map((p) => ({
-      id: p.id,
-      label: p.name,
-    }));
-  }, [projects, archive]);
+  // Progetti interni (clientId null), ordinati per frequenza d'uso.
+  const internalOptions = useMemo(
+    () =>
+      nameOptions(
+        rankProjectsByUsage(
+          projectsFor(projects, {
+            kind: "internal",
+            clientId: null,
+            keepId: projectId,
+          }),
+          archive,
+        ),
+      ),
+    [projects, projectId, archive],
+  );
   const selectedClient = clients.find((c) => c.id === clientId) ?? null;
   const selectedProject = projects.find((p) => p.id === projectId) ?? null;
   // Pallino-indizio della classificazione scelta.
@@ -200,21 +203,9 @@ export function QuickAddPopover() {
   async function createProject(name: string) {
     if (mode === "client" && !clientId) return;
     const id = nanoid();
-    await saveProject({
-      id,
-      clientId: mode === "client" ? clientId : null,
-      kind: mode === "client" ? "client" : "internal",
-      name,
-      status: "active",
-      description: "",
-      objectives: "",
-      startDate: "",
-      endDate: "",
-      teamIds: [],
-      contactIds: [],
-      estimatedHours: 0,
-      color: null,
-    });
+    await saveProject(
+      newProject({ name, clientId: mode === "client" ? clientId : null }, id),
+    );
     setProjectId(id);
   }
 
