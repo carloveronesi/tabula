@@ -201,6 +201,7 @@ function EntityRow({
       <div className="flex items-center gap-2">
         <Input
           aria-label="Nome"
+          className="min-w-0 flex-1"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
@@ -415,16 +416,17 @@ export function PeopleSettings() {
                   meta={`Cliente: ${clientName(k.clientId) || "—"}`}
                   onViewActivities={() => openSearch({ contactId: k.id })}
                   extra={
-                    <Input
-                      aria-label="Ruolo"
-                      className="w-40 shrink-0"
-                      placeholder="Ruolo"
-                      defaultValue={k.role}
-                      onBlur={(e) => {
-                        const role = e.target.value.trim();
-                        if (role !== k.role) void saveContact({ ...k, role });
-                      }}
-                    />
+                    <div className="w-36 shrink-0">
+                      <Input
+                        aria-label="Ruolo"
+                        placeholder="Ruolo"
+                        defaultValue={k.role}
+                        onBlur={(e) => {
+                          const role = e.target.value.trim();
+                          if (role !== k.role) void saveContact({ ...k, role });
+                        }}
+                      />
+                    </div>
                   }
                   mergeOptions={contactOptions}
                   onRename={(name) => void saveContact({ ...k, name })}
