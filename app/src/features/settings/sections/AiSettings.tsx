@@ -6,7 +6,7 @@ import { AI_PRESETS, chat } from "@/domain/ai/client";
 import type { AiSettings as AiSettingsT } from "@/data/types";
 
 /** Configurazione AI (BYO-key). Nessun dato lascia il browser finché non usi
- * esplicitamente l'AR; la key resta locale. */
+ * esplicitamente l'AI; la key resta locale. */
 export function AiSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const saveSettings = useSettingsStore((s) => s.saveSettings);
