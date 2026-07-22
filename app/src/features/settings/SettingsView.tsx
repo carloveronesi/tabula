@@ -8,6 +8,7 @@ import {
   IconBookmark,
   IconUsers,
   IconDatabase,
+  IconSparkles,
 } from "@/ui/icons";
 import { GeneralSettings } from "@/features/settings/sections/GeneralSettings";
 import { ScheduleSettings } from "@/features/settings/sections/ScheduleSettings";
@@ -16,6 +17,7 @@ import { CategoriesSettings } from "@/features/settings/sections/CategoriesSetti
 import { TemplatesSettings } from "@/features/settings/sections/TemplatesSettings";
 import { PeopleSettings } from "@/features/settings/sections/PeopleSettings";
 import { DataSettings } from "@/features/settings/sections/DataSettings";
+import { AiSettings } from "@/features/settings/sections/AiSettings";
 
 type SectionId =
   | "general"
@@ -24,6 +26,7 @@ type SectionId =
   | "categories"
   | "templates"
   | "people"
+  | "ai"
   | "data";
 
 const SECTIONS: {
@@ -37,6 +40,7 @@ const SECTIONS: {
   { id: "categories", label: "Categorie", Icon: IconTag },
   { id: "templates", label: "Template attività", Icon: IconBookmark },
   { id: "people", label: "Persone & referenti", Icon: IconUsers },
+  { id: "ai", label: "AI", Icon: IconSparkles },
   { id: "data", label: "Dati", Icon: IconDatabase },
 ];
 
@@ -52,7 +56,8 @@ export function SettingsView() {
       <header className="mb-6">
         <h2 className="text-2xl font-semibold tracking-tight">Impostazioni</h2>
         <p className="mt-1 text-sm text-muted">
-          Tutto resta sul tuo dispositivo: nessun dato lascia il browser.
+          I tuoi dati restano sul dispositivo. L'AI, se la attivi, invia solo il
+          testo che scegli al provider che indichi tu.
         </p>
       </header>
 
@@ -91,6 +96,7 @@ export function SettingsView() {
           {active === "categories" && <CategoriesSettings />}
           {active === "templates" && <TemplatesSettings />}
           {active === "people" && <PeopleSettings />}
+          {active === "ai" && <AiSettings />}
           {active === "data" && <DataSettings />}
         </div>
       </div>
