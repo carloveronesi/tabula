@@ -133,19 +133,22 @@ export function ProjectDetail({
   const workHours = useSettingsStore((s) => s.settings.workHours);
   const [subtypeFilter, setSubtypeFilter] = useState<Id | null | undefined>(undefined);
   const [timeMode, setTimeMode] = useState<"hours" | "share">("hours");
+  const [activityQuery, setActivityQuery] = useState("");
 
   const subtypeLabel = (id: Id | null) =>
     id ? (subtypes.find((s) => s.id === id)?.label ?? "Generico") : "Generico";
 
-  // Attività del progetto, più recenti prima; filtrate per sottotipo se scelto
-  // (`undefined` = tutti; `null` = "Generico"/senza sottotipo).
+  // Attività del progetto, più recenti prima; filtrate per sottotipo (`undefined`
+  // = tutti; `null` = "Generico"/senza sottotipo) e per testo del titolo.
   const rows = useMemo(() => {
-    const list =
-      subtypeFilter === undefined
-        ? entries
-        : entries.filter((e) => e.subtypeId === subtypeFilter);
+    const q = activityQuery.trim().toLowerCase();
+    const list = entries.filter(
+      (e) =>
+        (subtypeFilter === undefined || e.subtypeId === subtypeFilter) &&
+        (!q || e.title.toLowerCase().includes(q)),
+    );
     return [...list].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
-  }, [entries, subtypeFilter]);
+  }, [entries, subtypeFilter, activityQuery]);
 
   // Referenti espliciti del progetto; se non ce ne sono, ripiega sui contatti
   // del cliente (nei dati reali il link progetto→referente non è quasi mai
@@ -168,6 +171,10 @@ export function ProjectDetail({
   );
 
   const dot = <span className="text-line">·</span>;
+
+  // Il rail destro c'è solo se ha contenuto; altrimenti la sinistra si riprende
+  // tutta la larghezza invece di lasciare un buco.
+  const hasRail = entries.length > 0 || team.length > 0 || refs.length > 0;
 
   return (
     <section className="mx-auto max-w-6xl space-y-4">
@@ -204,8 +211,8 @@ export function ProjectDetail({
         </Button>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-        <div className="space-y-4 lg:col-span-2">
+      <div className={cn("grid gap-4 lg:items-start", hasRail && "lg:grid-cols-3")}>
+        <div className={cn("space-y-4", hasRail && "lg:col-span-2")}>
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Ore registrate">
           <span className="tnum text-3xl font-bold leading-none tracking-tight text-ink">
@@ -407,6 +414,7 @@ export function ProjectDetail({
       )}
         </div>
 
+        {hasRail && (
         <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
       {entries.length > 0 && (
         <div className={CARD}>
@@ -433,6 +441,22 @@ export function ProjectDetail({
               ))}
             </div>
           )}
+          {entries.length > 8 && (
+            <label className="mt-3 flex h-9 items-center gap-2 rounded-lg border border-line bg-bg px-3 focus-within:border-primary">
+              <Icons.IconSearch size={15} className="shrink-0 text-muted" />
+              <input
+                type="search"
+                aria-label="Cerca attività"
+                placeholder="Cerca attività…"
+                value={activityQuery}
+                onChange={(e) => setActivityQuery(e.target.value)}
+                className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
+              />
+            </label>
+          )}
+          {rows.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">Nessuna attività trovata.</p>
+          ) : (
           <ul className="mt-3 max-h-[32rem] overflow-y-auto">
             {rows.map((e) => (
               <li key={e.id} className="border-b border-line last:border-0">
@@ -459,6 +483,7 @@ export function ProjectDetail({
               </li>
             ))}
           </ul>
+          )}
         </div>
       )}
 
@@ -496,6 +521,7 @@ export function ProjectDetail({
         </div>
       )}
         </aside>
+        )}
       </div>
     </section>
   );

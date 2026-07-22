@@ -3,6 +3,7 @@ import type { Entry, EntryType } from "@/data/types";
 import { minutesOfDay, minutesToLabel } from "@/domain/slots";
 import { copyEntry, duplicateEntry } from "@/features/layout/entryActions";
 import { useEditorStore } from "@/store/editor";
+import { useUiStore } from "@/store";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
 import { Button, Markdown, Modal } from "@/ui";
@@ -47,6 +48,8 @@ export function EntryDetail() {
   const e = useEditorStore((s) => s.detail);
   const hide = useEditorStore((s) => s.hideDetail);
   const openEdit = useEditorStore((s) => s.openEdit);
+  const setView = useUiStore((s) => s.setView);
+  const setActiveDate = useUiStore((s) => s.setActiveDate);
   const clients = useInventoryStore((s) => s.clients);
   const projects = useInventoryStore((s) => s.projects);
   const people = useInventoryStore((s) => s.people);
@@ -78,6 +81,13 @@ export function EntryDetail() {
     if (e) copyEntry(e);
   };
 
+  const goToDay = () => {
+    if (!e) return;
+    setActiveDate(new Date(e.startsAt));
+    setView("day");
+    hide();
+  };
+
   return (
     <Modal
       open={e !== null}
@@ -86,19 +96,24 @@ export function EntryDetail() {
       description={e ? <span className="tnum">{whenLabel(e)}</span> : undefined}
       footer={
         e && (
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={hide}>
-              Chiudi
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="ghost" onClick={goToDay}>
+              Vai al giorno
             </Button>
-            <Button variant="subtle" onClick={copy}>
-              Copia
-            </Button>
-            <Button variant="subtle" onClick={() => void duplicate()}>
-              Duplica
-            </Button>
-            <Button variant="primary" onClick={() => openEdit(e)}>
-              Modifica
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={hide}>
+                Chiudi
+              </Button>
+              <Button variant="subtle" onClick={copy}>
+                Copia
+              </Button>
+              <Button variant="subtle" onClick={() => void duplicate()}>
+                Duplica
+              </Button>
+              <Button variant="primary" onClick={() => openEdit(e)}>
+                Modifica
+              </Button>
+            </div>
           </div>
         )
       }
