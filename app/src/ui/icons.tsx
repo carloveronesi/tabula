@@ -242,3 +242,11 @@ export const IconDatabase = (p: IconProps) => (
     <path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" />
   </Svg>
 );
+
+/** Sparkles: migliora e AI. */
+export const IconSparkles = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3Z" />
+    <path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9L18 14Z" />
+  </Svg>
+);
