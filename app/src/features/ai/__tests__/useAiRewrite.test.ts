@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act, waitFor, cleanup } from "@testing-library/react";
 import { useAiRewrite } from "@/features/ai/useAiRewrite";
 import { useSettingsStore } from "@/store/settings";
 import { DEFAULT_SETTINGS } from "@/data/settings";
@@ -20,6 +20,7 @@ function enableAi() {
 }
 
 afterEach(() => {
+  cleanup();
   vi.restoreAllMocks();
   useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
 });
