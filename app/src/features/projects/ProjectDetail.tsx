@@ -170,7 +170,7 @@ export function ProjectDetail({
   const dot = <span className="text-line">·</span>;
 
   return (
-    <section className="max-w-3xl space-y-4">
+    <section className="mx-auto max-w-6xl space-y-4">
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
@@ -204,6 +204,8 @@ export function ProjectDetail({
         </Button>
       </header>
 
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+        <div className="space-y-4 lg:col-span-2">
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Ore registrate">
           <span className="tnum text-3xl font-bold leading-none tracking-tight text-ink">
@@ -383,44 +385,6 @@ export function ProjectDetail({
         </div>
       )}
 
-      {(team.length > 0 || refs.length > 0) && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {team.length > 0 && (
-            <div className={CARD}>
-              <div className={CARD_LABEL}>Team</div>
-              <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
-                {team.map((p) => (
-                  <div key={p.id} className="flex items-center gap-2.5">
-                    <Avatar id={p.id} name={p.name} />
-                    <span className="text-sm text-ink">{p.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {refs.length > 0 && (
-            <div className={CARD}>
-              <div className={CARD_LABEL}>
-                Referenti{refsFromClient && " del cliente"}
-              </div>
-              <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
-                {refs.map((k) => (
-                  <div key={k.id} className="flex items-center gap-2.5">
-                    <Avatar id={k.id} name={k.name} />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm text-ink">{k.name}</div>
-                      {k.role && (
-                        <div className="truncate text-xs text-muted">{k.role}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {(project.description || project.objectives) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {project.description && (
@@ -441,7 +405,9 @@ export function ProjectDetail({
           )}
         </div>
       )}
+        </div>
 
+        <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
       {entries.length > 0 && (
         <div className={CARD}>
           <div className="flex items-baseline justify-between gap-2">
@@ -467,7 +433,7 @@ export function ProjectDetail({
               ))}
             </div>
           )}
-          <ul className="mt-3 max-h-96 overflow-y-auto">
+          <ul className="mt-3 max-h-[32rem] overflow-y-auto">
             {rows.map((e) => (
               <li key={e.id} className="border-b border-line last:border-0">
                 <button
@@ -495,6 +461,42 @@ export function ProjectDetail({
           </ul>
         </div>
       )}
+
+      {team.length > 0 && (
+        <div className={CARD}>
+          <div className={CARD_LABEL}>Team</div>
+          <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
+            {team.map((p) => (
+              <div key={p.id} className="flex items-center gap-2.5">
+                <Avatar id={p.id} name={p.name} />
+                <span className="text-sm text-ink">{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {refs.length > 0 && (
+        <div className={CARD}>
+          <div className={CARD_LABEL}>
+            Referenti{refsFromClient && " del cliente"}
+          </div>
+          <div className="mt-3 flex max-h-56 flex-col gap-2.5 overflow-y-auto">
+            {refs.map((k) => (
+              <div key={k.id} className="flex items-center gap-2.5">
+                <Avatar id={k.id} name={k.name} />
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-ink">{k.name}</div>
+                  {k.role && (
+                    <div className="truncate text-xs text-muted">{k.role}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+        </aside>
+      </div>
     </section>
   );
 }
