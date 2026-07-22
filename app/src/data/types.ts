@@ -119,6 +119,13 @@ export interface DayMeta {
   location: Location | null;
 }
 
+export interface AiSettings {
+  enabled: boolean;
+  baseUrl: string; // es. "https://api.openai.com/v1"
+  apiKey: string; // in chiaro nel DB locale (nessun server)
+  model: string; // id modello, inserito dall'utente
+}
+
 export interface Settings {
   id: "app";
   theme: "light" | "dark" | "system";
@@ -146,4 +153,5 @@ export interface Settings {
     officeTargetPct: number;
     clientTargetPct: number;
   };
+  ai: AiSettings;
 }

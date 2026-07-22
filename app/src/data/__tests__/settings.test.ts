@@ -96,3 +96,38 @@ describe("migrateSettings", () => {
     expect(migrateSettings(stored).subtypes).toEqual([{ id: "kt", label: "KT" }]);
   });
 });
+
+describe("ai settings default", () => {
+  it("migrateSettings fornisce ai di default se assente", () => {
+    const stored = { ...DEFAULT_SETTINGS } as Settings;
+    delete (stored as { ai?: unknown }).ai;
+    expect(migrateSettings(stored).ai).toEqual({
+      enabled: false,
+      baseUrl: "",
+      apiKey: "",
+      model: "",
+    });
+  });
+
+  it("migrateSettings preserva un ai valido", () => {
+    const stored = {
+      ...DEFAULT_SETTINGS,
+      ai: { enabled: true, baseUrl: "https://x/v1", apiKey: "k", model: "m" },
+    } as Settings;
+    expect(migrateSettings(stored).ai).toEqual({
+      enabled: true,
+      baseUrl: "https://x/v1",
+      apiKey: "k",
+      model: "m",
+    });
+  });
+
+  it("normalizeSettings fornisce ai di default", () => {
+    expect(normalizeSettings({}).ai).toEqual({
+      enabled: false,
+      baseUrl: "",
+      apiKey: "",
+      model: "",
+    });
+  });
+});
