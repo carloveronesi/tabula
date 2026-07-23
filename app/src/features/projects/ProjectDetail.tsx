@@ -10,6 +10,7 @@ import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
 import { useEditorStore } from "@/store/editor";
 import { Button, cn, Icons, Markdown } from "@/ui";
+import { ProjectSummaryCard } from "./ProjectSummaryCard";
 import { STATUS_COLOR, STATUS_LABEL } from "./meta";
 
 const fmtDay = (iso: string) =>
@@ -262,6 +263,18 @@ export function ProjectDetail({
           )}
         </div>
       )}
+
+      {/* `key`: cambiando progetto la card si rimonta e la chiamata in volo
+          viene annullata, così il riassunto non finisce sul progetto sbagliato. */}
+      <ProjectSummaryCard
+        key={project.id}
+        project={project}
+        stat={stat}
+        activity={activity}
+        entries={entries}
+        clientName={clientName}
+        className={CARD}
+      />
 
       {activity && activity.byMonth.length > 0 && (
         <div className={CARD}>

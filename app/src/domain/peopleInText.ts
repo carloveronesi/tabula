@@ -42,3 +42,26 @@ export function namesInText(
 
   return candidates.filter((c) => hit.has(c.id)).map((c) => c.id);
 }
+
+/**
+ * Toglie da un testo le parole che sono nomi (o cognomi) dei candidati dati.
+ * Serve prima di mandare testo scritto dall'utente a un provider esterno: i
+ * titoli delle attività sono pieni di "call con Marta", e i nomi delle persone
+ * non devono uscire dal browser.
+ *
+ * A differenza di `namesInText` qui non conta a chi punta la parola: se è il
+ * nome di qualcuno in anagrafica sparisce, anche quando è ambigua. Sbagliare
+ * per eccesso costa una parola in meno nel prompt. Pura.
+ */
+export function redactNames(
+  text: string,
+  candidates: { name: string }[],
+): string {
+  const banned = new Set(candidates.flatMap((c) => words(c.name)));
+  if (banned.size === 0) return text;
+  // Si ricalca il testo originale parola per parola per non perdere
+  // punteggiatura, accenti e maiuscole di tutto il resto.
+  return text
+    .replace(/[\p{L}\p{N}]+/gu, (w) => (banned.has(normalize(w)) ? "…" : w))
+    .replace(/(?:…[\s,]*)+…/gu, "…");
+}
