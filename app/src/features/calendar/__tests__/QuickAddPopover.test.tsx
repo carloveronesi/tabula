@@ -477,6 +477,38 @@ describe("QuickAddPopover — interpretazione AI", () => {
     );
   });
 
+  it("porta in 'Più dettagli' le persone nominate nella frase", async () => {
+    enableAi();
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [{ ...project("p1", "Sito Acme", "c1"), teamIds: ["u1", "u2"] }],
+      people: [
+        { id: "u1", name: "Mario Rossi" },
+        { id: "u2", name: "Anna Bianchi" },
+        { id: "u3", name: "Luca Neri" }, // fuori dal team: non deve entrare
+      ],
+      contacts: [
+        { id: "k1", clientId: "c1", name: "Giulia Conti", role: "PM" },
+        { id: "k2", clientId: "c9", name: "Paolo Grigi", role: "PM" },
+      ],
+    });
+    mockChat({ title: "Call", projectId: "p1" });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, {
+      target: { value: "call con Mario e Giulia, e anche Luca" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+    await waitFor(() => expect(titolo).toHaveValue("Call"));
+
+    fireEvent.click(screen.getByRole("button", { name: /Più dettagli/ }));
+    const seed = useEditorStore.getState().seed;
+    expect(seed.collaboratorIds).toEqual(["u1"]);
+    expect(seed.contactIds).toEqual(["k1"]);
+  });
+
   it("un errore del provider lascia il popover intatto", async () => {
     enableAi();
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("", { status: 401 }))));

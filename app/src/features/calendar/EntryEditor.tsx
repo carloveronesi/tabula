@@ -58,6 +58,8 @@ function seedDraft(seed: EditorSeed): EntryDraft {
     type: seed.type ?? "client",
     projectId: seed.projectId ?? null,
     subtypeId: seed.subtypeId ?? null,
+    collaboratorIds: seed.collaboratorIds ?? [],
+    contactIds: seed.contactIds ?? [],
   };
 }
 

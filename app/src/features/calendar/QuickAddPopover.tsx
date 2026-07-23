@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { ActivityTemplate, Entry, ISODate } from "@/data/types";
+import type { ActivityTemplate, Entry, Id, ISODate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
 import { addDays, isoDate } from "@/domain/calendarNav";
 import { parseEntry } from "@/domain/ai/parseEntry";
+import { collaboratorCandidateIds } from "@/domain/collaborators";
+import { namesInText } from "@/domain/peopleInText";
 import { colorFromKey, projectColor } from "@/domain/colors";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
 import { nameOptions, projectsFor } from "@/domain/pickers";
@@ -73,6 +75,8 @@ export function QuickAddPopover() {
   const saveClient = useInventoryStore((s) => s.saveClient);
   const projects = useInventoryStore((s) => s.projects);
   const saveProject = useInventoryStore((s) => s.saveProject);
+  const people = useInventoryStore((s) => s.people);
+  const contacts = useInventoryStore((s) => s.contacts);
   const templates = useTemplateStore((s) => s.templates);
   const ai = useSettingsStore((s) => s.settings.ai);
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
@@ -104,6 +108,12 @@ export function QuickAddPopover() {
   const [rawText, setRawText] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  // Persone nominate nella frase: qui non hanno un campo, viaggiano fino
+  // all'editor dove si vedono e si tolgono.
+  const [seedPeople, setSeedPeople] = useState<{
+    collaboratorIds: Id[];
+    contactIds: Id[];
+  }>({ collaboratorIds: [], contactIds: [] });
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -119,6 +129,7 @@ export function QuickAddPopover() {
     setRawText(null);
     setAiBusy(false);
     setAiError(null);
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
     void allEntries().then(setArchive);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -282,6 +293,20 @@ export function QuickAddPopover() {
         startMin: start,
         endMin: Math.min(start + dur, 24 * 60),
       });
+      // I nomi si cercano in codice, fra le sole persone legate al progetto
+      // riconosciuto: sono pochi e sono nomi propri, non serve chiederlo al
+      // modello — né mandargli la rubrica.
+      const team = collaboratorCandidateIds(projects, h.projectId, h.clientId);
+      setSeedPeople({
+        collaboratorIds: namesInText(
+          text,
+          people.filter((p) => team.includes(p.id)),
+        ),
+        contactIds: namesInText(
+          text,
+          contacts.filter((k) => k.clientId === h.clientId),
+        ),
+      });
     } catch (e) {
       if (ctrl.signal.aborted) return;
       setAiError(e instanceof Error ? e.message : "Errore imprevisto.");
@@ -300,6 +325,7 @@ export function QuickAddPopover() {
     setProjectId(null);
     setMode("client");
     setAiError(null);
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
   }
 
   function applyTpl(t: ActivityTemplate) {
@@ -344,6 +370,7 @@ export function QuickAddPopover() {
       clientId: mode === "client" && !specialTpl ? clientId : null,
       projectId: specialTpl ? specialTpl.projectId : projectId,
       subtypeId: tpl?.subtypeId,
+      ...seedPeople,
     });
   }
 
@@ -504,7 +531,10 @@ export function QuickAddPopover() {
       )}
 
       <div className="mt-3.5 flex items-center justify-between gap-2 border-t border-line pt-3">
-        {canInterpret ? (
+        {/* A proposta ricevuta torna "Più dettagli": è il passo successivo
+            naturale (ed è l'unico modo di vedere le persone riconosciute).
+            Per rileggere la frase resta ⌘/Ctrl+Invio. */}
+        {canInterpret && rawText === null ? (
           <Button variant="subtle" size="sm" onClick={() => void interpret()}>
             <Icons.IconSparkles size={14} />
             Interpreta
