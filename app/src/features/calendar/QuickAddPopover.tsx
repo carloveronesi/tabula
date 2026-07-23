@@ -114,6 +114,10 @@ export function QuickAddPopover() {
     collaboratorIds: Id[];
     contactIds: Id[];
   }>({ collaboratorIds: [], contactIds: [] });
+  // Campi ancora "come li ha lasciati l'AI". Toccarne uno a mano lo toglie dalla
+  // marcatura: il cobalto dice "controlla questo", e chi l'ha già corretto l'ha
+  // controllato.
+  const [aiFilled, setAiFilled] = useState({ client: false, project: false });
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -130,6 +134,7 @@ export function QuickAddPopover() {
     setAiBusy(false);
     setAiError(null);
     setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled({ client: false, project: false });
     void allEntries().then(setArchive);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -218,6 +223,14 @@ export function QuickAddPopover() {
       ? (selectedProject ? projectColor(selectedProject) : null)
       : (selectedClient ? colorFromKey(selectedClient.id) : null);
 
+  // Le persone riconosciute valgono per il progetto e il cliente di allora:
+  // cambiandoli a mano diventano referenti di un altro cliente, e finirebbero
+  // così nell'editor.
+  const dropProposal = () => {
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled({ client: false, project: false });
+  };
+
   // Il segmento resetta le selezioni: gli id di una modalità non valgono
   // nell'altra.
   const changeMode = (m: Mode) => {
@@ -225,11 +238,18 @@ export function QuickAddPopover() {
     setClientId(null);
     setProjectId(null);
     setTpl(null);
+    dropProposal();
   };
   // Il progetto dipende dal cliente: cambiando cliente si azzera.
   const pickClient = (id: string | null) => {
     setClientId(id);
     setProjectId(null);
+    dropProposal();
+  };
+  const pickProject = (id: string | null) => {
+    setProjectId(id);
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled((f) => ({ ...f, project: false }));
   };
 
   if (!quickAdd) return null;
@@ -287,6 +307,7 @@ export function QuickAddPopover() {
       setMode(h.kind);
       setClientId(h.clientId);
       setProjectId(h.projectId);
+      setAiFilled({ client: h.clientId !== null, project: h.projectId !== null });
       setTpl(null);
       setOverride({
         date: shiftDate(slotDate, h.dayOffset),
@@ -325,7 +346,7 @@ export function QuickAddPopover() {
     setProjectId(null);
     setMode("client");
     setAiError(null);
-    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    dropProposal();
   }
 
   function applyTpl(t: ActivityTemplate) {
@@ -457,16 +478,16 @@ export function QuickAddPopover() {
             value={clientId}
             onChange={pickClient}
             onCreate={(name) => void createClient(name)}
-            marked={rawText !== null &&clientId !== null}
+            marked={aiFilled.client}
           />
           <Combobox
             label="Progetto"
             placeholder={clientId ? "Progetto…" : "Prima il cliente"}
             options={clientProjectOptions}
             value={projectId}
-            onChange={setProjectId}
+            onChange={pickProject}
             onCreate={(name) => void createProject(name)}
-            marked={rawText !== null &&projectId !== null}
+            marked={aiFilled.project}
           />
         </div>
       ) : (
@@ -476,9 +497,9 @@ export function QuickAddPopover() {
             placeholder="Interno…"
             options={internalOptions}
             value={projectId}
-            onChange={setProjectId}
+            onChange={pickProject}
             onCreate={(name) => void createProject(name)}
-            marked={rawText !== null &&projectId !== null}
+            marked={aiFilled.project}
           />
         </div>
       )}

@@ -47,6 +47,15 @@ describe("chat", () => {
     );
   });
 
+  it("senza configurazione non chiama e lo dice", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    await expect(
+      chat({ ...cfg, apiKey: "" }, [{ role: "user", content: "x" }]),
+    ).rejects.toThrow(/Impostazioni/);
+    expect(f).not.toHaveBeenCalled();
+  });
+
   // Regressione: con AbortSignal.any() questa combinazione esplodeva su Safari
   // < 17.4 e in jsdom, travestita da errore di rete.
   it("funziona anche quando il chiamante passa un signal", async () => {

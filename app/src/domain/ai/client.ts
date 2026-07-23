@@ -26,11 +26,21 @@ export async function chat(
   signal?: AbortSignal,
   timeoutMs = 30_000,
 ): Promise<string> {
+  // Senza configurazione la richiesta partirebbe verso un URL relativo, l'app
+  // risponderebbe con la propria index.html e l'errore finale sarebbe "risposta
+  // non valida dal provider": un vicolo cieco che punta al posto sbagliato.
+  if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) {
+    throw new Error(
+      "AI non configurata: controlla base URL, API key e modello nelle Impostazioni.",
+    );
+  }
+
   // Un solo controller per il timeout e per l'annullamento del chiamante:
   // AbortSignal.any() farebbe lo stesso in due righe, ma non c'è su Safari < 17.4
   // (né in jsdom) e lì fallirebbe *dentro* la fetch, travestito da errore di rete.
   const ctrl = new AbortController();
   const onAbort = () => ctrl.abort();
+  if (signal?.aborted) ctrl.abort(); // già annullato: niente chiamata inutile
   signal?.addEventListener("abort", onAbort);
   let timedOut = false;
   const timer = setTimeout(() => {

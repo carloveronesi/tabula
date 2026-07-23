@@ -108,7 +108,7 @@ function lines(inv: ParseInventory): string {
 const RULES = `Estrai i dati di un'attività di lavoro dalla frase dell'utente.
 Rispondi SOLO con un oggetto JSON, senza commenti né blocchi di codice, con queste chiavi:
 - "title": la frase ripulita da orari, durate e nomi di cliente/progetto (sono campi a parte)
-- "dayOffset": intero, giorni rispetto a oggi ("ieri" = -1, "oggi"/non detto = 0)
+- "dayOffset": intero, giorni rispetto al giorno che l'utente sta compilando ("ieri" = -1, "oggi"/non detto = 0)
 - "start": orario d'inizio "HH:MM", null se non detto
 - "durationMin": durata in minuti, null se non detta
 - "kind": "client" oppure "internal"

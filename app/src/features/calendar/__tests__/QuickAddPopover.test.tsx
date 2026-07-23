@@ -509,6 +509,52 @@ describe("QuickAddPopover — interpretazione AI", () => {
     expect(seed.contactIds).toEqual(["k1"]);
   });
 
+  it("cambiare cliente a mano scarta le persone della proposta", async () => {
+    enableAi();
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme"), client("c2", "Globex")],
+      projects: [{ ...project("p1", "Sito Acme", "c1"), teamIds: ["u1"] }],
+      people: [{ id: "u1", name: "Mario Rossi" }],
+      contacts: [{ id: "k1", clientId: "c1", name: "Giulia Conti", role: "PM" }],
+    });
+    mockChat({ title: "Call", projectId: "p1" });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: "call con Mario e Giulia" } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+    await waitFor(() => expect(titolo).toHaveValue("Call"));
+
+    // il cliente cambia: i referenti di Acme non c'entrano più
+    const clientBox = screen.getByRole("combobox", { name: "Cliente" });
+    fireEvent.focus(clientBox);
+    // il campo contiene "Acme" e filtra la lista: si svuota per rivedere tutti
+    fireEvent.change(clientBox, { target: { value: "" } });
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Globex" }));
+    fireEvent.click(screen.getByRole("button", { name: /Più dettagli/ }));
+
+    const seed = useEditorStore.getState().seed;
+    expect(seed.collaboratorIds).toEqual([]);
+    expect(seed.contactIds).toEqual([]);
+  });
+
+  it("senza configurazione dice di sistemare le Impostazioni", async () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ai: { enabled: true, baseUrl: "", apiKey: "", model: "" },
+      },
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Impostazioni/);
+  });
+
   it("un errore del provider lascia il popover intatto", async () => {
     enableAi();
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("", { status: 401 }))));
