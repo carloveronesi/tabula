@@ -14,6 +14,25 @@ visivo. Il codice vive in `app/` (`cd app` per `npm` e i test).
   Le micro-decisioni reversibili (naming, spaziature, dettagli di stile) restano
   a tua discrezione.
 
+## AI (opt-in, BYO-key)
+
+Vincoli da non violare senza chiederlo:
+
+- **È opt-in.** Con `settings.ai.enabled` falso non parte nessuna chiamata e non
+  compare nessun bottone AI.
+- **Una sola porta di uscita**: `domain/ai/client.ts` (`chat()`), un `fetch` a un
+  provider OpenAI-compatible. Non aggiungere altri punti di chiamata né dipendenze.
+- **La API key non esce mai**: né nell'export, né nei log. Il campo è `type="password"`.
+- **Non aggiungere dati al prompt** senza l'ok esplicito dell'utente. Oggi partono
+  solo: il testo scritto da lui e, per il quick-add, i nomi di clienti e progetti
+  *non archiviati*. Mai lo storico delle attività, mai i nomi di persone.
+  Se cambi cosa viene inviato, aggiorna la frase nei Settings e nel README.
+- **Nel dubbio, campo vuoto.** Un campo sbagliato ma compilato viene salvato senza
+  guardarlo e falsa i totali del mese; uno vuoto si nota.
+- **Niente `AbortSignal.any` / `AbortSignal.timeout`**: manca su Safari < 17.4 e in
+  jsdom, e fallisce *dentro* la fetch travestito da errore di rete. `AbortController`
+  a mano.
+
 ## Comandi (da `app/`)
 
 - `npm run dev` — dev server
