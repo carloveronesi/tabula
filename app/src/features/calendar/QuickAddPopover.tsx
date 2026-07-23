@@ -535,7 +535,7 @@ export function QuickAddPopover() {
             naturale (ed è l'unico modo di vedere le persone riconosciute).
             Per rileggere la frase resta ⌘/Ctrl+Invio. */}
         {canInterpret && rawText === null ? (
-          <Button variant="subtle" size="sm" onClick={() => void interpret()}>
+          <Button variant="accent" size="sm" onClick={() => void interpret()}>
             <Icons.IconSparkles size={14} />
             Interpreta
           </Button>
