@@ -52,6 +52,10 @@ export interface Project {
   contactIds: Id[];
   estimatedHours: number;
   color: string | null; // colore del progetto; null ⇒ fallback deterministico
+  /** Ultimo riassunto AI, in cache per non ripagarlo a ogni apertura.
+   * `sig` è la firma dei dati da cui è nato (vedi `digestSignature`): se non
+   * combacia più con quella attuale, il riassunto è vecchio. */
+  aiSummary?: { text: string; at: number; sig: string };
 }
 
 export interface Person {

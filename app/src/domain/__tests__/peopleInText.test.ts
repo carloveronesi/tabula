@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { namesInText } from "@/domain/peopleInText";
+import { namesInText, redactNames } from "@/domain/peopleInText";
 
 const team = [
   { id: "u1", name: "Mario Rossi" },
@@ -42,5 +42,35 @@ describe("namesInText", () => {
 
   it("nessun candidato, nessun risultato", () => {
     expect(namesInText("call con Mario", [])).toEqual([]);
+  });
+});
+
+describe("redactNames", () => {
+  it("toglie nome e cognome e lascia il resto del titolo", () => {
+    expect(redactNames("Call con Mario Rossi sul sito", team)).toBe(
+      "Call con … sul sito",
+    );
+  });
+
+  it("toglie anche i nomi ambigui, che namesInText non assegnerebbe", () => {
+    const due = [
+      { id: "u1", name: "Mario Rossi" },
+      { id: "u4", name: "Mario Bianchi" },
+    ];
+    expect(redactNames("call con Mario", due)).toBe("call con …");
+  });
+
+  it("ignora accenti e maiuscole", () => {
+    expect(redactNames("allineamento con NICCOLO", team)).toBe(
+      "allineamento con …",
+    );
+  });
+
+  it("non tocca parole che contengono un nome", () => {
+    expect(redactNames("annali del progetto", team)).toBe("annali del progetto");
+  });
+
+  it("senza candidati restituisce il testo com'è", () => {
+    expect(redactNames("call con Mario", [])).toBe("call con Mario");
   });
 });

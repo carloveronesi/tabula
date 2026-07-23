@@ -25,7 +25,39 @@ describe("chat", () => {
         { status: 200 },
       ),
     );
-    await expect(chat(cfg, [{ role: "user", content: "x" }])).resolves.toBe("ciao");
+    await expect(chat(cfg, [{ role: "user", content: "x" }])).resolves.toMatchObject({ text: "ciao" });
+  });
+
+  it("riporta i token dichiarati dal provider", async () => {
+    mockFetch(() =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "ciao" } }],
+          usage: { prompt_tokens: 1200, completion_tokens: 300, total_tokens: 1500 },
+        }),
+        { status: 200 },
+      ),
+    );
+    await expect(chat(cfg, [{ role: "user", content: "x" }])).resolves.toEqual({
+      text: "ciao",
+      usage: { in: 1200, out: 300 },
+    });
+  });
+
+  it("provider che non dichiara i token → usage null, nessuna stima", async () => {
+    mockFetch(() =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "ciao" } }],
+          usage: { total_tokens: 1500 },
+        }),
+        { status: 200 },
+      ),
+    );
+    await expect(chat(cfg, [{ role: "user", content: "x" }])).resolves.toEqual({
+      text: "ciao",
+      usage: null,
+    });
   });
 
   it("401 → messaggio sulla key", async () => {
@@ -67,7 +99,7 @@ describe("chat", () => {
     const ctrl = new AbortController();
     await expect(
       chat(cfg, [{ role: "user", content: "x" }], ctrl.signal),
-    ).resolves.toBe("ok");
+    ).resolves.toMatchObject({ text: "ok" });
   });
 
   it("il signal del chiamante annulla la richiesta", async () => {

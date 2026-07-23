@@ -111,7 +111,7 @@ const FEATURES: { name: string; body: string }[] = [
   },
   {
     name: "AI, se la vuoi",
-    body: "Facoltativa e spenta di default, con la tua API key. Descrivi l'attività a parole e il quick-add compila i campi; sulle note propone una riscrittura da applicare o scartare.",
+    body: "Facoltativa e spenta di default, con la tua API key. Descrivi l'attività a parole e il quick-add compila i campi; sulle note propone una riscrittura da applicare o scartare. Nel dettaglio di un progetto, «Come va» legge le sue attività e dice a che punto sei, e lì sotto puoi fargli domande: il riassunto resta salvato e vedi i token spesi.",
   },
   {
     name: "Ricerca e backup",
@@ -207,7 +207,9 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           <p className="text-muted">
             Tutto resta nel browser, su questo dispositivo: niente account,
             niente server, niente statistiche d'uso. L'unica cosa che può uscire
-            è quello che mandi tu all'AI, se l'hai attivata. Per lo stesso
+            è quello che mandi tu all'AI, se l'hai attivata: il testo che le
+            scrivi e, quando chiedi «Come va» su un progetto, le attività di
+            quel progetto — senza i nomi di colleghi e referenti. Per lo stesso
             motivo, <strong className="font-medium text-ink">esporta ogni
             tanto</strong> da Impostazioni → Dati: se svuoti i dati del browser,
             l'archivio se ne va con loro.

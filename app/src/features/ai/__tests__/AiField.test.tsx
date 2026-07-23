@@ -32,7 +32,7 @@ describe("AiField", () => {
 
   it("Migliora → Applica chiama onApply con la proposta", async () => {
     enableAi();
-    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue("riscritto");
+    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ text: "riscritto", usage: null });
     const onApply = vi.fn();
     render(<AiField value="originale" systemPrompt="sys" onApply={onApply} />);
     fireEvent.click(screen.getByRole("button", { name: /migliora/i }));
