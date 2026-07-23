@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
 import type { Client, Project } from "@/data/types";
@@ -346,5 +346,148 @@ describe("QuickAddPopover", () => {
 
     fireEvent(window, new Event("resize"));
     expect(useEditorStore.getState().quickAdd).toBeNull();
+  });
+});
+
+describe("QuickAddPopover — interpretazione AI", () => {
+  const FRASE = "call con Acme sul sito, ieri 2h dalle 15";
+
+  /** Il provider risponde con il JSON che il client si aspetta. */
+  function mockChat(payload: unknown) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              choices: [{ message: { content: JSON.stringify(payload) } }],
+            }),
+            { status: 200 },
+          ),
+        ),
+      ),
+    );
+  }
+
+  function enableAi() {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ai: { enabled: true, baseUrl: "https://x/v1", apiKey: "k", model: "m" },
+      },
+    });
+  }
+
+  beforeEach(() => {
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [project("p1", "Sito Acme", "c1")],
+    });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("senza AI attiva il bottone non compare", () => {
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: FRASE } });
+    expect(screen.queryByRole("button", { name: /Interpreta/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Più dettagli/ })).toBeInTheDocument();
+  });
+
+  it("con AI attiva compila i campi e salva data e orario proposti", async () => {
+    enableAi();
+    mockChat({
+      title: "Call sul rifacimento sito",
+      dayOffset: -1,
+      start: "15:00",
+      durationMin: 120,
+      projectId: "p1",
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+
+    await waitFor(() =>
+      expect(titolo).toHaveValue("Call sul rifacimento sito"),
+    );
+    // il cliente arriva dal progetto, non dalla parola nella frase
+    expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("Acme");
+    expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("Sito Acme");
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    const saved = useCalendarStore.getState().entries[0];
+    // slot cliccato: 12/06 09:00–10:00; proposta: il giorno prima, 15:00–17:00
+    expect(saved.startsAt).toBe("2026-06-11T15:00:00");
+    expect(saved.endsAt).toBe("2026-06-11T17:00:00");
+    expect(saved.clientId).toBe("c1");
+    expect(saved.projectId).toBe("p1");
+  });
+
+  it("un id inventato lascia il campo vuoto invece di riempirlo a caso", async () => {
+    enableAi();
+    mockChat({ title: "Call", clientId: "c-inventato", projectId: "p-inventato" });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+
+    await waitFor(() => expect(titolo).toHaveValue("Call"));
+    expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("");
+  });
+
+  it("Ripristina il testo rimette la frase e annulla la proposta", async () => {
+    enableAi();
+    mockChat({
+      title: "Call sul rifacimento sito",
+      dayOffset: -1,
+      start: "15:00",
+      durationMin: 120,
+      projectId: "p1",
+    });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+    await waitFor(() => expect(titolo).toHaveValue("Call sul rifacimento sito"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Ripristina il testo" }));
+    expect(titolo).toHaveValue(FRASE);
+    expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() =>
+      expect(useCalendarStore.getState().entries).toHaveLength(1),
+    );
+    // torna lo slot cliccato
+    expect(useCalendarStore.getState().entries[0].startsAt).toBe(
+      "2026-06-12T09:00:00",
+    );
+  });
+
+  it("un errore del provider lascia il popover intatto", async () => {
+    enableAi();
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("", { status: 401 }))));
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/key/i);
+    expect(titolo).toHaveValue(FRASE);
   });
 });

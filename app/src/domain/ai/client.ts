@@ -26,45 +26,61 @@ export async function chat(
   signal?: AbortSignal,
   timeoutMs = 30_000,
 ): Promise<string> {
-  const timeout = AbortSignal.timeout(timeoutMs);
-  let res: Response;
+  // Un solo controller per il timeout e per l'annullamento del chiamante:
+  // AbortSignal.any() farebbe lo stesso in due righe, ma non c'è su Safari < 17.4
+  // (né in jsdom) e lì fallirebbe *dentro* la fetch, travestito da errore di rete.
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort();
+  signal?.addEventListener("abort", onAbort);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    ctrl.abort();
+  }, timeoutMs);
+
   try {
-    res = await fetch(`${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.apiKey}`,
-      },
-      body: JSON.stringify({ model: cfg.model, messages }),
-      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    });
-  } catch (e) {
-    // Prima dell'AbortError: uno scadere non va scambiato per un annullamento
-    // dell'utente, altrimenti chi chiama lo ignora e resta in loading per sempre.
-    if (timeout.aborted) {
-      throw new Error("Il provider non ha risposto in tempo. Riprova.");
+    let res: Response;
+    try {
+      res = await fetch(`${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfg.apiKey}`,
+        },
+        body: JSON.stringify({ model: cfg.model, messages }),
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      // Prima dell'AbortError: uno scadere non va scambiato per un annullamento
+      // dell'utente, altrimenti chi chiama lo ignora e resta in loading per sempre.
+      if (timedOut) {
+        throw new Error("Il provider non ha risposto in tempo. Riprova.");
+      }
+      if (e instanceof DOMException && e.name === "AbortError") throw e;
+      throw new Error("Impossibile raggiungere il provider AI. Controlla la connessione e la base URL.");
     }
-    if (e instanceof DOMException && e.name === "AbortError") throw e;
-    throw new Error("Impossibile raggiungere il provider AI. Controlla la connessione e la base URL.");
-  }
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error("API key non valida o senza permessi.");
-  }
-  if (!res.ok) {
-    throw new Error(`Il provider ha risposto con errore (${res.status}).`);
-  }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("API key non valida o senza permessi.");
+    }
+    if (!res.ok) {
+      throw new Error(`Il provider ha risposto con errore (${res.status}).`);
+    }
 
-  let data: unknown;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error("Risposta non valida dal provider.");
+    let data: unknown;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Risposta non valida dal provider.");
+    }
+    const content = (data as { choices?: { message?: { content?: unknown } }[] })
+      ?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error("Risposta non valida dal provider.");
+    }
+    return content;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", onAbort);
   }
-  const content = (data as { choices?: { message?: { content?: unknown } }[] })
-    ?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error("Risposta non valida dal provider.");
-  }
-  return content;
 }

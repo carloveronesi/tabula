@@ -47,6 +47,35 @@ describe("chat", () => {
     );
   });
 
+  // Regressione: con AbortSignal.any() questa combinazione esplodeva su Safari
+  // < 17.4 e in jsdom, travestita da errore di rete.
+  it("funziona anche quando il chiamante passa un signal", async () => {
+    mockFetch(() =>
+      new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), {
+        status: 200,
+      }),
+    );
+    const ctrl = new AbortController();
+    await expect(
+      chat(cfg, [{ role: "user", content: "x" }], ctrl.signal),
+    ).resolves.toBe("ok");
+  });
+
+  it("il signal del chiamante annulla la richiesta", async () => {
+    mockFetch(
+      (_url?: string, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    const ctrl = new AbortController();
+    const p = chat(cfg, [{ role: "user", content: "x" }], ctrl.signal);
+    ctrl.abort();
+    await expect(p).rejects.toMatchObject({ name: "AbortError" });
+  });
+
   it("provider che non risponde → messaggio di timeout", async () => {
     mockFetch(
       (_url?: string, init?: RequestInit) =>
