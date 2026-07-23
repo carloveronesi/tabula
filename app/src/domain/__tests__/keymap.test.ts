@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { resolveKey, initialKeyState, type KeyInput } from "@/domain/keymap";
+import {
+  resolveKey,
+  initialKeyState,
+  SHORTCUTS,
+  type KeyInput,
+} from "@/domain/keymap";
 
 const key = (k: string, mods: Partial<KeyInput> = {}): KeyInput => ({
   key: k,
@@ -88,5 +93,21 @@ describe("keymap (scorciatoie pure)", () => {
     const r = resolveKey({ prefix: "g" }, key("z", { ctrlKey: true }));
     expect(r.action).toEqual({ type: "undo" });
     expect(r.state.prefix).toBeNull();
+  });
+});
+
+// Il pannello Aiuto legge SHORTCUTS: se una scorciatoia cambia in resolveKey e
+// nessuno aggiorna la lista, l'app finisce per documentare tasti che non fanno
+// più quello che dice. Qui la lista viene eseguita davvero.
+describe("SHORTCUTS (quel che il pannello Aiuto dichiara)", () => {
+  it.each(SHORTCUTS)("$label", ({ press, action }) => {
+    let state = initialKeyState;
+    let last = null as ReturnType<typeof resolveKey>["action"];
+    for (const p of press) {
+      const r = resolveKey(state, p);
+      state = r.state;
+      last = r.action;
+    }
+    expect(last).toEqual(action);
   });
 });

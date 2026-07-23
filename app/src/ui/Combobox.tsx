@@ -17,6 +17,8 @@ export interface ComboboxProps {
   label?: string;
   placeholder?: string;
   emptyText?: string;
+  /** Marca il campo come compilato da una proposta, da rivedere prima di salvare. */
+  marked?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ export function Combobox({
   label,
   placeholder,
   emptyText = "Nessun risultato",
+  marked = false,
 }: ComboboxProps) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -121,7 +124,7 @@ export function Combobox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className={cn(inputClasses, "pr-9")}
+        className={cn(inputClasses, "pr-9", marked && "border-primary bg-primary-wash")}
       />
       <IconChevronDown
         size={15}

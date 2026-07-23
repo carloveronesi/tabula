@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { ActivityTemplate, Entry } from "@/data/types";
+import type { ActivityTemplate, Entry, Id, ISODate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
+import { addDays, isoDate } from "@/domain/calendarNav";
+import { parseEntry } from "@/domain/ai/parseEntry";
+import { collaboratorCandidateIds } from "@/domain/collaborators";
+import { namesInText } from "@/domain/peopleInText";
 import { colorFromKey, projectColor } from "@/domain/colors";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
 import { nameOptions, projectsFor } from "@/domain/pickers";
@@ -14,7 +18,8 @@ import { useCalendarStore } from "@/store/calendar";
 import { useInventoryStore } from "@/store/inventory";
 import { useTemplateStore } from "@/store/templates";
 import { useToastStore } from "@/store/toast";
-import { Button, cn, Combobox, Segmented } from "@/ui";
+import { useSettingsStore } from "@/store/settings";
+import { Button, cn, Combobox, Icons, Segmented } from "@/ui";
 
 type Mode = "client" | "internal";
 const MODES = [
@@ -24,6 +29,17 @@ const MODES = [
 
 const WIDTH = 340;
 const MARGIN = 12;
+
+const dayLabel = (d: ISODate) =>
+  new Intl.DateTimeFormat("it-IT", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${d}T00:00:00`));
+
+/** ISODate + scarto in giorni → ISODate (nessuna conversione di fuso). */
+const shiftDate = (d: ISODate, days: number): ISODate =>
+  isoDate(addDays(new Date(`${d}T00:00:00`), days));
 
 /** Posizione fissa + lato della freccetta, calcolati dall'ancora. */
 function place(anchor: { x: number; y: number } | null) {
@@ -59,10 +75,15 @@ export function QuickAddPopover() {
   const saveClient = useInventoryStore((s) => s.saveClient);
   const projects = useInventoryStore((s) => s.projects);
   const saveProject = useInventoryStore((s) => s.saveProject);
+  const people = useInventoryStore((s) => s.people);
+  const contacts = useInventoryStore((s) => s.contacts);
   const templates = useTemplateStore((s) => s.templates);
+  const ai = useSettingsStore((s) => s.settings.ai);
+  const subtypes = useSettingsStore((s) => s.settings.subtypes);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const aiAbort = useRef<AbortController | null>(null);
   const [title, setTitle] = useState("");
   // Il segmento sceglie la classificazione: "client" abilita cliente + progetto
   // del cliente, "internal" abilita il solo progetto interno.
@@ -76,6 +97,28 @@ export function QuickAddPopover() {
   // se pesa, cache in uno store o un indice per progetto.
   const [archive, setArchive] = useState<Entry[]>([]);
 
+  // Data e fascia proposte dall'AI: sovrascrivono lo slot cliccato finché non
+  // si ripristina la frase.
+  const [override, setOverride] = useState<{
+    date: ISODate;
+    startMin: number;
+    endMin: number;
+  } | null>(null);
+  // Frase originale: presente ⇒ la proposta è in campo e si può ripristinare.
+  const [rawText, setRawText] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  // Persone nominate nella frase: qui non hanno un campo, viaggiano fino
+  // all'editor dove si vedono e si tolgono.
+  const [seedPeople, setSeedPeople] = useState<{
+    collaboratorIds: Id[];
+    contactIds: Id[];
+  }>({ collaboratorIds: [], contactIds: [] });
+  // Campi ancora "come li ha lasciati l'AI". Toccarne uno a mano lo toglie dalla
+  // marcatura: il cobalto dice "controlla questo", e chi l'ha già corretto l'ha
+  // controllato.
+  const [aiFilled, setAiFilled] = useState({ client: false, project: false });
+
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
   // gestisce il proprio focus).
@@ -86,11 +129,18 @@ export function QuickAddPopover() {
     setClientId(null);
     setProjectId(null);
     setTpl(null);
+    setOverride(null);
+    setRawText(null);
+    setAiBusy(false);
+    setAiError(null);
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled({ client: false, project: false });
     void allEntries().then(setArchive);
     const prevFocus = document.activeElement as HTMLElement | null;
     const id = window.requestAnimationFrame(() => inputRef.current?.focus());
     return () => {
       window.cancelAnimationFrame(id);
+      aiAbort.current?.abort();
       if (!useEditorStore.getState().open) prevFocus?.focus?.();
     };
   }, [quickAdd]);
@@ -173,6 +223,14 @@ export function QuickAddPopover() {
       ? (selectedProject ? projectColor(selectedProject) : null)
       : (selectedClient ? colorFromKey(selectedClient.id) : null);
 
+  // Le persone riconosciute valgono per il progetto e il cliente di allora:
+  // cambiandoli a mano diventano referenti di un altro cliente, e finirebbero
+  // così nell'editor.
+  const dropProposal = () => {
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled({ client: false, project: false });
+  };
+
   // Il segmento resetta le selezioni: gli id di una modalità non valgono
   // nell'altra.
   const changeMode = (m: Mode) => {
@@ -180,17 +238,33 @@ export function QuickAddPopover() {
     setClientId(null);
     setProjectId(null);
     setTpl(null);
+    dropProposal();
   };
   // Il progetto dipende dal cliente: cambiando cliente si azzera.
   const pickClient = (id: string | null) => {
     setClientId(id);
     setProjectId(null);
+    dropProposal();
+  };
+  const pickProject = (id: string | null) => {
+    setProjectId(id);
+    setSeedPeople({ collaboratorIds: [], contactIds: [] });
+    setAiFilled((f) => ({ ...f, project: false }));
   };
 
   if (!quickAdd) return null;
-  const { date, startMin, endMin, anchor } = quickAdd;
+  const { anchor } = quickAdd;
+  // Data dello slot cliccato: base per lo scarto in giorni proposto dall'AI, così
+  // due interpretazioni di fila non si sommano.
+  const slotDate = quickAdd.date;
+  const date = override?.date ?? quickAdd.date;
+  const startMin = override?.startMin ?? quickAdd.startMin;
+  const endMin = override?.endMin ?? quickAdd.endMin;
   const pos = place(anchor);
   const valid = title.trim() !== "" && endMin > startMin;
+  // Basta del testo: una soglia di parole risparmierebbe qualche chiamata inutile
+  // al prezzo di un bottone che appare e sparisce senza una ragione visibile.
+  const canInterpret = ai.enabled && !aiBusy && title.trim() !== "";
 
   async function createClient(name: string) {
     const id = nanoid();
@@ -207,6 +281,83 @@ export function QuickAddPopover() {
       newProject({ name, clientId: mode === "client" ? clientId : null }, id),
     );
     setProjectId(id);
+  }
+
+  /**
+   * Legge la frase e compila i campi. Non tocca niente da solo: parte solo dal
+   * bottone o da ⌘/Ctrl+Invio, e quello che propone resta rivedibile.
+   * ponytail: il sottotipo proposto viene ignorato — qui non ha un campo, e
+   * riempirlo senza mostrarlo sarebbe una modifica invisibile.
+   */
+  async function interpret() {
+    const text = title.trim();
+    if (text === "") return;
+    aiAbort.current?.abort();
+    const ctrl = new AbortController();
+    aiAbort.current = ctrl;
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      // Stesso criterio dei selettori (`projectsFor`): un progetto archiviato non
+      // è proponibile, quindi non ha senso nemmeno mostrarlo al modello.
+      const h = await parseEntry(
+        text,
+        {
+          clients,
+          projects: projects.filter((p) => p.status !== "archived"),
+          subtypes,
+        },
+        ai,
+        ctrl.signal,
+      );
+      if (ctrl.signal.aborted) return;
+      const start = h.startMin ?? startMin;
+      const dur = h.durationMin ?? endMin - startMin;
+      setRawText(text);
+      setTitle(h.title);
+      setMode(h.kind);
+      setClientId(h.clientId);
+      setProjectId(h.projectId);
+      setAiFilled({ client: h.clientId !== null, project: h.projectId !== null });
+      setTpl(null);
+      setOverride({
+        date: shiftDate(slotDate, h.dayOffset),
+        startMin: start,
+        endMin: Math.min(start + dur, 24 * 60),
+      });
+      // I nomi si cercano in codice, fra le sole persone legate al progetto
+      // riconosciuto: sono pochi e sono nomi propri, non serve chiederlo al
+      // modello — né mandargli la rubrica.
+      const team = collaboratorCandidateIds(projects, h.projectId, h.clientId);
+      setSeedPeople({
+        collaboratorIds: namesInText(
+          text,
+          people.filter((p) => team.includes(p.id)),
+        ),
+        contactIds: namesInText(
+          text,
+          contacts.filter((k) => k.clientId === h.clientId),
+        ),
+      });
+    } catch (e) {
+      if (ctrl.signal.aborted) return;
+      setAiError(e instanceof Error ? e.message : "Errore imprevisto.");
+    } finally {
+      if (!ctrl.signal.aborted) setAiBusy(false);
+    }
+  }
+
+  /** Rimette la frase e annulla tutto quello che l'AI aveva compilato. */
+  function restoreText() {
+    if (rawText === null) return;
+    setTitle(rawText);
+    setRawText(null);
+    setOverride(null);
+    setClientId(null);
+    setProjectId(null);
+    setMode("client");
+    setAiError(null);
+    dropProposal();
   }
 
   function applyTpl(t: ActivityTemplate) {
@@ -251,6 +402,7 @@ export function QuickAddPopover() {
       clientId: mode === "client" && !specialTpl ? clientId : null,
       projectId: specialTpl ? specialTpl.projectId : projectId,
       subtypeId: tpl?.subtypeId,
+      ...seedPeople,
     });
   }
 
@@ -285,10 +437,12 @@ export function QuickAddPopover() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            void save();
-          }
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          // ⌘/Ctrl+Invio interpreta, Invio salva come sempre: chi non usa l'AI
+          // non incontra un comportamento diverso da prima.
+          if ((e.metaKey || e.ctrlKey) && canInterpret) void interpret();
+          else void save();
         }}
         placeholder="Cosa hai fatto?"
         className={cn(
@@ -310,6 +464,11 @@ export function QuickAddPopover() {
             style={{ backgroundColor: dotColor }}
           />
         )}
+        {/* La data compare solo se l'AI ha spostato l'attività su un altro
+            giorno: senza, uno slot finito su ieri lo scopri a consuntivo. */}
+        {date !== slotDate && (
+          <span className="text-xs text-muted">{dayLabel(date)}</span>
+        )}
       </div>
 
       <div className="mt-3">
@@ -330,14 +489,16 @@ export function QuickAddPopover() {
             value={clientId}
             onChange={pickClient}
             onCreate={(name) => void createClient(name)}
+            marked={aiFilled.client}
           />
           <Combobox
             label="Progetto"
             placeholder={clientId ? "Progetto…" : "Prima il cliente"}
             options={clientProjectOptions}
             value={projectId}
-            onChange={setProjectId}
+            onChange={pickProject}
             onCreate={(name) => void createProject(name)}
+            marked={aiFilled.project}
           />
         </div>
       ) : (
@@ -347,9 +508,36 @@ export function QuickAddPopover() {
             placeholder="Interno…"
             options={internalOptions}
             value={projectId}
-            onChange={setProjectId}
+            onChange={pickProject}
             onCreate={(name) => void createProject(name)}
+            marked={aiFilled.project}
           />
+        </div>
+      )}
+
+      {aiBusy && (
+        <p role="status" className="mt-3 text-xs text-muted">
+          Sto leggendo…
+        </p>
+      )}
+
+      {aiError && (
+        <p role="alert" className="mt-3 text-xs text-danger">
+          {aiError}
+        </p>
+      )}
+
+      {rawText !== null && !aiBusy && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+          <Icons.IconSparkles size={13} className="shrink-0 text-accent" />
+          <span>Compilato dall'AI — controlla</span>
+          <button
+            type="button"
+            onClick={restoreText}
+            className="ml-auto shrink-0 font-medium text-accent hover:underline"
+          >
+            Ripristina il testo
+          </button>
         </div>
       )}
 
@@ -375,12 +563,22 @@ export function QuickAddPopover() {
       )}
 
       <div className="mt-3.5 flex items-center justify-between gap-2 border-t border-line pt-3">
-        <Button variant="ghost" size="sm" onClick={moreDetails}>
-          Più dettagli
-          <span aria-hidden className="ml-1">
-            ›
-          </span>
-        </Button>
+        {/* A proposta ricevuta torna "Più dettagli": è il passo successivo
+            naturale (ed è l'unico modo di vedere le persone riconosciute).
+            Per rileggere la frase resta ⌘/Ctrl+Invio. */}
+        {canInterpret && rawText === null ? (
+          <Button variant="accent" size="sm" onClick={() => void interpret()}>
+            <Icons.IconSparkles size={14} />
+            Interpreta
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={moreDetails}>
+            Più dettagli
+            <span aria-hidden className="ml-1">
+              ›
+            </span>
+          </Button>
+        )}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={closeQuickAdd}>
             Annulla

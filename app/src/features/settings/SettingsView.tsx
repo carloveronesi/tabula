@@ -56,8 +56,8 @@ export function SettingsView() {
       <header className="mb-6">
         <h2 className="text-2xl font-semibold tracking-tight">Impostazioni</h2>
         <p className="mt-1 text-sm text-muted">
-          I tuoi dati restano sul dispositivo. L'AI, se la attivi, invia solo il
-          testo che scegli al provider che indichi tu.
+          I tuoi dati restano sul dispositivo. L'unica cosa che esce dal browser
+          è quello che mandi tu all'AI, se la attivi.
         </p>
       </header>
 

@@ -108,6 +108,33 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 - Ricerca trasversale su voci, progetti e todo.
 
+### ✨ AI (opzionale, con la tua API key)
+
+Spenta di default: finché non la attivi nelle Impostazioni, l'app non mostra
+alcun bottone AI e non fa alcuna chiamata di rete.
+
+- **Bring your own key** — qualsiasi provider con API compatibile OpenAI
+  (`/chat/completions`): base URL, key e modello li scegli tu, con preset per i
+  più comuni. Nessun servizio intermedio, nessuna dipendenza aggiuntiva.
+- **Quick-add in linguaggio naturale** — scrivi *«call con Acme sul portale, un'ora
+  e mezza da stamattina»* e il popover propone cliente, progetto, sottotipo, orario
+  e giorno. Ogni campo dedotto è **evidenziato** e resta correggibile; il testo
+  originale rimane a portata di mano finché non salvi.
+- **Riconoscimento di colleghi e referenti** — i nomi citati nella frase vengono
+  cercati **in locale** (nessuna chiamata, nessun nome inviato all'AI) tra il team
+  del progetto e i contatti del cliente, e arrivano precompilati nell'editor completo.
+- **Migliora il testo** — sulle note dell'attività, l'AI propone una riscrittura
+  che puoi **applicare o scartare**: non sovrascrive mai nulla da sola.
+- **Nel dubbio, campo vuoto.** Se il modello è incerto o si contraddice, il campo
+  resta da compilare: un campo vuoto si nota, uno sbagliato finisce nei totali del mese.
+
+### ❓ Aiuto
+
+- Pannello **«Come funziona»** dal `?` nella sidebar: il flusso di una giornata,
+  le funzioni principali e le scorciatoie da tastiera — senza uscire dall'app.
+- L'elenco delle scorciatoie è **generato da `domain/keymap.ts`** e un test lo
+  esegue davvero: non può documentare tasti diversi da quelli che l'app ascolta.
+
 ### ⚙️ Impostazioni
 
 Organizzate per sezioni:
@@ -116,17 +143,24 @@ Organizzate per sezioni:
 - **Orari** — fasce mattino/pomeriggio, giorni lavorativi, giorno del patrono.
 - **Categorie** — sottotipi e colori per clienti e attività interne.
 - **Presenze** — abilitazione e obiettivi percentuali per sede.
+- **AI** — attivazione, provider (preset o base URL), API key e modello, con
+  *Prova connessione*.
 - **Dati** — import/export.
 
 ### 🔒 Privacy & dati locali
 
 - **Nessun backend, nessun account, nessuna telemetria.** Tutto è salvato in
   IndexedDB sul tuo dispositivo.
-- **Import / export** dei dati per backup o migrazione.
+- **Import / export** dei dati per backup o migrazione. L'API key **non entra mai
+  nel file di export** e non finisce nei log.
 - **PWA installabile e offline-first**: nessuna dipendenza **esterna** a runtime
   (niente CDN né tracker; icone inline, font di sistema). Anche l'**OCR**
   dell'import da screenshot è self-hosted e gira sul dispositivo — l'immagine non
   lascia mai il browser.
+- **L'unica cosa che può uscire dal browser è l'AI, se la attivi tu**, e solo nel
+  momento in cui la usi: parte il testo che le dai e — per il quick-add — i nomi
+  di clienti e progetti attivi, che le servono per riconoscerli. Lo storico delle
+  attività non viene mai inviato, e nemmeno i nomi di colleghi e referenti.
 
 ### ♿ Accessibilità
 
@@ -145,6 +179,7 @@ Organizzate per sezioni:
 | Stato         | Zustand |
 | Storage       | IndexedDB via Dexie |
 | OCR           | Tesseract.js (in locale, self-hosted) |
+| AI (opz.)     | `fetch` a un provider OpenAI-compatible, key tua — zero dipendenze |
 | Ricorrenze    | rrule |
 | Markdown      | react-markdown + remark-gfm |
 | Test          | Vitest + Testing Library |
@@ -185,7 +220,7 @@ app/src/
 ├── domain/      logica pura (nessun I/O, nessun React) — test-driven
 ├── store/       stato applicativo (Zustand)
 ├── features/    UI per dominio (calendar, projects, todo, summary,
-│                settings, search, layout)
+│                settings, search, ai, layout)
 ├── ui/          primitivi UI (Button, Modal, Popover, Combobox, …)
 ├── pwa/         registrazione service worker / install prompt
 └── styles/      token di design e configurazione Tailwind

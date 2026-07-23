@@ -11,6 +11,9 @@ export interface EditorSeed {
   type?: EntryType;
   projectId?: Id | null;
   subtypeId?: Id | null;
+  /** Persone riconosciute nella frase del quick-add, da rivedere qui. */
+  collaboratorIds?: Id[];
+  contactIds?: Id[];
 }
 
 /** Punto-ancora in coordinate viewport per posizionare il quick-add. */

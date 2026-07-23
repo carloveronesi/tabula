@@ -250,3 +250,11 @@ export const IconSparkles = (p: IconProps) => (
     <path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9L18 14Z" />
   </Svg>
 );
+
+export const IconHelp = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.2a2.6 2.6 0 1 1 3.3 2.5c-.5.2-.8.7-.8 1.2v.6" />
+    <path d="M12 16.8h.01" />
+  </Svg>
+);
