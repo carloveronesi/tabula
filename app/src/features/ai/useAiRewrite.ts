@@ -16,6 +16,8 @@ export type RewriteState =
 export function useAiRewrite(systemPrompt: string) {
   const settings = useSettingsStore((s) => s.settings.ai);
   const [state, setState] = useState<RewriteState>({ status: "idle" });
+  // Token spesi da quando la card è aperta, per chi vuole tenere d'occhio il conto.
+  const [tokens, setTokens] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -33,8 +35,10 @@ export function useAiRewrite(systemPrompt: string) {
       ],
       ctrl.signal,
     )
-      .then((proposal) => {
-        if (!ctrl.signal.aborted) setState({ status: "ready", proposal });
+      .then(({ text, usage }) => {
+        if (ctrl.signal.aborted) return;
+        if (usage) setTokens((t) => t + usage.in + usage.out);
+        setState({ status: "ready", proposal: text });
       })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return;
@@ -48,5 +52,5 @@ export function useAiRewrite(systemPrompt: string) {
     setState({ status: "idle" });
   }
 
-  return { state, run, reset, enabled: settings.enabled };
+  return { state, run, reset, tokens, enabled: settings.enabled };
 }

@@ -1,6 +1,34 @@
 import type { AiSettings } from "@/data/types";
 
-export type AiMessage = { role: "system" | "user"; content: string };
+export type AiMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+/** Token dichiarati dal provider per una chiamata. */
+export interface AiUsage {
+  in: number;
+  out: number;
+}
+
+export interface AiReply {
+  text: string;
+  /** `null` se il provider non li dichiara: meglio nessun numero che uno finto. */
+  usage: AiUsage | null;
+}
+
+/**
+ * ponytail: nessuna stima locale dei token quando il provider tace, e nessuna
+ * conversione in euro: i prezzi per modello sono una tabella che invecchia da
+ * sola, e qui il modello lo scegli tu.
+ */
+function readUsage(data: unknown): AiUsage | null {
+  const u = (data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } })
+    ?.usage;
+  return typeof u?.prompt_tokens === "number" && typeof u?.completion_tokens === "number"
+    ? { in: u.prompt_tokens, out: u.completion_tokens }
+    : null;
+}
 
 export const AI_PRESETS: {
   id: string;
@@ -25,7 +53,7 @@ export async function chat(
   messages: AiMessage[],
   signal?: AbortSignal,
   timeoutMs = 30_000,
-): Promise<string> {
+): Promise<AiReply> {
   // Senza configurazione la richiesta partirebbe verso un URL relativo, l'app
   // risponderebbe con la propria index.html e l'errore finale sarebbe "risposta
   // non valida dal provider": un vicolo cieco che punta al posto sbagliato.
@@ -88,7 +116,7 @@ export async function chat(
     if (typeof content !== "string") {
       throw new Error("Risposta non valida dal provider.");
     }
-    return content;
+    return { text: content, usage: readUsage(data) };
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", onAbort);

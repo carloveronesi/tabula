@@ -123,7 +123,7 @@ export async function parseEntry(
   cfg: AiSettings,
   signal?: AbortSignal,
 ): Promise<EntryHints> {
-  const reply = await chat(
+  const { text: reply } = await chat(
     cfg,
     [
       { role: "system", content: `${RULES}\n\n${lines(inv)}` },

@@ -129,7 +129,9 @@ alcun bottone AI e non fa alcuna chiamata di rete.
   ore e titoli delle sue attività (**senza i nomi** di colleghi e referenti, tolti
   prima di partire) e ne ricava un punto della situazione. Il riassunto resta
   **salvato sul progetto**: riaprirlo non costa una nuova chiamata, e quando le
-  attività cambiano te lo segnala invece di rigenerarlo da solo.
+  attività cambiano te lo segnala invece di rigenerarlo da solo. Sotto al
+  riassunto puoi **fare domande** sugli stessi dati, con il **conteggio dei token**
+  spesi sul progetto — quello dichiarato dal provider, non una stima.
 - **Nel dubbio, campo vuoto.** Se il modello è incerto o si contraddice, il campo
   resta da compilare: un campo vuoto si nota, uno sbagliato finisce nei totali del mese.
 
@@ -164,9 +166,9 @@ Organizzate per sezioni:
   lascia mai il browser.
 - **L'unica cosa che può uscire dal browser è l'AI, se la attivi tu**, e solo nel
   momento in cui la usi: parte il testo che le dai e — per il quick-add — i nomi
-  di clienti e progetti attivi, che le servono per riconoscerli. Fa eccezione il
-  riassunto di un progetto, che manda le attività *di quel progetto* quando premi
-  tu il bottone. I nomi di colleghi e referenti non escono mai: nei titoli inviati
+  di clienti e progetti attivi, che le servono per riconoscerli. Fanno eccezione
+  il riassunto di un progetto e le domande che gli fai lì, che mandano le attività
+  *di quel progetto* quando premi tu. I nomi di colleghi e referenti non escono mai: nei titoli inviati
   vengono sostituiti prima della chiamata.
 
 ### ♿ Accessibilità

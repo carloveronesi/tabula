@@ -36,7 +36,7 @@ describe("useAiRewrite", () => {
 
   it("idle → loading → ready con la proposta", async () => {
     enableAi();
-    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue("riscritto");
+    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ text: "riscritto", usage: null });
     const { result } = renderHook(() => useAiRewrite("sys"));
     act(() => result.current.run("originale"));
     expect(result.current.state.status).toBe("loading");
@@ -57,7 +57,7 @@ describe("useAiRewrite", () => {
 
   it("reset torna a idle", async () => {
     enableAi();
-    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue("y");
+    (chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ text: "y", usage: null });
     const { result } = renderHook(() => useAiRewrite("sys"));
     act(() => result.current.run("x"));
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
