@@ -298,7 +298,18 @@ export function QuickAddPopover() {
     setAiBusy(true);
     setAiError(null);
     try {
-      const h = await parseEntry(text, { clients, projects, subtypes }, ai, ctrl.signal);
+      // Stesso criterio dei selettori (`projectsFor`): un progetto archiviato non
+      // è proponibile, quindi non ha senso nemmeno mostrarlo al modello.
+      const h = await parseEntry(
+        text,
+        {
+          clients,
+          projects: projects.filter((p) => p.status !== "archived"),
+          subtypes,
+        },
+        ai,
+        ctrl.signal,
+      );
       if (ctrl.signal.aborted) return;
       const start = h.startMin ?? startMin;
       const dur = h.durationMin ?? endMin - startMin;

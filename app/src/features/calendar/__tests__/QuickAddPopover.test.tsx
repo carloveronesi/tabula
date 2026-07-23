@@ -509,6 +509,26 @@ describe("QuickAddPopover — interpretazione AI", () => {
     expect(seed.contactIds).toEqual(["k1"]);
   });
 
+  it("un progetto archiviato non è proponibile", async () => {
+    enableAi();
+    useInventoryStore.setState({
+      clients: [client("c1", "Acme")],
+      projects: [project("p1", "Sito Acme", "c1", "archived")],
+    });
+    // anche se il modello lo nominasse, non è fra i candidati
+    mockChat({ title: "Call", projectId: "p1" });
+    openSlot();
+    render(<QuickAddPopover />);
+
+    const titolo = screen.getByLabelText("Titolo");
+    fireEvent.change(titolo, { target: { value: FRASE } });
+    fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+
+    await waitFor(() => expect(titolo).toHaveValue("Call"));
+    expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("");
+  });
+
   it("cambiare cliente a mano scarta le persone della proposta", async () => {
     enableAi();
     useInventoryStore.setState({

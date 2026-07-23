@@ -36,7 +36,7 @@ export function AiSettings() {
     <div className="space-y-6">
       <SettingsSection
         title="AI"
-        description="Configura un provider AI con la tua API key per migliorare i testi. Quando l'AI è attiva, il testo che scegli di migliorare viene inviato al provider selezionato; tutto il resto resta sul dispositivo."
+        description="Configura un provider AI con la tua API key. Ogni volta che usi l'AI esce dal browser solo la richiesta di quel momento: il testo che le dai e, per il quick-add, i nomi di clienti e progetti, che le servono per riconoscerli. Lo storico delle attività non viene mai inviato, e nemmeno i nomi di colleghi e referenti."
       >
         <Segmented
           label="Attivazione AI"
