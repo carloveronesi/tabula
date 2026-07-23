@@ -231,9 +231,9 @@ export function QuickAddPopover() {
   const endMin = override?.endMin ?? quickAdd.endMin;
   const pos = place(anchor);
   const valid = title.trim() !== "" && endMin > startMin;
-  // Il bottone compare solo con abbastanza testo da interpretare: su due parole
-  // il quick-add a mano è più veloce di una chiamata di rete.
-  const canInterpret = ai.enabled && !aiBusy && title.trim().split(/\s+/).length >= 3;
+  // Basta del testo: una soglia di parole risparmierebbe qualche chiamata inutile
+  // al prezzo di un bottone che appare e sparisce senza una ragione visibile.
+  const canInterpret = ai.enabled && !aiBusy && title.trim() !== "";
 
   async function createClient(name: string) {
     const id = nanoid();
