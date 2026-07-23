@@ -11,7 +11,9 @@ const cfg: AiSettings = {
 
 afterEach(() => vi.restoreAllMocks());
 
-function mockFetch(impl: () => Promise<Response> | Response) {
+function mockFetch(
+  impl: (url?: string, init?: RequestInit) => Promise<Response> | Response,
+) {
   vi.stubGlobal("fetch", vi.fn(impl));
 }
 
@@ -43,6 +45,20 @@ describe("chat", () => {
     await expect(chat(cfg, [{ role: "user", content: "x" }])).rejects.toThrow(
       /valida/i,
     );
+  });
+
+  it("provider che non risponde → messaggio di timeout", async () => {
+    mockFetch(
+      (_url?: string, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(init.signal?.reason as Error),
+          );
+        }),
+    );
+    await expect(
+      chat(cfg, [{ role: "user", content: "x" }], undefined, 10),
+    ).rejects.toThrow(/in tempo/i);
   });
 
   it("propaga AbortError", async () => {
