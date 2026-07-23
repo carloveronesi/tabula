@@ -24,7 +24,9 @@ export async function chat(
   cfg: AiSettings,
   messages: AiMessage[],
   signal?: AbortSignal,
+  timeoutMs = 30_000,
 ): Promise<string> {
+  const timeout = AbortSignal.timeout(timeoutMs);
   let res: Response;
   try {
     res = await fetch(`${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -34,9 +36,14 @@ export async function chat(
         Authorization: `Bearer ${cfg.apiKey}`,
       },
       body: JSON.stringify({ model: cfg.model, messages }),
-      signal,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
   } catch (e) {
+    // Prima dell'AbortError: uno scadere non va scambiato per un annullamento
+    // dell'utente, altrimenti chi chiama lo ignora e resta in loading per sempre.
+    if (timeout.aborted) {
+      throw new Error("Il provider non ha risposto in tempo. Riprova.");
+    }
     if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw new Error("Impossibile raggiungere il provider AI. Controlla la connessione e la base URL.");
   }
