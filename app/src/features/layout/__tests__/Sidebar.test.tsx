@@ -44,6 +44,18 @@ describe("Sidebar", () => {
     expect(useUiStore.getState().view).toBe("month");
   });
 
+  it("Aiuto apre il pannello senza cambiare vista", () => {
+    render(<Sidebar />);
+    expect(screen.queryByText("Il flusso di una giornata")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Aiuto" }));
+
+    expect(screen.getByText("Il flusso di una giornata")).toBeInTheDocument();
+    // Le scorciatoie arrivano da SHORTCUTS: se la lista si svuota, qui si vede.
+    expect(screen.getByText("Avvia o ferma il timer")).toBeInTheDocument();
+    expect(useUiStore.getState().view).toBe("month");
+  });
+
   it("marca la sezione attiva con aria-pressed", () => {
     useUiStore.setState({ view: "todo" });
     render(<Sidebar />);

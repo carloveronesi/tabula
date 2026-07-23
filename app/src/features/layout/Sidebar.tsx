@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import { useUiStore, type ViewMode } from "@/store";
 import { cn } from "@/ui/cn";
 import {
@@ -8,7 +8,9 @@ import {
   IconTodo,
   IconSearch,
   IconSettings,
+  IconHelp,
 } from "@/ui/icons";
+import { HelpModal } from "@/features/help/HelpModal";
 
 type Dest = {
   label: string;
@@ -31,6 +33,16 @@ const SECONDARY: Dest[] = [
   { label: "Impostazioni", icon: IconSettings, target: "settings" },
 ];
 
+const itemClass = (active: boolean) =>
+  cn(
+    "group relative flex w-full flex-col items-center gap-1 rounded-xl py-2.5",
+    "text-[10.5px] font-medium tracking-tight",
+    "transition-[background-color,color] duration-[var(--dur-fast)] ease-out",
+    active
+      ? "bg-primary-wash text-accent"
+      : "text-muted hover:bg-raised hover:text-ink",
+  );
+
 function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSelect: () => void }) {
   const Icon = dest.icon;
   return (
@@ -39,14 +51,7 @@ function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSe
       aria-pressed={active}
       onClick={onSelect}
       title={dest.label}
-      className={cn(
-        "group relative flex w-full flex-col items-center gap-1 rounded-xl py-2.5",
-        "text-[10.5px] font-medium tracking-tight",
-        "transition-[background-color,color] duration-[var(--dur-fast)] ease-out",
-        active
-          ? "bg-primary-wash text-accent"
-          : "text-muted hover:bg-raised hover:text-ink",
-      )}
+      className={itemClass(active)}
     >
       {/* indicatore attivo a filo del bordo sinistro del rail */}
       <span
@@ -71,6 +76,7 @@ function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSe
 export function Sidebar() {
   const view = useUiStore((s) => s.view);
   const setView = useUiStore((s) => s.setView);
+  const [help, setHelp] = useState(false);
 
   const isActive = (d: Dest) =>
     d.match ? d.match.includes(view) : view === d.target;
@@ -93,10 +99,21 @@ export function Sidebar() {
         ))}
       </div>
       <div className="flex w-full flex-col gap-1">
+        {/* L'aiuto non è una vista: apre un pannello e ti lascia dov'eri. */}
+        <button
+          type="button"
+          onClick={() => setHelp(true)}
+          title="Come funziona"
+          className={itemClass(false)}
+        >
+          <IconHelp size={21} />
+          <span className="leading-none">Aiuto</span>
+        </button>
         {SECONDARY.map((d) => (
           <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => setView(d.target)} />
         ))}
       </div>
+      <HelpModal open={help} onClose={() => setHelp(false)} />
     </nav>
   );
 }

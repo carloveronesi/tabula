@@ -128,6 +128,13 @@ alcun bottone AI e non fa alcuna chiamata di rete.
 - **Nel dubbio, campo vuoto.** Se il modello è incerto o si contraddice, il campo
   resta da compilare: un campo vuoto si nota, uno sbagliato finisce nei totali del mese.
 
+### ❓ Aiuto
+
+- Pannello **«Come funziona»** dal `?` nella sidebar: il flusso di una giornata,
+  le funzioni principali e le scorciatoie da tastiera — senza uscire dall'app.
+- L'elenco delle scorciatoie è **generato da `domain/keymap.ts`** e un test lo
+  esegue davvero: non può documentare tasti diversi da quelli che l'app ascolta.
+
 ### ⚙️ Impostazioni
 
 Organizzate per sezioni:
