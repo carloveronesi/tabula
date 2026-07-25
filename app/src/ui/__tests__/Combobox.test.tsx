@@ -97,6 +97,35 @@ describe("Combobox", () => {
     expect(screen.queryByRole("option", { name: /Crea/ })).not.toBeInTheDocument();
   });
 
+  it("searchOptions: il dropdown a campo vuoto resta options, ma digitando cerca nel pool ampio", () => {
+    const wide: ComboboxOption[] = [{ id: "x1", label: "Zoe Globale" }];
+    const onChange = vi.fn();
+    const onCreate = vi.fn();
+    render(
+      <Combobox
+        options={OPTS}
+        searchOptions={wide}
+        value={null}
+        onChange={onChange}
+        onCreate={onCreate}
+        label="Collaboratore"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.focus(input);
+    // a campo vuoto solo le options (non i searchOptions)
+    expect(screen.getAllByRole("option")).toHaveLength(OPTS.length);
+    // digitando ripesca dal pool ampio, e per un nome che esiste già (match
+    // esatto) non offre "Crea"
+    fireEvent.change(input, { target: { value: "Zoe Globale" } });
+    const opts = screen.getAllByRole("option");
+    expect(opts).toHaveLength(1);
+    expect(opts[0]).toHaveTextContent("Zoe Globale");
+    expect(screen.queryByRole("option", { name: /Crea/ })).not.toBeInTheDocument();
+    fireEvent.mouseDown(opts[0]);
+    expect(onChange).toHaveBeenCalledWith("x1");
+  });
+
   it("crea col tasto Invio quando non ci sono risultati", () => {
     const onCreate = vi.fn();
     render(

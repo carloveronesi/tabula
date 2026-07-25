@@ -216,6 +216,18 @@ export function EntryEditor() {
       ),
     [people, candidateIds, draft.collaboratorIds],
   );
+  // Pool per la sola ricerca: tutte le persone (di ogni progetto), così si può
+  // ripescare chi collabora altrove senza ridigitarlo. Il dropdown a campo vuoto
+  // resta il team; digitando la ricerca spazia qui.
+  const collaboratorSearchOptions = useMemo(
+    () =>
+      nameOptions(
+        [...people]
+          .filter((p) => !draft.collaboratorIds.includes(p.id))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      ),
+    [people, draft.collaboratorIds],
+  );
 
   // Referenti: contatti del cliente selezionato.
   const selectedContacts = draft.contactIds
@@ -244,17 +256,23 @@ export function EntryEditor() {
     patch({ projectId: id, clientId: draft.clientId });
   }
 
-  async function createCollaborator(name: string) {
-    // Riusa una persona con lo stesso nome se esiste già: niente doppioni.
-    const existing = findByName(people, name);
-    const id = existing?.id ?? nanoid();
-    if (!existing) await savePerson({ id, name });
-    // Lega la persona al team del progetto, così ricompare la volta dopo.
+  // Aggiunge un collaboratore all'attività e — se c'è un progetto — lo lega al suo
+  // team, così dalla volta dopo è un candidato normale e non va più ricercato.
+  // Vale sia per chi si sceglie dalla ricerca globale sia per i nomi creati a mano.
+  async function addCollaborator(id: string) {
     const proj = projects.find((p) => p.id === draft.projectId);
     if (proj && !proj.teamIds.includes(id)) {
       await saveProject({ ...proj, teamIds: [...proj.teamIds, id] });
     }
     addId("collaboratorIds", id);
+  }
+
+  async function createCollaborator(name: string) {
+    // Riusa una persona con lo stesso nome se esiste già: niente doppioni.
+    const existing = findByName(people, name);
+    const id = existing?.id ?? nanoid();
+    if (!existing) await savePerson({ id, name });
+    await addCollaborator(id);
   }
 
   async function createContact(name: string) {
@@ -545,14 +563,11 @@ export function EntryEditor() {
                 <Combobox
                   key={`collab-${draft.collaboratorIds.length}`}
                   label="Aggiungi collaboratore"
-                  placeholder={
-                    candidateIds.length || draft.projectId || draft.clientId
-                      ? "Cerca o crea…"
-                      : "Scegli prima cliente o progetto"
-                  }
+                  placeholder="Cerca o crea…"
                   options={collaboratorAddOptions}
+                  searchOptions={collaboratorSearchOptions}
                   value={null}
-                  onChange={(id) => addId("collaboratorIds", id)}
+                  onChange={(id) => void addCollaborator(id)}
                   onCreate={(name) => void createCollaborator(name)}
                 />
               </div>

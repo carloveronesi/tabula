@@ -12,6 +12,9 @@ export interface ComboboxProps {
   options: ComboboxOption[];
   value: string | null;
   onChange: (id: string) => void;
+  /** Opzioni cercabili solo digitando: il dropdown a campo vuoto resta `options`,
+   * ma la ricerca spazia anche qui (pool più ampio, es. tutte le persone). */
+  searchOptions?: ComboboxOption[];
   /** Se presente, un testo non in elenco può essere creato (riga "Crea …"). */
   onCreate?: (label: string) => void;
   label?: string;
@@ -29,6 +32,7 @@ export function Combobox({
   options,
   value,
   onChange,
+  searchOptions,
   onCreate,
   label,
   placeholder,
@@ -37,7 +41,16 @@ export function Combobox({
 }: ComboboxProps) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const selected = options.find((o) => o.id === value) ?? null;
+
+  // Pool cercabile: `options` (dropdown di default) più `searchOptions`, con
+  // `options` prima e senza duplicati per id.
+  const pool = useMemo(() => {
+    if (!searchOptions?.length) return options;
+    const seen = new Set(options.map((o) => o.id));
+    return [...options, ...searchOptions.filter((o) => !seen.has(o.id))];
+  }, [options, searchOptions]);
+
+  const selected = pool.find((o) => o.id === value) ?? null;
 
   const [query, setQuery] = useState(selected?.label ?? "");
   const [open, setOpen] = useState(false);
@@ -51,14 +64,14 @@ export function Combobox({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return options;
-    return options.filter((o) => o.label.toLowerCase().includes(q));
-  }, [options, query]);
+    return pool.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, pool, query]);
 
   const trimmed = query.trim();
   const showCreate =
     !!onCreate &&
     trimmed !== "" &&
-    !options.some((o) => o.label.toLowerCase() === trimmed.toLowerCase());
+    !pool.some((o) => o.label.toLowerCase() === trimmed.toLowerCase());
   // Indice della riga "Crea …" nella navigazione da tastiera (dopo i filtrati).
   const createIndex = showCreate ? filtered.length : -1;
 
