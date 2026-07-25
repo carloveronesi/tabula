@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import type { ActivityTemplate, Entry, Id, ISODate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
@@ -41,12 +41,16 @@ const dayLabel = (d: ISODate) =>
 const shiftDate = (d: ISODate, days: number): ISODate =>
   isoDate(addDays(new Date(`${d}T00:00:00`), days));
 
-/** Posizione fissa + lato della freccetta, calcolati dall'ancora. */
-function place(anchor: { x: number; y: number } | null) {
+/**
+ * Posizione + lato e scarto della freccetta, dall'ancora e dall'altezza reale
+ * del popover. `top` è il centro (translateY(-50%)): tenerlo a mezza altezza dai
+ * bordi evita che uno slot in basso (dalle 17 in giù) resti tagliato sotto.
+ */
+function place(anchor: { x: number; y: number } | null, height: number) {
   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   if (!anchor) {
-    return { left: vw / 2 - WIDTH / 2, top: vh / 3, side: "none" as const };
+    return { left: vw / 2 - WIDTH / 2, top: vh / 3, side: "none" as const, arrow: 0 };
   }
   let left = anchor.x + 14;
   let side: "left" | "right" = "left";
@@ -55,8 +59,11 @@ function place(anchor: { x: number; y: number } | null) {
     side = "right";
   }
   left = Math.max(MARGIN, Math.min(left, vw - WIDTH - MARGIN));
-  const top = Math.max(96, Math.min(anchor.y, vh - 96));
-  return { left, top, side };
+  const half = height / 2;
+  const top = Math.max(MARGIN + half, Math.min(anchor.y, vh - MARGIN - half));
+  // La freccetta segue lo slot anche quando il popover si sposta per rientrare.
+  const arrow = Math.max(14, Math.min(anchor.y - (top - half), height - 14));
+  return { left, top, side, arrow };
 }
 
 /**
@@ -118,6 +125,9 @@ export function QuickAddPopover() {
   // marcatura: il cobalto dice "controlla questo", e chi l'ha già corretto l'ha
   // controllato.
   const [aiFilled, setAiFilled] = useState({ client: false, project: false });
+  // Altezza reale del popover: serve a centrarlo senza sforare il viewport.
+  // Il contenuto cresce (banner AI, template): la seguiamo con ResizeObserver.
+  const [height, setHeight] = useState(0);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -143,6 +153,18 @@ export function QuickAddPopover() {
       aiAbort.current?.abort();
       if (!useEditorStore.getState().open) prevFocus?.focus?.();
     };
+  }, [quickAdd]);
+
+  // Misura l'altezza per centrarlo entro il viewport; jsdom non ha
+  // ResizeObserver (come useFitSlotHeight), lì resta l'offsetHeight iniziale.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el || !quickAdd) return;
+    setHeight(el.offsetHeight);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [quickAdd]);
 
   // Scroll/resize spostano lo slot sotto al popover: l'ancora diventa stale, così
@@ -260,7 +282,7 @@ export function QuickAddPopover() {
   const date = override?.date ?? quickAdd.date;
   const startMin = override?.startMin ?? quickAdd.startMin;
   const endMin = override?.endMin ?? quickAdd.endMin;
-  const pos = place(anchor);
+  const pos = place(anchor, height);
   const valid = title.trim() !== "" && endMin > startMin;
   // Basta del testo: una soglia di parole risparmierebbe qualche chiamata inutile
   // al prezzo di un bottone che appare e sparisce senza una ragione visibile.
@@ -422,8 +444,9 @@ export function QuickAddPopover() {
       {pos.side !== "none" && (
         <span
           aria-hidden
+          style={{ top: pos.arrow }}
           className={cn(
-            "absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-line bg-surface",
+            "absolute h-3 w-3 -translate-y-1/2 rotate-45 border-line bg-surface",
             pos.side === "left"
               ? "-left-1.5 border-b border-l"
               : "-right-1.5 border-r border-t",
