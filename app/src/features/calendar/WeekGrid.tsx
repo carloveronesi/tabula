@@ -288,7 +288,6 @@ export function WeekGrid({
         <span className="shrink-0" style={{ width: TIME_GUTTER }} />
         {days.map((d) => {
           const today = isoDate(d) === todayKey;
-          const holiday = dowMon0(d) >= 5 || isHoliday(d, patronDay);
           const holName = holidayLabel(d, patronDay);
           const key = isoDate(d);
           return (
