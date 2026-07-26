@@ -78,7 +78,7 @@ export function SettingsView() {
                   "flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm",
                   "transition-[background-color,color] duration-[var(--dur-fast)] ease-out",
                   isActive
-                    ? "bg-primary-wash font-medium text-accent"
+                    ? "bg-primary-wash font-medium text-primary"
                     : "text-muted hover:bg-raised hover:text-ink",
                 )}
               >

@@ -109,7 +109,7 @@ export function ScheduleSettings() {
                   "h-9 w-12 rounded-lg border text-sm font-medium",
                   "transition-[background-color,color,border-color] duration-[var(--dur-fast)] ease-out",
                   active
-                    ? "border-accent bg-accent-wash text-accent"
+                    ? "border-primary bg-primary-wash text-primary"
                     : "border-line text-muted hover:bg-raised hover:text-ink",
                 )}
               >

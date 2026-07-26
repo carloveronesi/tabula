@@ -15,9 +15,9 @@ import {
 } from "@/ui/icons";
 
 const CALENDAR_VIEWS: SegmentedOption<ViewMode>[] = [
-  { id: "day", label: "Giorno" },
-  { id: "week", label: "Settimana" },
-  { id: "month", label: "Mese" },
+  { id: "day", label: "Giorno", short: "G" },
+  { id: "week", label: "Settimana", short: "S" },
+  { id: "month", label: "Mese", short: "M" },
 ];
 
 const SECTION_LABEL: Partial<Record<ViewMode, string>> = {
@@ -35,6 +35,10 @@ const isCalendar = (v: ViewMode): boolean =>
  * periodo, switch giorno/settimana/mese, storia (annulla/ripeti) e nuova
  * attività. Per le viste non-calendario mostra solo il titolo della sezione.
  * La navigazione tra sezioni vive nella Sidebar.
+ *
+ * Niente `flex-wrap`: l'altezza dello slot della griglia è *misurata*, quindi uno
+ * header che raddoppia fa saltare il layout. Sotto `xl` il cluster destro
+ * collassa da sé (segmenti a iniziale, Timer e Nuova a sola icona).
  */
 export function TopBar() {
   const view = useUiStore((s) => s.view);
@@ -55,10 +59,10 @@ export function TopBar() {
     openCreate({ date: isoDate(activeDate), startMin: 540, endMin: 600 });
 
   return (
-    <header className="sticky top-0 z-sticky flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-sticky flex flex-nowrap items-center justify-between gap-x-4 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
         {calendar && (
-          <div className="flex items-center gap-1 rounded-pill border border-line bg-surface p-1 shadow-sm">
+          <div className="flex flex-none items-center gap-1 rounded-pill border border-line bg-surface p-1 shadow-sm">
             <IconButton label="Precedente" size="sm" onClick={goPrev}>
               <IconChevronLeft size={18} />
             </IconButton>
@@ -70,12 +74,12 @@ export function TopBar() {
             </IconButton>
           </div>
         )}
-        <h1 className="text-xl font-semibold tracking-tight text-ink tnum sm:text-2xl">
+        <h1 className="truncate text-xl font-semibold tracking-tight text-ink tnum sm:text-2xl">
           {calendar ? period || "Tabula" : (SECTION_LABEL[view] ?? "Tabula")}
         </h1>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-none items-center gap-2.5">
         <TimerControl />
         <div className="flex items-center gap-0.5">
           <IconButton
@@ -110,9 +114,10 @@ export function TopBar() {
           size="sm"
           onClick={newEntry}
           title="Nuova attività (n)"
+          aria-label="Nuova attività"
         >
           <IconPlus size={16} />
-          Nuova
+          <span className="hidden xl:inline">Nuova</span>
         </Button>
       </div>
     </header>

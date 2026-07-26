@@ -5,7 +5,7 @@ import type { ProjectActivity } from "@/domain/projectActivity";
 import { workedMinutes } from "@/domain/time";
 import { formatHours } from "@/domain/format";
 import { budgetProgress } from "@/domain/budget";
-import { colorFromKey, withAlpha } from "@/domain/colors";
+import { colorFromKey, tint } from "@/domain/colors";
 import { useInventoryStore } from "@/store/inventory";
 import { useSettingsStore } from "@/store/settings";
 import { useEditorStore } from "@/store/editor";
@@ -31,7 +31,7 @@ function fmtMonth(m: string): string {
 
 const CARD = "rounded-lg border border-line bg-surface p-4 shadow-sm";
 const CARD_LABEL =
-  "text-[10px] font-bold uppercase tracking-[0.07em] text-muted";
+  "text-[11px] font-bold uppercase tracking-[0.07em] text-muted";
 
 const initials = (name: string) =>
   name
@@ -59,7 +59,7 @@ function FilterChip({
       className={cn(
         "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-[var(--dur-fast)]",
         active
-          ? "border-accent bg-primary-wash text-accent"
+          ? "border-primary bg-primary-wash text-primary"
           : "border-line text-muted hover:text-ink",
       )}
     >
@@ -84,7 +84,7 @@ function StatusBadge({ status }: { status: ProjectStatus }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold"
-      style={{ background: withAlpha(c, 0.14), color: c }}
+      style={{ background: tint(c, 0.14), color: c }}
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
       {STATUS_LABEL[status]}
@@ -99,7 +99,7 @@ function Avatar({ id, name }: { id: string; name: string }) {
     <span
       aria-hidden
       className="flex h-8 w-8 flex-none items-center justify-center rounded-lg text-xs font-semibold"
-      style={{ background: withAlpha(c, 0.16), color: c }}
+      style={{ background: tint(c, 0.16), color: c }}
     >
       {initials(name)}
     </span>
@@ -304,7 +304,7 @@ export function ProjectDetail({
                             }}
                           />
                         )}
-                        <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[10px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
+                        <span className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-1 text-[11px] font-semibold text-bg opacity-0 shadow-card transition-opacity duration-[var(--dur-fast)] group-hover:opacity-100">
                           {share
                             ? `${Math.round(projPct)}% · ${formatHours(b.minutes)} su ${formatHours(denom)}${gapMin > 0 ? ` · ${formatHours(gapMin)} da compilare` : ""}`
                             : formatHours(b.minutes)}
@@ -317,14 +317,14 @@ export function ProjectDetail({
                   {activity.byMonth.map((b) => (
                     <span
                       key={b.month}
-                      className="tnum flex-1 text-center text-[10px] leading-none text-muted"
+                      className="tnum flex-1 text-center text-[11px] leading-none text-muted"
                     >
                       {fmtMonth(b.month)}
                     </span>
                   ))}
                 </div>
                 {share && (
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-sm" style={{ background: color }} />
                       Progetto
@@ -402,7 +402,7 @@ export function ProjectDetail({
               <span
                 className={cn(
                   "tnum font-semibold",
-                  overBudget ? "text-danger" : "text-accent",
+                  overBudget ? "text-danger" : "text-primary",
                 )}
               >
                 {realPct}%
@@ -410,7 +410,7 @@ export function ProjectDetail({
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-pill bg-raised">
               <div
-                className={cn("h-full rounded-pill", overBudget ? "bg-danger" : "bg-accent")}
+                className={cn("h-full rounded-pill", overBudget ? "bg-danger" : "bg-primary")}
                 style={{ width: `${Math.min(100, realPct)}%` }}
               />
             </div>
@@ -517,7 +517,7 @@ export function ProjectDetail({
                       {e.title.trim() || "Senza titolo"}
                     </span>
                     {e.subtypeId !== null && (
-                      <span className="hidden shrink-0 text-xs text-faint sm:inline">
+                      <span className="hidden shrink-0 text-xs text-muted sm:inline">
                         {subtypeLabel(e.subtypeId)}
                       </span>
                     )}

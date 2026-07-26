@@ -47,7 +47,7 @@ export function TimeField({ label, value, onChange, step = 30 }: TimeFieldProps)
       className={cn(
         "flex h-10 items-stretch overflow-hidden rounded border border-line bg-bg",
         "transition-[border-color,box-shadow] duration-[var(--dur-fast)] ease-out",
-        "focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--accent-wash)]",
+        "focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--primary-wash)]",
       )}
     >
       <input

@@ -292,14 +292,19 @@ describe("QuickAddPopover", () => {
     expect(useCalendarStore.getState().entries).toHaveLength(0);
   });
 
-  it("Annulla chiude senza creare nulla", () => {
+  // Niente bottone "Annulla": il popover si congeda da sé. Le tre vie d'uscita
+  // sono Esc (sotto), il click fuori e lo scroll — se una si rompe, si resta
+  // intrappolati in un popover senza chiusura visibile.
+  it("un click fuori chiude senza creare nulla", () => {
     openSlot();
     render(<QuickAddPopover />);
 
     fireEvent.change(screen.getByLabelText("Titolo"), {
       target: { value: "Da scartare" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    expect(screen.queryByRole("button", { name: "Annulla" })).toBeNull();
+
+    fireEvent.mouseDown(document.body);
 
     expect(useEditorStore.getState().quickAdd).toBeNull();
     expect(useCalendarStore.getState().entries).toHaveLength(0);
@@ -393,6 +398,19 @@ describe("QuickAddPopover — interpretazione AI", () => {
 
     fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: FRASE } });
     expect(screen.queryByRole("button", { name: /Interpreta/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Più dettagli/ })).toBeInTheDocument();
+  });
+
+  // I due bottoni si contendevano lo stesso slot: con l'AI accesa "Interpreta"
+  // compare a partire dal primo carattere, e l'editor completo restava senza
+  // nessuna via d'accesso.
+  it("con AI attiva 'Interpreta' non scaccia 'Più dettagli'", () => {
+    enableAi();
+    openSlot();
+    render(<QuickAddPopover />);
+
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "a" } });
+    expect(screen.getByRole("button", { name: /Interpreta/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Più dettagli/ })).toBeInTheDocument();
   });
 

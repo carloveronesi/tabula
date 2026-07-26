@@ -53,7 +53,8 @@ export function DaySummary({
 
   return (
     <aside className="hidden w-64 min-h-0 flex-none flex-col gap-3.5 overflow-y-auto lg:flex">
-      <div className="rounded-lg border border-line bg-surface p-[18px] shadow-card">
+      {/* Stesso raggio della card timeline (`--radius-xl`): sono fratelli. */}
+      <div className="rounded-xl border border-line bg-surface p-[18px] shadow-card">
         <div className="text-[13px] font-medium text-muted">Oggi registrato</div>
         <div className="tnum mt-1 text-2xl font-semibold leading-tight tracking-tight text-ink">
           {formatHours(totalMin)}
@@ -69,19 +70,19 @@ export function DaySummary({
                 </span>
               </div>
             ) : (
-              <div className="mt-1 text-[13px] font-medium text-accent">
+              <div className="mt-1 text-[13px] font-medium text-primary">
                 Giornata completa
               </div>
             )}
             <div className="mt-2.5 h-1.5 overflow-hidden rounded-pill bg-line">
               <div
-                className="h-full rounded-pill bg-accent"
+                className="h-full rounded-pill bg-primary"
                 style={{ width: `${Math.min(100, (totalMin / expectedMin) * 100)}%` }}
               />
             </div>
-            <div className="mt-1.5 text-[11.5px] text-faint">
-              <span className="tnum text-muted">{formatHours(totalMin)}</span> su{" "}
-              <span className="tnum text-muted">{formatHours(expectedMin)}</span>
+            <div className="mt-1.5 text-xs text-muted">
+              <span className="tnum text-ink/80">{formatHours(totalMin)}</span> su{" "}
+              <span className="tnum text-ink/80">{formatHours(expectedMin)}</span>
               {count > 0 && ` · ${count} ${count === 1 ? "attività" : "attività"}`}
             </div>
           </>
@@ -114,14 +115,14 @@ export function DaySummary({
                   <span
                     aria-hidden
                     className={`h-[9px] w-[9px] flex-none rounded-[3px] ${
-                      r.color ? "" : "bg-accent"
+                      r.color ? "" : "bg-primary"
                     }`}
                     style={r.color ? { backgroundColor: r.color } : undefined}
                   />
                   <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink/85">
                     {r.label}
                   </span>
-                  <span className="tnum text-[11.5px] text-ink">
+                  <span className="tnum text-xs text-ink">
                     {formatHours(r.minutes)}
                   </span>
                 </li>

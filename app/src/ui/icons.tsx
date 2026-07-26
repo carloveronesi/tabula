@@ -54,12 +54,6 @@ export const IconCalendar = (p: IconProps) => (
   </Svg>
 );
 
-export const IconSummary = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M5 21V10M12 21V4M19 21v-7" />
-  </Svg>
-);
-
 export const IconProjects = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />

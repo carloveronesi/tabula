@@ -5,7 +5,7 @@
 /* =========================================================================
    Tabula — design tokens
    Calmo ed editoriale: carta bianca, inchiostro caldo, una voce di colore.
-   Colore in OKLCH. Vedi DESIGN.md per la mappa dei ruoli.
+   Colore in OKLCH. Vedi ../DESIGN.md (radice del repo) per la mappa dei ruoli.
    ========================================================================= */
 :root {
   /* color — light: carta blu-fredda, superfici bianche che galleggiano, un solo
@@ -17,22 +17,24 @@
   --weekend: oklch(0.955 0.008 256);
   --ink: oklch(0.21 0.012 256);
   --muted: oklch(0.5 0.018 256);
+  /* faint NON è un colore da testo: su bianco sta sotto 4.5:1 e non può salirci
+     senza collassare su --muted. Vale per decorazione (placeholder, disabilitati,
+     giorni fuori mese). Testo che si legge → --muted. */
   --faint: oklch(0.64 0.015 256);
   --line: oklch(0.905 0.006 256);
   --line-strong: oklch(0.83 0.01 256);
 
+  /* Una sola voce di colore. C'era anche una famiglia --accent-*, identica a
+     questa valore per valore in entrambi i temi: due token che collassavano
+     sempre non sono due ruoli. La gerarchia dei bottoni la fa il peso
+     (fill/outline/ghost), non una seconda tinta. */
   --primary: oklch(0.55 0.17 258);
   --primary-hover: oklch(0.49 0.18 258);
   --primary-ink: oklch(0.99 0.004 256);
   --primary-wash: oklch(0.95 0.035 258);
 
-  --accent: oklch(0.55 0.17 258);
-  --accent-hover: oklch(0.49 0.18 258);
-  --accent-ink: oklch(0.99 0.004 256);
-  --accent-wash: oklch(0.95 0.035 258);
-
   --danger: oklch(0.55 0.2 25);
-  /* linea "ora corrente" (stile Teams): rosso-rosa vivo, distinto dall'accento e
+  /* linea "ora corrente" (stile Teams): rosso-rosa vivo, distinto dal primary e
      dal danger; serve solo come segnale temporale di posizione. */
   --now: oklch(0.62 0.22 18);
   --focus: var(--primary);
@@ -40,8 +42,6 @@
   /* typography */
   --font-sans: "Inter", "Inter var", system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
-  /* serif deprecato: alias a sans (niente display serif su UI prodotto) */
-  --font-serif: var(--font-sans);
   --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas,
     monospace;
 
@@ -92,11 +92,6 @@
   --primary-hover: oklch(0.66 0.16 258);
   --primary-ink: oklch(0.99 0.004 256);
   --primary-wash: oklch(0.33 0.08 258);
-
-  --accent: oklch(0.6 0.17 258);
-  --accent-hover: oklch(0.66 0.16 258);
-  --accent-ink: oklch(0.99 0.004 256);
-  --accent-wash: oklch(0.33 0.08 258);
 
   --danger: oklch(0.64 0.18 25);
   --now: oklch(0.68 0.2 18);
@@ -150,11 +145,14 @@
     );
   }
 
-  /* Focus visibile e coerente su tutto ciò che è interattivo. */
+  /* Focus visibile e coerente su tutto ciò che è interattivo. Qui NON si tocca
+     `border-radius`: l'outline segue già da sé il raggio del controllo, mentre
+     forzarlo rimodella anche i *bordi* dell'elemento (un raggio fisso tagliava
+     gli angoli dei bottoni pill; `inherit` incurvava il border-b degli input
+     ereditando il raggio del contenitore). La forma la decide il controllo. */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
-    border-radius: var(--radius-sm);
   }
 
   /* Backdrop della modale nativa (token, niente opacity-modifier su var). */
@@ -219,7 +217,7 @@
   margin: 0.4em 0;
 }
 .md a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

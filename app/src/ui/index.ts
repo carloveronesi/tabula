@@ -1,6 +1,6 @@
 /**
  * Primitivi UI del design system di Tabula. Senza dipendenze esterne,
- * accessibili da tastiera, su token semantici (vedi DESIGN.md).
+ * accessibili da tastiera, su token semantici (vedi ../DESIGN.md, radice del repo).
  */
 export { cn } from "@/ui/cn";
 export { Button, type ButtonProps } from "@/ui/Button";

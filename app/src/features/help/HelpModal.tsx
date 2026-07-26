@@ -140,7 +140,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
               <li key={s.title} className="flex gap-3">
                 <span
                   aria-hidden
-                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-wash text-[11px] font-semibold text-accent"
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-wash text-[11px] font-semibold text-primary"
                 >
                   {i + 1}
                 </span>

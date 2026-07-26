@@ -33,19 +33,25 @@ OKLCH ovunque. Token definiti in `app/src/styles/index.css` (`:root` = chiaro,
 | Weekend          | `--weekend`        | `oklch(0.955 0.008 256)`   | celle sab/dom nel calendario |
 | Inchiostro       | `--ink`            | `oklch(0.21 0.012 256)`    | testo corpo (cool near-black) |
 | Attenuato        | `--muted`          | `oklch(0.50 0.018 256)`    | testo secondario (≥ 4.5:1) |
-| Tenue            | `--faint`          | `oklch(0.64 0.015 256)`    | meta/disabilitato (testo grande) |
+| Tenue            | `--faint`          | `oklch(0.64 0.015 256)`    | **decorazione, non testo**: placeholder, disabilitati, giorni fuori mese |
 | Filo             | `--line`           | `oklch(0.905 0.006 256)`   | bordi hairline, divisori |
 | Filo marcato     | `--line-strong`    | `oklch(0.83 0.01 256)`     | bordi enfatizzati |
-| Accento (cobalto)| `--primary`/`--accent` | `oklch(0.55 0.17 258)` | unico accento: azioni, selezione, oggi, link, blocchi |
-| Accento hover    | `--primary-hover`/`--accent-hover` | `oklch(0.49 0.18 258)` | |
-| Testo su accento | `--primary-ink`/`--accent-ink` | `oklch(0.99 0.004 256)` | testo bianco su fill cobalto |
-| Wash accento     | `--primary-wash`/`--accent-wash` | `oklch(0.955 0.03 258)` | sfondo tenue (blocchi-evento, oggi, selezione) |
+| Accento (cobalto)| `--primary`        | `oklch(0.55 0.17 258)`     | unico accento: azioni, selezione, oggi, link, blocchi |
+| Accento hover    | `--primary-hover`  | `oklch(0.49 0.18 258)`     | |
+| Testo su accento | `--primary-ink`    | `oklch(0.99 0.004 256)`    | testo bianco su fill cobalto |
+| Wash accento     | `--primary-wash`   | `oklch(0.95 0.035 258)`    | sfondo tenue (blocchi-evento, oggi, selezione) |
 | Pericolo         | `--danger`         | `oklch(0.55 0.20 25)`      | elimina/errore |
 | Ora corrente     | `--now`            | `oklch(0.62 0.22 18)`      | linea "adesso" nel calendario (stile Teams) |
 
-`--primary` e `--accent` sono **lo stesso cobalto** (un solo accento). I due nomi
-restano per non toccare i componenti; i ruoli secondari (es. chip cliente) usano
-neutri (`--raised`), non un secondo colore.
+C'era anche una famiglia `--accent-*`, identica a `--primary-*` valore per valore
+in entrambi i temi: **rimossa**. Due token che collassano sempre non sono due
+ruoli, e la variante "accent" del Button era indistinguibile da `primary`. La
+gerarchia dei bottoni la fa il **peso** (fill → outline → ghost), non una seconda
+tinta; i ruoli secondari (es. chip cliente) usano neutri (`--raised`).
+
+`--faint` non è un colore da testo: su bianco sta sotto 4.5:1 e non può salirci
+senza collassare su `--muted`. Testo che si legge → `--muted`. **Niente sotto gli
+11px**, e le micro-etichette (eyebrow, meta, scadenze) stanno a 12px/`--muted`.
 
 ### Dark (`.dark`)
 
@@ -58,7 +64,7 @@ Vedi `index.css`.
 - Testo su fill cobalto (bottoni, badge): **bianco** (`*-ink`).
 - **Blocchi-evento — colore per cliente/sottotipo.** Eccezione mirata alla regola
   della voce unica: ogni blocco porta una **barra colore** + un **wash** dello
-  stesso colore (`withAlpha(color, 0.16)`), risolto da `entryColor()`
+  stesso colore (`tint(color, 0.16)`), risolto da `entryColor()`
   (`clientColors`/`internalColors` con fallback deterministico `colorFromKey`).
   Ferie/evento senza cliente → accento cobalto di default. Tutto il *cromo* dell'UI
   (azioni, nav, oggi) resta a voce unica cobalto: il colore categoriale vive solo
@@ -81,7 +87,6 @@ usano `font-weight 650` + `letter-spacing -0.011em`.
 | Token          | Stack | Uso |
 |----------------|-------|-----|
 | `--font-sans`  | `"Inter", "Inter var", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` | tutto: titoli, UI, corpo, dati |
-| `--font-serif` | alias di `--font-sans` (deprecato) | — |
 | `--font-mono`  | `ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace` | solo `code` nel markdown |
 
 Etichette orarie e numeri: **stessa famiglia sans** (`--font-sans`) con **cifre
@@ -93,11 +98,17 @@ di tutto il resto. Il mono è riservato al `code` inline. Scala **rem fissa** (~
 ## Layout
 
 **Sidebar** (`features/layout/Sidebar.tsx`): rail verticale a sinistra (~76px),
-icona + etichetta per ogni sezione (Calendario, Riepilogo, Progetti, Todo, e in
-basso Ricerca, Impostazioni); voce attiva su `--primary-wash` con indicatore a
-filo. **TopBar** snella: toolbar del *calendario* (prec/oggi/succ in cluster pill,
-titolo periodo, switch giorno/settimana/mese, annulla/ripeti, "Nuova"); per le
-viste non-calendario mostra solo il titolo di sezione. Il contenuto vive in un
+icona + etichetta per ogni sezione (Calendario, Progetti, Todo, e in basso
+Ricerca, Impostazioni); voce attiva su `--primary-wash` con indicatore a filo.
+Il **mese non è una sezione** ma una scala del calendario: "Calendario" resta
+attivo su giorno/settimana/mese e non esiste una voce che apra `month` con un
+secondo nome. **TopBar** snella: toolbar del *calendario* (prec/oggi/succ in
+cluster pill, titolo periodo, switch giorno/settimana/mese, annulla/ripeti,
+"Nuova"); per le viste non-calendario mostra solo il titolo di sezione.
+Lo header **non va mai a capo** (`flex-nowrap`): l'altezza-slot è misurata, e un
+header che raddoppia fa saltare la griglia. Sotto `xl` il cluster destro collassa
+da sé — segmenti a iniziale (`SegmentedOption.short`), Timer e "Nuova" a sola
+icona, con l'etichetta lunga che resta il nome accessibile. Il contenuto vive in un
 **pannello-superficie** arrotondato (`bg-surface` + `shadow-card`) sul fondo tinto.
 
 **Shell ad altezza fissa** (`h-screen`, niente scroll di pagina): le viste
@@ -119,6 +130,17 @@ l'ora è nell'orario mostrato.
 Spaziatura: scala Tailwind di default (base 4px). Raggi **generosi** (morbidi sui
 contenitori, pill sui controlli): `--radius-sm 6px` · `--radius 10px` ·
 `--radius-lg 14px` · `--radius-xl 18px` · `--radius-pill 9999px`.
+
+La regola è **per livello, non per componente**: i controlli sono `pill` (Button,
+IconButton, Segmented, cluster della TopBar), le card fratelle sullo stesso
+schermo condividono `--radius-xl` (pannello timeline, riepilogo giorno, widget
+Da fare), e ciò che sta *dentro* un contenitore scende di un gradino. Quattro
+raggi diversi allo stesso livello sono un errore, non una scelta.
+
+**Un solo idioma di "selezionato" nei gruppi**: chip rialzata su `--surface` con
+`shadow-sm` (Segmented, DayLocationPicker in entrambe le varianti). Il wash +
+indicatore a filo resta alla **navigazione** (rail): è un'altra cosa, non un
+membro di un gruppo.
 
 ## Elevation
 
@@ -144,10 +166,13 @@ minimo sui blocchi-evento). Backdrop modale con blur leggero.
 In `app/src/ui/`. Senza dipendenze esterne; accessibili da tastiera; focus visibile.
 
 - **Button** — **pill** (`rounded-pill`), press su `active:translate-y-px`.
-  Varianti `primary` (fill cobalto, testo bianco, ombra), `subtle` (superficie +
-  filo), `ghost` (solo testo), `danger`. Dimensioni `sm`/`md`. Focus ring `--focus`.
-- **IconButton** — quadrato `rounded-lg`, solo icona, `aria-label` obbligatorio;
-  stato premuto via `aria-pressed` (wash + accento).
+  Varianti `primary` (fill cobalto, testo bianco, ombra), `outline` (filo cobalto
+  su wash: stesso colore, meno peso), `subtle` (superficie + filo), `ghost` (solo
+  testo), `danger`. Dimensioni `sm`/`md`. Focus ring `--focus` (outline 2px): la
+  regola globale **non tocca `border-radius`** — l'outline segue già il raggio del
+  controllo, e forzarlo rimodella anche i suoi bordi.
+- **IconButton** — **pill** come Button (i controlli hanno una forma sola), solo
+  icona, `aria-label` obbligatorio; stato premuto via `aria-pressed` (wash).
 - **Segmented** — gruppo a segmenti **pill** in scanalatura (`--bg`); attivo su
   `--surface` bianco con ombra. Role `group` + bottoni con `aria-pressed`.
 - **TimeField** (`ui/TimeField.tsx`) — campo orario **senza dropdown**: testo

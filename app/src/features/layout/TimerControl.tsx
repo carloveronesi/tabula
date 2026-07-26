@@ -47,9 +47,11 @@ export function TimerControl() {
         size="sm"
         onClick={() => void toggleTimer()}
         title="Avvia timer (t)"
+        aria-label="Avvia timer"
       >
         <Icons.IconPlay size={15} />
-        Timer
+        {/* Sotto `xl` resta la sola icona: lo header non deve andare a capo. */}
+        <span className="hidden xl:inline">Timer</span>
       </Button>
     );
   }
@@ -57,13 +59,13 @@ export function TimerControl() {
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-sm border border-primary bg-primary-wash",
-        "py-0.5 pl-2.5 pr-1 text-accent shadow-sm",
+        "flex items-center gap-1.5 rounded-pill border border-primary bg-primary-wash",
+        "py-0.5 pl-2.5 pr-1 text-primary shadow-sm",
       )}
     >
       <span
         aria-hidden
-        className="h-2 w-2 rounded-full bg-accent motion-safe:animate-pulse"
+        className="h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse"
       />
       <span className="tnum text-sm font-semibold">
         {elapsedLabel(now - startedAt!)}
@@ -74,9 +76,10 @@ export function TimerControl() {
         className="ml-1 h-7 px-2.5"
         onClick={() => void toggleTimer()}
         title="Ferma e salva (t)"
+        aria-label="Ferma e salva"
       >
         <Icons.IconStop size={14} />
-        Ferma
+        <span className="hidden xl:inline">Ferma</span>
       </Button>
       <IconButton
         label="Annulla timer"

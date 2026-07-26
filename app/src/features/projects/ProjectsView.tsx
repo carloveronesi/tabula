@@ -68,7 +68,7 @@ function ProjectItem({
           <span
             className={cn(
               "tnum shrink-0 text-xs",
-              active ? "font-medium text-accent" : "text-muted",
+              active ? "font-medium text-primary" : "text-muted",
             )}
           >
             {formatHours(totalMin)}
@@ -89,7 +89,7 @@ function ProjectItem({
               />
             </span>
             {overBudget && (
-              <span className="tnum shrink-0 text-[10px] font-semibold text-danger">
+              <span className="tnum shrink-0 text-[11px] font-semibold text-danger">
                 +{formatHours(overMin)}
               </span>
             )}

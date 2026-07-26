@@ -32,7 +32,7 @@ function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-sm border border-primary bg-primary-wash",
-        "py-1 pl-2.5 pr-1 text-xs text-accent",
+        "py-1 pl-2.5 pr-1 text-xs text-primary",
       )}
     >
       {label}

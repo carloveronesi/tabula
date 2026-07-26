@@ -5,7 +5,7 @@ import {
   entryGroupColor,
   projectColor,
   textColorOn,
-  withAlpha,
+  tint,
 } from "@/domain/colors";
 
 describe("colorFromKey", () => {
@@ -34,9 +34,11 @@ describe("textColorOn", () => {
   });
 });
 
-describe("withAlpha", () => {
-  it("converte hex in rgba", () => {
-    expect(withAlpha("#6366f1", 0.5)).toBe("rgba(99, 102, 241, 0.5)");
+describe("tint", () => {
+  it("mescola sulla superficie del tema, in oklab", () => {
+    expect(tint("#6366f1", 0.16)).toBe(
+      "color-mix(in oklab, #6366f1 16%, var(--surface))",
+    );
   });
 });
 

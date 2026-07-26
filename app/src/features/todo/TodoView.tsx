@@ -349,7 +349,7 @@ function TodoRow({
               ? "bg-danger/10 text-danger"
               : t.dueDate
                 ? "bg-raised text-muted"
-                : "text-faint hover:bg-raised",
+                : "text-muted hover:bg-raised",
           )}
         >
           <IconCal />
@@ -381,14 +381,14 @@ function TodoRow({
             {t.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-accent"
+                className="inline-flex items-center gap-1 rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-primary"
               >
                 {tag}
                 <button
                   type="button"
                   aria-label={`Rimuovi tag ${tag}`}
                   onClick={() => void removeTag(t.id, tag)}
-                  className="text-accent/60 hover:text-accent"
+                  className="text-primary/60 hover:text-primary"
                 >
                   ✕
                 </button>

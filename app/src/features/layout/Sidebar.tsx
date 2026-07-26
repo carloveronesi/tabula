@@ -3,7 +3,6 @@ import { useUiStore, type ViewMode } from "@/store";
 import { cn } from "@/ui/cn";
 import {
   IconCalendar,
-  IconSummary,
   IconProjects,
   IconTodo,
   IconSearch,
@@ -21,9 +20,11 @@ type Dest = {
   match?: ViewMode[];
 };
 
+// Il mese è una scala del calendario, non una sezione: niente voce "Riepilogo"
+// che aprirebbe la stessa vista con un altro nome, e "Calendario" resta attivo
+// anche su `month` (ci si arriva dallo switch Giorno/Settimana/Mese in TopBar).
 const PRIMARY: Dest[] = [
-  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week"] },
-  { label: "Riepilogo", icon: IconSummary, target: "month", match: ["month"] },
+  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week", "month"] },
   { label: "Progetti", icon: IconProjects, target: "projects" },
   { label: "Todo", icon: IconTodo, target: "todo" },
 ];
@@ -36,10 +37,10 @@ const SECONDARY: Dest[] = [
 const itemClass = (active: boolean) =>
   cn(
     "group relative flex w-full flex-col items-center gap-1 rounded-xl py-2.5",
-    "text-[10.5px] font-medium tracking-tight",
+    "text-[11px] font-medium tracking-tight",
     "transition-[background-color,color] duration-[var(--dur-fast)] ease-out",
     active
-      ? "bg-primary-wash text-accent"
+      ? "bg-primary-wash text-primary"
       : "text-muted hover:bg-raised hover:text-ink",
   );
 
@@ -57,7 +58,7 @@ function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSe
       <span
         aria-hidden
         className={cn(
-          "absolute left-[-10px] top-1/2 h-6 w-1 -translate-y-1/2 rounded-pill bg-accent",
+          "absolute left-[-10px] top-1/2 h-6 w-1 -translate-y-1/2 rounded-pill bg-primary",
           "transition-opacity duration-[var(--dur-fast)]",
           active ? "opacity-100" : "opacity-0",
         )}

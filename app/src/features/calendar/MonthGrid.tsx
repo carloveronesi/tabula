@@ -74,7 +74,7 @@ export function MonthGrid({
             key={name}
             role="columnheader"
             className={`px-2.5 py-2.5 text-[11px] font-semibold uppercase tracking-wide ${
-              i >= 5 ? "text-faint" : "text-muted"
+              i >= 5 ? "text-muted/70" : "text-muted"
             }`}
           >
             {name}
@@ -115,7 +115,7 @@ export function MonthGrid({
               className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
                 weekend ? "bg-weekend" : "bg-surface"
               } ${outside ? "text-faint" : "text-ink"} ${
-                dimmed ? "opacity-40" : matches && highlight ? "ring-1 ring-inset ring-accent/50" : ""
+                dimmed ? "opacity-40" : matches && highlight ? "ring-1 ring-inset ring-primary/50" : ""
               }`}
             >
               <div className="flex w-full items-center justify-between">
@@ -140,7 +140,7 @@ export function MonthGrid({
               </div>
               {holName && !outside && (
                 <span
-                  className="w-full truncate text-[10px] font-medium leading-tight text-faint"
+                  className="w-full truncate text-[11px] font-medium leading-tight text-muted"
                   title={holName}
                 >
                   {holName}
@@ -164,7 +164,7 @@ export function MonthGrid({
                           key={e.id}
                           title={e.title}
                           style={{ width: `${width}%`, backgroundColor: color ?? undefined }}
-                          className={`h-full ${color ? "" : "bg-accent"} ${
+                          className={`h-full ${color ? "" : "bg-primary"} ${
                             match ? "" : "opacity-25"
                           }`}
                         />
@@ -187,7 +187,7 @@ export function MonthGrid({
                             aria-hidden
                             style={{ backgroundColor: color ?? undefined }}
                             className={`h-1.5 w-1.5 flex-none rounded-[2px] ${
-                              color ? "" : "bg-accent"
+                              color ? "" : "bg-primary"
                             }`}
                           />
                           <span className="truncate text-[11px] leading-tight text-ink/80">
@@ -197,7 +197,7 @@ export function MonthGrid({
                       );
                     })}
                     {count > MAX_NAMES && (
-                      <li className="pl-2.5 text-[10px] font-semibold text-muted">
+                      <li className="pl-2.5 text-[11px] font-semibold text-muted">
                         +{count - MAX_NAMES}
                       </li>
                     )}

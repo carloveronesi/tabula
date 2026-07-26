@@ -69,7 +69,7 @@ function Token({ label, onRemove }: { label: string; onRemove: () => void }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-sm border border-primary bg-primary-wash",
-        "py-1 pl-2.5 pr-1 text-xs text-accent",
+        "py-1 pl-2.5 pr-1 text-xs text-primary",
       )}
     >
       {label}
@@ -478,7 +478,7 @@ export function EntryEditor() {
                       "rounded-sm border px-2.5 py-1 text-xs font-medium",
                       "transition-colors duration-[var(--dur-fast)] ease-out",
                       active
-                        ? "border-primary bg-primary-wash text-accent"
+                        ? "border-primary bg-primary-wash text-primary"
                         : "border-line text-muted hover:bg-raised hover:text-ink",
                     )}
                   >

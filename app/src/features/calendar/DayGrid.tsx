@@ -66,7 +66,7 @@ export function DayGrid({ workHours, slotMinutes }: DayGridProps) {
                 </span>
                 {/* Spaziatore largo come il gutter ore: allinea "pausa" ai blocchi. */}
                 <span className="shrink-0" style={{ width: TIME_GUTTER }} />
-                <span className="pl-1 text-[11px] text-faint">pausa</span>
+                <span className="pl-1 text-xs text-muted">pausa</span>
               </LunchBand>
             )}
             <div

@@ -21,18 +21,11 @@ export default {
           ink: "var(--primary-ink)",
           wash: "var(--primary-wash)",
         },
-        accent: {
-          DEFAULT: "var(--accent)",
-          hover: "var(--accent-hover)",
-          ink: "var(--accent-ink)",
-          wash: "var(--accent-wash)",
-        },
         danger: "var(--danger)",
         now: "var(--now)",
       },
       fontFamily: {
         sans: "var(--font-sans)",
-        serif: "var(--font-serif)",
         mono: "var(--font-mono)",
       },
       borderRadius: {

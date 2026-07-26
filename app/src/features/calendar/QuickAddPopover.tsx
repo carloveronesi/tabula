@@ -552,12 +552,12 @@ export function QuickAddPopover() {
 
       {rawText !== null && !aiBusy && (
         <div className="mt-3 flex items-center gap-2 text-xs text-muted">
-          <Icons.IconSparkles size={13} className="shrink-0 text-accent" />
+          <Icons.IconSparkles size={13} className="shrink-0 text-primary" />
           <span>Compilato dall'AI — controlla</span>
           <button
             type="button"
             onClick={restoreText}
-            className="ml-auto shrink-0 font-medium text-accent hover:underline"
+            className="ml-auto shrink-0 font-medium text-primary hover:underline"
           >
             Ripristina il testo
           </button>
@@ -575,7 +575,7 @@ export function QuickAddPopover() {
                 "inline-flex h-7 max-w-full items-center truncate rounded-sm border px-2.5 text-xs",
                 "transition-colors duration-[var(--dur-fast)]",
                 tpl?.id === t.id
-                  ? "border-primary bg-primary-wash text-accent"
+                  ? "border-primary bg-primary-wash text-primary"
                   : "border-line text-muted hover:border-line-strong hover:text-ink",
               )}
             >
@@ -586,35 +586,40 @@ export function QuickAddPopover() {
       )}
 
       <div className="mt-3.5 flex items-center justify-between gap-2 border-t border-line pt-3">
-        {/* A proposta ricevuta torna "Più dettagli": è il passo successivo
-            naturale (ed è l'unico modo di vedere le persone riconosciute).
-            Per rileggere la frase resta ⌘/Ctrl+Invio. */}
-        {canInterpret && rawText === null ? (
-          <Button variant="accent" size="sm" onClick={() => void interpret()}>
-            <Icons.IconSparkles size={14} />
-            Interpreta
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" onClick={moreDetails}>
+        {/* "Interpreta" e "Più dettagli" convivono: si contendevano lo stesso
+            slot, e da quando `canInterpret` è vero con qualsiasi testo l'AI
+            accesa nascondeva sempre l'unica via verso l'editor completo (dove
+            si vedono le persone riconosciute). Per rileggere la frase resta
+            ⌘/Ctrl+Invio. */}
+        <div className="flex min-w-0 items-center gap-1">
+          {canInterpret && rawText === null && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2.5"
+              onClick={() => void interpret()}
+            >
+              <Icons.IconSparkles size={14} />
+              Interpreta
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="px-2.5" onClick={moreDetails}>
             Più dettagli
             <span aria-hidden className="ml-1">
               ›
             </span>
           </Button>
-        )}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={closeQuickAdd}>
-            Annulla
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={!valid}
-            onClick={() => void save()}
-          >
-            Salva
-          </Button>
         </div>
+        {/* Niente "Annulla": un popover si chiude già con Esc, con un click
+            fuori e allo scroll — era cromo da modale, e lo spazio serve. */}
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={!valid}
+          onClick={() => void save()}
+        >
+          Salva
+        </Button>
       </div>
     </div>
   );

@@ -38,8 +38,16 @@ describe("TopBar", () => {
 
   it("evidenzia la vista attiva via aria-pressed", () => {
     render(<TopBar />);
-    expect(screen.getByText("Mese")).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText("Giorno")).toHaveAttribute("aria-pressed", "false");
+    // I segmenti hanno etichetta corta sotto `xl`: il nome accessibile è quello
+    // lungo, il testo visibile no. Si interroga per ruolo, non per testo.
+    expect(screen.getByRole("button", { name: "Mese" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Giorno" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("Annulla/Ripeti sono disabilitati senza storico", () => {
