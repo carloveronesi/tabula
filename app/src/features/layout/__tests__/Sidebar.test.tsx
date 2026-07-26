@@ -11,9 +11,12 @@ describe("Sidebar", () => {
   it("espone la navigazione tra sezioni", () => {
     render(<Sidebar />);
     expect(screen.getByRole("navigation", { name: "Sezioni" })).toBeInTheDocument();
-    for (const label of ["Calendario", "Riepilogo", "Progetti", "Todo", "Ricerca", "Impostazioni"]) {
+    for (const label of ["Calendario", "Progetti", "Todo", "Ricerca", "Impostazioni"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
+    // Il mese è una scala del calendario, non una sezione: nessuna voce che
+    // apra `month` con un secondo nome.
+    expect(screen.queryByRole("button", { name: "Riepilogo" })).toBeNull();
   });
 
   it("cambia vista al click su una sezione", () => {
@@ -22,27 +25,19 @@ describe("Sidebar", () => {
     expect(useUiStore.getState().view).toBe("projects");
   });
 
-  it("Calendario è attivo per giorno/settimana e porta al Giorno", () => {
-    useUiStore.setState({ view: "week" });
-    render(<Sidebar />);
-    expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Calendario" }));
-    expect(useUiStore.getState().view).toBe("day");
-  });
-
-  it("Riepilogo è attivo nel Mese e ci porta direttamente", () => {
-    useUiStore.setState({ view: "todo" });
-    render(<Sidebar />);
-    expect(screen.getByRole("button", { name: "Riepilogo" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Riepilogo" }));
-    expect(useUiStore.getState().view).toBe("month");
-  });
+  it.each(["day", "week", "month"] as const)(
+    "Calendario è attivo anche in %s e porta al Giorno",
+    (view) => {
+      useUiStore.setState({ view });
+      render(<Sidebar />);
+      expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Calendario" }));
+      expect(useUiStore.getState().view).toBe("day");
+    },
+  );
 
   it("Aiuto apre il pannello senza cambiare vista", () => {
     render(<Sidebar />);
@@ -63,7 +58,7 @@ describe("Sidebar", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Riepilogo" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );

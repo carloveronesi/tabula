@@ -230,7 +230,7 @@ export function CalendarImportModal() {
                 className="tnum h-10 w-16 rounded-lg border border-line bg-bg px-2 text-sm text-ink focus:border-primary focus:outline-none"
               />
             </label>
-            <span className="tnum text-xs text-faint">
+            <span className="tnum text-xs text-muted">
               → {minutesToLabel(r.startMin + r.durationMin)}
             </span>
           </div>

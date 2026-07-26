@@ -50,10 +50,17 @@ export function textColorOn(background: string): "#000000" | "#ffffff" {
   return yiq >= 128 ? "#000000" : "#ffffff";
 }
 
-/** Converte un colore hex in rgba con l'alpha indicato. */
-export function withAlpha(hex: string, alpha: number): string {
-  const { r, g, b } = parseHex(hex);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+/**
+ * Sfondo tinto per un colore: `amount` di tinta mescolato sulla superficie del
+ * tema, non un alpha fisso. Un rgba al 16% su `--surface` scuro sparisce e i
+ * blocchi diventano indistinguibili; il mix segue il tema.
+ *
+ * Il mix è in **oklab**, non oklch: oklch interpola la tonalità, e contro un
+ * bianco acromatico (hue 0) sposta indigo → rosa e smeraldo → pesca, perdendo
+ * la codifica-colore per cliente. oklab è rettangolare e tiene la tinta.
+ */
+export function tint(hex: string, amount: number): string {
+  return `color-mix(in oklab, ${hex} ${amount * 100}%, var(--surface))`;
 }
 
 /** Mappe colore persistite (per cliente e per sottotipo interno), usate dalle

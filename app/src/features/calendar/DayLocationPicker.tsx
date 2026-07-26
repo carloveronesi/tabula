@@ -70,12 +70,12 @@ export function DayLocationPicker({
               compact
                 ? "h-6 w-6 rounded-pill"
                 : "flex-1 flex-col gap-1.5 rounded-lg py-2.5 text-[11px]",
+              // Un solo idioma di "selezionato" nei gruppi: chip rialzata su
+              // `surface`, come Segmented. Il wash resta alla navigazione (rail).
               active
-                ? compact
-                  ? "bg-accent-wash text-accent shadow-sm"
-                  : "bg-surface text-ink shadow-sm"
+                ? "bg-surface text-ink shadow-sm"
                 : isSuggested
-                  ? "text-accent/70 ring-1 ring-inset ring-accent/30"
+                  ? "text-primary/70 ring-1 ring-inset ring-primary/30"
                   : "text-muted hover:text-ink",
             )}
           >

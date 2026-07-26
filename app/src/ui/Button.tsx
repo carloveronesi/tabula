@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/ui/cn";
 
-export type ButtonVariant = "primary" | "subtle" | "ghost" | "danger" | "accent";
+export type ButtonVariant = "primary" | "outline" | "subtle" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md";
 
 const base =
@@ -15,10 +15,11 @@ const variants: Record<ButtonVariant, string> = {
     "bg-primary text-primary-ink shadow-[var(--shadow-primary)] hover:bg-primary-hover",
   subtle:
     "border border-line bg-surface text-ink shadow-sm hover:bg-raised hover:border-line-strong",
-  // Accento senza fill: si stacca dal resto senza competere con `primary`, che
-  // in una barra d'azioni resta l'azione conclusiva (Salva).
-  accent:
-    "border border-primary bg-primary-wash text-accent shadow-sm hover:border-accent-hover hover:text-accent-hover",
+  // Stesso colore di `primary` ma senza fill: si stacca dal resto senza competere
+  // con `primary`, che in una barra d'azioni resta l'azione conclusiva (Salva).
+  // La gerarchia la fa il peso, non una seconda tinta.
+  outline:
+    "border border-primary bg-primary-wash text-primary shadow-sm hover:border-primary-hover hover:text-primary-hover",
   ghost: "text-muted hover:bg-raised hover:text-ink",
   danger: "bg-danger text-primary-ink shadow-sm hover:opacity-90",
 };

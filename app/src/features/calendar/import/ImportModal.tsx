@@ -275,7 +275,7 @@ export function ImportModal<R extends { key: string }>(props: ImportModalProps<R
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
-            <p className="tnum text-xs text-faint">
+            <p className="tnum text-xs text-muted">
               {Math.round(progress * 100)}%
             </p>
           </div>

@@ -17,7 +17,7 @@ import {
 } from "@/domain/slots";
 import { entryBlocks } from "@/domain/dayBlocks";
 import { conflictsOnDay } from "@/domain/conflict";
-import { withAlpha } from "@/domain/colors";
+import { tint } from "@/domain/colors";
 import {
   rowAtOffset,
   rowTop,
@@ -298,15 +298,16 @@ export function WeekGrid({
               className="flex flex-1 flex-col items-start gap-1.5 px-2 py-2.5"
             >
               <span
-                className={`text-xs font-semibold ${
-                  today ? "text-accent" : holiday ? "text-faint" : "text-muted"
-                }`}
+                // Il festivo lo dice già la colonna tinta (`bg-weekend`): non
+                // serve anche sbiadire il nome del giorno, che è testo da
+                // leggere e in `faint` non arriva a contrasto.
+                className={`text-xs font-semibold ${today ? "text-primary" : "text-muted"}`}
               >
                 {dayLabel(d)}
               </span>
               {holName && (
                 <span
-                  className="max-w-full truncate text-[10px] font-medium leading-tight text-faint"
+                  className="max-w-full truncate text-[11px] font-medium leading-tight text-muted"
                   title={holName}
                 >
                   {holName}
@@ -464,14 +465,18 @@ export function WeekGrid({
                       height,
                       left: 2,
                       right: 2,
-                      backgroundColor: color ? withAlpha(color, 0.16) : undefined,
+                      backgroundColor: color ? tint(color, 0.16) : undefined,
                     }}
                     className="relative flex touch-none overflow-hidden rounded bg-primary-wash py-0.5 pl-2.5 pr-1.5 text-left text-[11px] font-medium leading-tight text-ink shadow-sm transition-[box-shadow] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow"
+                    // In settimana la colonna è stretta e il blocco non mostra
+                    // mai l'orario: un quarto d'ora è ~15px di titolo tagliato.
+                    // Il tooltip è l'unico modo per leggerlo senza aprirlo.
+                    title={`${b.entry.title} · ${b.entry.startsAt.slice(11, 16)}–${b.entry.endsAt.slice(11, 16)}`}
                   >
                     <span
                       aria-hidden
                       style={{ backgroundColor: color ?? undefined }}
-                      className="absolute inset-y-1 left-1 w-1 rounded-pill bg-accent"
+                      className="absolute inset-y-1 left-1 w-1 rounded-pill bg-primary"
                     />
                     <span className="line-clamp-2">{b.entry.title}</span>
                     <span

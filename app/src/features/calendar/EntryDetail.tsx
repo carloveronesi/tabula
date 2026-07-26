@@ -130,7 +130,7 @@ export function EntryDetail() {
               </span>
             )}
             {projectName && (
-              <span className="rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-accent">
+              <span className="rounded-sm bg-primary-wash px-2 py-0.5 text-xs text-primary">
                 {projectName}
               </span>
             )}
@@ -178,7 +178,7 @@ export function EntryDetail() {
                       href={l.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-accent underline underline-offset-2"
+                      className="text-primary underline underline-offset-2"
                     >
                       {l.label || l.url}
                     </a>

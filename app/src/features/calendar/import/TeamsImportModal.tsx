@@ -148,7 +148,7 @@ export function TeamsImportModal() {
               {formatDuration(r.durationMin)}
             </span>
             {r.direction && (
-              <span className="inline-flex h-10 items-center text-xs text-faint">
+              <span className="inline-flex h-10 items-center text-xs text-muted">
                 {DIRECTION_LABEL[r.direction]}
               </span>
             )}

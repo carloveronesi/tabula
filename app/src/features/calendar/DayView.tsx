@@ -29,7 +29,7 @@ import {
   rowsToRange,
 } from "@/domain/dragGrid";
 import { isoDate } from "@/domain/calendarNav";
-import { withAlpha } from "@/domain/colors";
+import { tint } from "@/domain/colors";
 import { DayGrid, TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
@@ -297,6 +297,9 @@ export function DayView({
           // Blocchi bassi (~30 min): titolo e orario stanno su una riga sola,
           // altrimenti due righe impilate non ci stanno e il titolo viene tagliato.
           const compact = heightPx < 44;
+          // Sotto i 26px (un quarto d'ora su griglia fitta) l'orario non ci sta:
+          // resta il solo titolo, leggibile, invece di due testi entrambi tagliati.
+          const tiny = heightPx < 26;
           const time = `${b.entry.startsAt.slice(11, 16)}–${b.entry.endsAt.slice(11, 16)}`;
           return (
             <button
@@ -335,18 +338,19 @@ export function DayView({
                 height: heightPx,
                 left: 4,
                 right: split ? SPLIT_MID : 4,
-                backgroundColor: color ? withAlpha(color, 0.16) : undefined,
+                backgroundColor: color ? tint(color, 0.16) : undefined,
               }}
               className={`group relative flex touch-none overflow-hidden rounded bg-primary-wash pl-3.5 pr-2 text-left text-xs font-medium text-ink shadow-sm transition-[box-shadow,transform] duration-[var(--dur-fast)] ease-out animate-block-in hover:shadow ${
                 compact
                   ? "items-center gap-2"
                   : "flex-col gap-0.5 py-1.5"
               } ${active && dragConflict ? "ring-2 ring-danger" : ""}`}
+              title={label ? `${b.entry.title} · ${label} · ${time}` : `${b.entry.title} · ${time}`}
             >
               <span
                 aria-hidden
                 style={{ backgroundColor: color ?? undefined }}
-                className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-accent"
+                className="absolute inset-y-1.5 left-1.5 w-1 rounded-pill bg-primary"
               />
               <span
                 className={`min-w-0 truncate leading-tight ${
@@ -355,12 +359,12 @@ export function DayView({
               >
                 {b.entry.title}
               </span>
-              {compact ? (
-                <span className="tnum shrink-0 truncate text-[10px] font-normal text-muted">
+              {tiny ? null : compact ? (
+                <span className="tnum shrink-0 truncate text-[11px] font-normal text-muted">
                   {time}
                 </span>
               ) : (
-                <span className="flex min-w-0 items-baseline gap-1 text-[10px] font-normal text-muted">
+                <span className="flex min-w-0 items-baseline gap-1 text-[11px] font-normal text-muted">
                   {label && (
                     <>
                       <span className="min-w-0 truncate">{label}</span>
@@ -428,7 +432,7 @@ export function DayView({
               }`}
             >
               <span className="truncate leading-tight">{p.label || "Evento"}</span>
-              <span className="tnum text-[10px] font-normal opacity-80">
+              <span className="tnum text-[11px] font-normal opacity-80">
                 {minutesToLabel(p.startMin)}–{minutesToLabel(p.endMin)}
               </span>
             </div>

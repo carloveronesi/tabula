@@ -17,8 +17,8 @@ const fmtDue = (iso: string) =>
 function dueHint(todo: Todo, today: string): { label: string; tone: string } | null {
   if (!todo.dueDate) return null;
   if (todo.dueDate < today) return { label: "scaduto", tone: "text-danger" };
-  if (todo.dueDate === today) return { label: "oggi", tone: "text-accent" };
-  return { label: fmtDue(todo.dueDate), tone: "text-faint" };
+  if (todo.dueDate === today) return { label: "oggi", tone: "text-primary" };
+  return { label: fmtDue(todo.dueDate), tone: "text-muted" };
 }
 
 /**
@@ -37,15 +37,15 @@ export function DayTodoWidget({ onOpenTodo }: { onOpenTodo: () => void }) {
   const extra = pending.length - shown.length;
 
   return (
-    <div className="rounded-lg border border-line bg-surface p-[18px] shadow-card">
+    <div className="rounded-xl border border-line bg-surface p-[18px] shadow-card">
       <div className="flex items-baseline justify-between">
-        <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
+        <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted">
           Da fare
         </div>
         <button
           type="button"
           onClick={onOpenTodo}
-          className="text-[11px] font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:text-accent"
+          className="text-xs font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-out hover:text-primary"
         >
           Tutti →
         </button>
@@ -70,12 +70,12 @@ export function DayTodoWidget({ onOpenTodo }: { onOpenTodo: () => void }) {
                   type="button"
                   onClick={onOpenTodo}
                   title={t.title}
-                  className="min-w-0 flex-1 truncate text-left text-[12.5px] text-ink/90 hover:text-accent"
+                  className="min-w-0 flex-1 truncate text-left text-[12.5px] text-ink/90 hover:text-primary"
                 >
                   {t.title}
                 </button>
                 {hint && (
-                  <span className={cn("shrink-0 text-[10.5px] font-medium", hint.tone)}>
+                  <span className={cn("shrink-0 text-xs font-medium", hint.tone)}>
                     {hint.label}
                   </span>
                 )}
@@ -89,7 +89,7 @@ export function DayTodoWidget({ onOpenTodo }: { onOpenTodo: () => void }) {
         <button
           type="button"
           onClick={onOpenTodo}
-          className="mt-2.5 text-[11.5px] font-medium text-muted hover:text-accent"
+          className="mt-2.5 text-xs font-medium text-muted hover:text-primary"
         >
           +{extra} altri
         </button>

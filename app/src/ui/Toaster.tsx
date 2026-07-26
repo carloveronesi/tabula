@@ -28,7 +28,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       {toast.action && (
         <button
           type="button"
-          className="rounded font-medium text-accent hover:underline underline-offset-2"
+          className="rounded font-medium text-primary hover:underline underline-offset-2"
           onClick={() => {
             toast.action!.run();
             dismiss(toast.id);

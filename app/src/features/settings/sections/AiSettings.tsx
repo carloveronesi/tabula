@@ -101,7 +101,7 @@ export function AiSettings() {
           {test.status === "done" && (
             <span
               role="status"
-              className={test.ok ? "text-sm text-accent" : "text-sm text-danger"}
+              className={test.ok ? "text-sm text-primary" : "text-sm text-danger"}
             >
               {test.message}
             </span>

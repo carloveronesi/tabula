@@ -99,7 +99,7 @@ export function ProjectSummaryCard({
   return (
     <div className={className}>
       <div className="flex items-baseline justify-between gap-2">
-        <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted">
+        <div className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted">
           Come va
         </div>
         {cached && (
@@ -141,7 +141,7 @@ export function ProjectSummaryCard({
           {loading ? "Sto leggendo…" : cached ? "Rigenera" : "Riassumi"}
         </Button>
         {tokens > 0 && (
-          <span className="tnum text-xs text-faint">
+          <span className="tnum text-xs text-muted">
             {fmtTokens(tokens)} token da quando sei su questo progetto
           </span>
         )}
@@ -165,7 +165,7 @@ export function ProjectSummaryCard({
                   </Markdown>
                 ),
               )}
-              {qa.busy && <p className="text-sm text-faint">Sto guardando…</p>}
+              {qa.busy && <p className="text-sm text-muted">Sto guardando…</p>}
             </div>
           )}
 

@@ -48,7 +48,7 @@ interface MonthSummaryProps {
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-faint">
+    <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted">
       {children}
     </div>
   );
@@ -98,8 +98,8 @@ function FilterCard({
           "flex flex-col rounded-lg border px-3 py-2.5",
           interactive && "cursor-pointer",
           active
-            ? "border-accent bg-primary-wash"
-            : "border-line bg-raised/40 " + (interactive ? "hover:border-accent/40" : ""),
+            ? "border-primary bg-primary-wash"
+            : "border-line bg-raised/40 " + (interactive ? "hover:border-primary/40" : ""),
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -111,7 +111,7 @@ function FilterCard({
             />
             <div className="min-w-0">
               {eyebrow && (
-                <div className="truncate text-[9.5px] font-bold uppercase tracking-wider text-faint">
+                <div className="truncate text-[11px] font-bold uppercase tracking-wider text-muted">
                   {eyebrow}
                 </div>
               )}
@@ -247,16 +247,16 @@ export function MonthSummary({
             <Eyebrow>Giorni compilati</Eyebrow>
             <span className="tnum text-[12.5px] font-semibold text-ink">
               {cov.filledDays}
-              <span className="text-faint">/{cov.workingDays}</span>
+              <span className="text-muted">/{cov.workingDays}</span>
               <span className="ml-1.5 text-muted">{cov.pct}%</span>
             </span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-line">
-            <div className="h-full rounded-pill bg-accent" style={{ width: `${cov.pct}%` }} />
+            <div className="h-full rounded-pill bg-primary" style={{ width: `${cov.pct}%` }} />
           </div>
-          <div className="mt-1.5 text-[11.5px] text-faint">
-            <span className="tnum text-muted">{formatHours(cov.registeredMin)}</span> registrate su{" "}
-            <span className="tnum text-muted">{formatHours(cov.expectedMin)}</span> attese
+          <div className="mt-1.5 text-xs text-muted">
+            <span className="tnum text-ink/80">{formatHours(cov.registeredMin)}</span> registrate su{" "}
+            <span className="tnum text-ink/80">{formatHours(cov.expectedMin)}</span> attese
           </div>
         </div>
       )}
@@ -292,11 +292,11 @@ export function MonthSummary({
                       <span className="w-14 shrink-0 text-muted">{LOCATION_LABEL[r.location]}</span>
                       <span className="tnum font-semibold text-ink">
                         {r.days}
-                        <span className="text-faint">g</span>
+                        <span className="text-muted">g</span>
                       </span>
                       <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
                         <div
-                          className="absolute inset-y-0 left-0 rounded-pill bg-accent"
+                          className="absolute inset-y-0 left-0 rounded-pill bg-primary"
                           style={{ width: `${r.pct}%` }}
                         />
                       </div>
@@ -305,7 +305,7 @@ export function MonthSummary({
                         <span
                           className={cn(
                             "tnum w-10 shrink-0 text-right text-[11px] font-semibold",
-                            reached ? "text-accent" : "text-faint",
+                            reached ? "text-primary" : "text-muted",
                           )}
                         >
                           {reached ? "✓" : `${r.targetPct}%`}

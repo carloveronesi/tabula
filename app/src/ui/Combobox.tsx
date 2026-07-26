@@ -195,7 +195,7 @@ export function Combobox({
               className={cn(
                 "cursor-pointer rounded px-2 py-1.5 text-sm",
                 highlight === createIndex ? "bg-raised" : "",
-                "text-accent",
+                "text-primary",
               )}
             >
               Crea «{trimmed}»
