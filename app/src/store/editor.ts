@@ -28,6 +28,12 @@ export interface QuickAdd {
   startMin: number;
   endMin: number;
   anchor: Anchor | null;
+  /**
+   * Selezione multi-giorno trascinata sul Mese: al salvataggio il quick-add
+   * riempie ognuno di questi giorni (già filtrati: feriali e ancora liberi).
+   * Assente ⇒ quick-add normale su `date`/`startMin`/`endMin`.
+   */
+  days?: ISODate[];
 }
 
 const DEFAULT_SEED: EditorSeed = {

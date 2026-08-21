@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { ActivityTemplate, Entry, Id, ISODate } from "@/data/types";
+import type { ActivityTemplate, Entry, EntryType, Id, ISODate } from "@/data/types";
 import { applyDraft, emptyDraft } from "@/domain/entryDraft";
+import { spanSlots } from "@/domain/spanFill";
 import { applyTemplate } from "@/domain/activityTemplate";
 import { minutesToLabel } from "@/domain/slots";
 import { addDays, isoDate } from "@/domain/calendarNav";
@@ -21,10 +22,13 @@ import { useToastStore } from "@/store/toast";
 import { useSettingsStore } from "@/store/settings";
 import { Button, cn, Combobox, Icons, Segmented } from "@/ui";
 
-type Mode = "client" | "internal";
+// I segmenti sono anche il `type` della entry: "Ferie" serve sia alla mezza
+// giornata singola sia alla settimana intera trascinata sul Mese.
+type Mode = "client" | "internal" | "vacation";
 const MODES = [
   { id: "client" as const, label: "Cliente" },
   { id: "internal" as const, label: "Interno" },
+  { id: "vacation" as const, label: "Ferie" },
 ];
 
 const WIDTH = 340;
@@ -87,6 +91,7 @@ export function QuickAddPopover() {
   const templates = useTemplateStore((s) => s.templates);
   const ai = useSettingsStore((s) => s.settings.ai);
   const subtypes = useSettingsStore((s) => s.settings.subtypes);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -241,7 +246,9 @@ export function QuickAddPopover() {
   const selectedProject = projects.find((p) => p.id === projectId) ?? null;
   // Pallino-indizio della classificazione scelta.
   const dotColor =
-    mode === "internal"
+    mode === "vacation"
+      ? null
+      : mode === "internal"
       ? (selectedProject ? projectColor(selectedProject) : null)
       : (selectedClient ? colorFromKey(selectedClient.id) : null);
 
@@ -283,7 +290,19 @@ export function QuickAddPopover() {
   const startMin = override?.startMin ?? quickAdd.startMin;
   const endMin = override?.endMin ?? quickAdd.endMin;
   const pos = place(anchor, height);
-  const valid = title.trim() !== "" && endMin > startMin;
+  // Un template evento porta un tipo senza selettore qui: al salvataggio vince
+  // il tipo del template.
+  const specialTpl =
+    tpl && tpl.type !== "client" && tpl.type !== "internal" ? tpl : null;
+  const type: EntryType = specialTpl ? specialTpl.type : mode;
+  // Selezione multi-giorno dal Mese: i giorni sono già filtrati da `spanDays`.
+  const days = quickAdd.days ?? null;
+  const slots = days ? spanSlots(days, type, workHours) : null;
+  // Le fasce di un giorno solo: è l'etichetta ("9:00–13:00 · 14:00–18:00").
+  const dayShape = days ? spanSlots(days.slice(0, 1), type, workHours) : [];
+  const valid = slots
+    ? title.trim() !== "" && slots.length > 0
+    : title.trim() !== "" && endMin > startMin;
   // Basta del testo: una soglia di parole risparmierebbe qualche chiamata inutile
   // al prezzo di un bottone che appare e sparisce senza una ragione visibile.
   const canInterpret = ai.enabled && !aiBusy && title.trim() !== "";
@@ -385,18 +404,15 @@ export function QuickAddPopover() {
   function applyTpl(t: ActivityTemplate) {
     setTpl(t);
     setTitle(t.title);
-    // Le sole classificazioni con selettori qui sono cliente/interno; ferie ed
-    // eventi passano al salvataggio via il tipo del template.
-    setMode(t.type === "internal" ? "internal" : "client");
+    // Gli eventi non hanno un segmento qui: passano al salvataggio via il tipo
+    // del template.
+    setMode(
+      t.type === "internal" || t.type === "vacation" ? t.type : "client",
+    );
     setClientId(t.type === "internal" ? null : t.clientId);
     setProjectId(t.projectId);
     inputRef.current?.focus();
   }
-
-  // Un template ferie/evento porta un tipo senza selettore qui: al salvataggio
-  // vince il tipo del template.
-  const specialTpl =
-    tpl && tpl.type !== "client" && tpl.type !== "internal" ? tpl : null;
 
   async function save() {
     if (!valid) return;
@@ -406,12 +422,33 @@ export function QuickAddPopover() {
       ? { ...t, title }
       : mode === "internal"
         ? { ...t, type: "internal" as const, clientId: null, projectId, title }
-        : { ...t, type: "client" as const, clientId, projectId, title };
-    await saveEntry(applyDraft(draft, { id: nanoid(), now: Date.now() }));
+        : mode === "vacation"
+          ? { ...t, type: "vacation" as const, clientId: null, projectId: null, title }
+          : { ...t, type: "client" as const, clientId, projectId, title };
+    const targets = slots ?? [{ date, startMin, endMin }];
+    for (const slot of targets) {
+      await saveEntry(applyDraft({ ...draft, ...slot }, { id: nanoid(), now: Date.now() }));
+    }
     closeQuickAdd();
-    notify("Attività creata", {
-      action: { label: "Annulla", run: () => void undo() },
-    });
+    // Ogni entry è un passo di storico a sé: per tornare indietro davvero
+    // l'Annulla della selezione ne deve disfare tante quante ne ha create.
+    // ponytail: lo storico non ha un passo composto; aggiungerlo se servirà
+    // anche altrove (import, incolla multiplo).
+    notify(
+      targets.length > 1
+        ? `${targets.length} attività create su ${days?.length ?? 1} giorni`
+        : "Attività creata",
+      {
+        action: {
+          label: "Annulla",
+          run: () => {
+            void (async () => {
+              for (let i = 0; i < targets.length; i++) await undo();
+            })();
+          },
+        },
+      },
+    );
   }
 
   function moreDetails() {
@@ -420,7 +457,7 @@ export function QuickAddPopover() {
       startMin,
       endMin,
       title,
-      type: specialTpl ? specialTpl.type : mode,
+      type,
       clientId: mode === "client" && !specialTpl ? clientId : null,
       projectId: specialTpl ? specialTpl.projectId : projectId,
       subtypeId: tpl?.subtypeId,
@@ -474,12 +511,25 @@ export function QuickAddPopover() {
         )}
       />
 
-      <div className="mt-3 flex items-center gap-2">
-        <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
-          {minutesToLabel(startMin)}
-          <span className="text-faint">–</span>
-          {minutesToLabel(endMin)}
-        </span>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {days ? (
+          <>
+            <span className="inline-flex h-8 items-center rounded-lg bg-primary-wash px-2.5 text-xs font-medium text-primary">
+              {days.length} {days.length === 1 ? "giorno" : "giorni"}
+            </span>
+            <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
+              {dayShape
+                .map((p) => `${minutesToLabel(p.startMin)}–${minutesToLabel(p.endMin)}`)
+                .join(" · ")}
+            </span>
+          </>
+        ) : (
+          <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
+            {minutesToLabel(startMin)}
+            <span className="text-faint">–</span>
+            {minutesToLabel(endMin)}
+          </span>
+        )}
         {dotColor && (
           <span
             aria-hidden
@@ -489,7 +539,7 @@ export function QuickAddPopover() {
         )}
         {/* La data compare solo se l'AI ha spostato l'attività su un altro
             giorno: senza, uno slot finito su ieri lo scopri a consuntivo. */}
-        {date !== slotDate && (
+        {!days && date !== slotDate && (
           <span className="text-xs text-muted">{dayLabel(date)}</span>
         )}
       </div>
@@ -503,7 +553,7 @@ export function QuickAddPopover() {
         />
       </div>
 
-      {mode === "client" ? (
+      {mode === "vacation" ? null : mode === "client" ? (
         <div className="mt-2 grid grid-cols-2 gap-2">
           <Combobox
             label="Cliente"
@@ -603,12 +653,16 @@ export function QuickAddPopover() {
               Interpreta
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="px-2.5" onClick={moreDetails}>
-            Più dettagli
-            <span aria-hidden className="ml-1">
-              ›
-            </span>
-          </Button>
+          {/* In selezione multi-giorno l'editor completo lavora su una entry
+              sola: aprirlo butterebbe via gli altri giorni senza dirlo. */}
+          {!days && (
+            <Button variant="ghost" size="sm" className="px-2.5" onClick={moreDetails}>
+              Più dettagli
+              <span aria-hidden className="ml-1">
+                ›
+              </span>
+            </Button>
+          )}
         </div>
         {/* Niente "Annulla": un popover si chiude già con Esc, con un click
             fuori e allo scroll — era cromo da modale, e lo spazio serve. */}
