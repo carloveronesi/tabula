@@ -27,6 +27,33 @@ function entry(id: string, startsAt: ISODateTime): Entry {
   };
 }
 
+/**
+ * jsdom non fa layout: senza un rect finto `cellAt` non sa dov'è nessuna cella.
+ * Griglia 700×600 all'origine ⇒ celle da 100×100, indice = riga*7 + colonna.
+ */
+function mockGrid() {
+  const spy = vi
+    .spyOn(Element.prototype, "getBoundingClientRect")
+    .mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 700,
+      height: 600,
+      right: 700,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+  return () => spy.mockRestore();
+}
+
+/** Centro della cella `i` nella griglia finta. */
+const at = (i: number) => ({
+  clientX: (i % 7) * 100 + 50,
+  clientY: Math.floor(i / 7) * 100 + 50,
+});
+
 describe("MonthGrid", () => {
   it("renderizza 42 celle (6×7)", () => {
     render(<MonthGrid date={DATE} />);
@@ -125,5 +152,89 @@ describe("MonthGrid", () => {
     const arg = onOpenDay.mock.calls[0][0] as Date;
     expect(arg.getDate()).toBe(15);
     expect(arg.getMonth()).toBe(5);
+  });
+
+  describe("selezione multi-giorno", () => {
+    it("trascinando su più celle chiede la creazione sull'intervallo", () => {
+      const restore = mockGrid();
+      const onCreateSpan = vi.fn();
+      const onOpenDay = vi.fn();
+      const { container } = render(
+        <MonthGrid date={DATE} onCreateSpan={onCreateSpan} onOpenDay={onOpenDay} />,
+      );
+      const grid = container.querySelector(".grid-rows-6")!;
+      const cells = screen.getAllByRole("gridcell");
+
+      // celle 0..4 = lun 1 giu → ven 5 giu 2026
+      fireEvent.pointerDown(grid, { button: 0, ...at(0) });
+      fireEvent.pointerMove(grid, at(4));
+      fireEvent.pointerUp(grid, at(4));
+
+      expect(onCreateSpan).toHaveBeenCalledTimes(1);
+      const [from, to] = onCreateSpan.mock.calls[0];
+      expect(from).toEqual(new Date(2026, 5, 1));
+      expect(to).toEqual(new Date(2026, 5, 5));
+
+      // il click che segue il rilascio non deve anche aprire il giorno
+      fireEvent.click(cells[0]);
+      expect(onOpenDay).not.toHaveBeenCalled();
+      restore();
+    });
+
+    it("trascinando all'indietro l'intervallo resta ordinato", () => {
+      const restore = mockGrid();
+      const onCreateSpan = vi.fn();
+      const { container } = render(
+        <MonthGrid date={DATE} onCreateSpan={onCreateSpan} />,
+      );
+      const grid = container.querySelector(".grid-rows-6")!;
+
+      fireEvent.pointerDown(grid, { button: 0, ...at(4) });
+      fireEvent.pointerMove(grid, at(0));
+      fireEvent.pointerUp(grid, at(0));
+
+      const [from, to] = onCreateSpan.mock.calls[0];
+      expect(from).toEqual(new Date(2026, 5, 1));
+      expect(to).toEqual(new Date(2026, 5, 5));
+      restore();
+    });
+
+    it("dopo un trascinamento il giorno resta apribile", async () => {
+      const restore = mockGrid();
+      const onOpenDay = vi.fn();
+      const { container } = render(
+        <MonthGrid date={DATE} onCreateSpan={vi.fn()} onOpenDay={onOpenDay} />,
+      );
+      const grid = container.querySelector(".grid-rows-6")!;
+
+      fireEvent.pointerDown(grid, { button: 0, ...at(0) });
+      fireEvent.pointerMove(grid, at(4));
+      fireEvent.pointerUp(grid, at(4));
+      // dopo un trascinamento il click non arriva: il paraurti si abbassa da sé,
+      // altrimenti si mangerebbe il primo Invio da tastiera su una cella.
+      await new Promise((r) => setTimeout(r, 0));
+
+      fireEvent.click(screen.getAllByRole("gridcell")[10]);
+      expect(onOpenDay).toHaveBeenCalledTimes(1);
+      restore();
+    });
+
+    it("un click secco apre il giorno e non crea niente", () => {
+      const restore = mockGrid();
+      const onCreateSpan = vi.fn();
+      const onOpenDay = vi.fn();
+      const { container } = render(
+        <MonthGrid date={DATE} onCreateSpan={onCreateSpan} onOpenDay={onOpenDay} />,
+      );
+      const grid = container.querySelector(".grid-rows-6")!;
+
+      fireEvent.pointerDown(grid, { button: 0, ...at(14) });
+      fireEvent.pointerUp(grid, at(14));
+      fireEvent.click(screen.getAllByRole("gridcell")[14]);
+
+      expect(onCreateSpan).not.toHaveBeenCalled();
+      expect(onOpenDay).toHaveBeenCalledTimes(1);
+      restore();
+    });
   });
 });

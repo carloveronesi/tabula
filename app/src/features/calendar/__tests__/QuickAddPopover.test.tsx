@@ -606,4 +606,88 @@ describe("QuickAddPopover — interpretazione AI", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/key/i);
     expect(titolo).toHaveValue(FRASE);
   });
+
 });
+
+describe("QuickAddPopover — selezione multi-giorno", () => {
+    const DAYS = ["2026-06-15", "2026-06-16", "2026-06-17"];
+
+    const openSpan = () =>
+      useEditorStore.getState().openQuickAdd({ ...SLOT, days: DAYS });
+
+    const type = (title: string) =>
+      fireEvent.change(screen.getByLabelText("Titolo"), {
+        target: { value: title },
+      });
+
+    it("mostra i giorni e le fasce mattina + pomeriggio", () => {
+      openSpan();
+      render(<QuickAddPopover />);
+      expect(screen.getByText("3 giorni")).toBeInTheDocument();
+      expect(screen.getByText("09:00–13:00 · 14:00–18:00")).toBeInTheDocument();
+      // l'editor completo lavora su una entry sola: qui non ha senso
+      expect(screen.queryByText("Più dettagli")).toBeNull();
+    });
+
+    it("salva due blocchi per giorno, pranzo libero", async () => {
+      openSpan();
+      render(<QuickAddPopover />);
+      type("Sviluppo");
+      fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(6),
+      );
+      const saved = [...useCalendarStore.getState().entries].sort((a, b) =>
+        a.startsAt.localeCompare(b.startsAt),
+      );
+      expect(saved.map((e) => [e.startsAt, e.endsAt])).toEqual([
+        ["2026-06-15T09:00:00", "2026-06-15T13:00:00"],
+        ["2026-06-15T14:00:00", "2026-06-15T18:00:00"],
+        ["2026-06-16T09:00:00", "2026-06-16T13:00:00"],
+        ["2026-06-16T14:00:00", "2026-06-16T18:00:00"],
+        ["2026-06-17T09:00:00", "2026-06-17T13:00:00"],
+        ["2026-06-17T14:00:00", "2026-06-17T18:00:00"],
+      ]);
+      expect(saved.every((e) => e.title === "Sviluppo")).toBe(true);
+    });
+
+    it("con Ferie: un blocco per giorno, senza cliente né progetto", async () => {
+      openSpan();
+      render(<QuickAddPopover />);
+      fireEvent.click(screen.getByRole("button", { name: "Ferie" }));
+      expect(screen.queryByLabelText("Cliente")).toBeNull();
+      expect(screen.getByText("09:00–18:00")).toBeInTheDocument();
+
+      type("Ferie");
+      fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(3),
+      );
+      const saved = useCalendarStore.getState().entries;
+      expect(saved.every((e) => e.type === "vacation")).toBe(true);
+      expect(saved.every((e) => e.clientId === null)).toBe(true);
+      expect(saved.map((e) => e.startsAt).sort()).toEqual(
+        DAYS.map((d) => `${d}T09:00:00`),
+      );
+    });
+
+    it("Annulla disfa tutte le attività create, non solo l'ultima", async () => {
+      openSpan();
+      render(<QuickAddPopover />);
+      type("Sviluppo");
+      fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(6),
+      );
+
+      const toast = useToastStore.getState().toasts.at(-1)!;
+      expect(toast.message).toBe("6 attività create su 3 giorni");
+      toast.action!.run();
+
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(0),
+      );
+    });
+  });

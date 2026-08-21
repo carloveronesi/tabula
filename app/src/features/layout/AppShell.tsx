@@ -5,6 +5,7 @@ import { dateTimeAt } from "@/domain/time";
 import { entryGroupColor } from "@/domain/colors";
 import { isoDate, workingDatesOfMonth, isWorkingDate } from "@/domain/calendarNav";
 import { availableMinutes } from "@/domain/capacity";
+import { spanDays } from "@/domain/spanFill";
 import { dayBreakdown, entryLabel } from "@/domain/dayBreakdown";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
@@ -110,6 +111,31 @@ export function AppShell() {
   const openDay = (date: Date) => {
     setActiveDate(date);
     setView("day");
+  };
+
+  // Trascinamento su più giorni nel Mese: dei giorni toccati tiene i feriali
+  // ancora liberi e apre il quick-add su quelli.
+  const createSpan = (
+    from: Date,
+    to: Date,
+    anchor: { x: number; y: number },
+  ) => {
+    const days = spanDays(from, to, {
+      workingDays: settings.workingDays,
+      patronDay: settings.patronDay,
+      entries,
+    });
+    if (days.length === 0) {
+      notify("Nella selezione non c'è nessun giorno feriale libero");
+      return;
+    }
+    openQuickAdd({
+      date: days[0],
+      startMin: settings.workHours.morningStart,
+      endMin: settings.workHours.morningEnd,
+      anchor,
+      days,
+    });
   };
 
   const createRange = (
@@ -275,6 +301,7 @@ export function AppShell() {
                   date={activeDate}
                   entries={entries}
                   onOpenDay={openDay}
+                  onCreateSpan={createSpan}
                   colorOf={colorOf}
                   patronDay={settings.patronDay}
                   highlight={monthFilter}

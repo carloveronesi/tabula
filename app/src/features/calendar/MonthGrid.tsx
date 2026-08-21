@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { Entry, Location } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
 import { durationMinutes } from "@/domain/time";
@@ -17,6 +18,11 @@ interface MonthGridProps {
   date: Date;
   entries?: Entry[];
   onOpenDay?: (date: Date) => void;
+  /**
+   * Trascinamento su più giorni: crea un'attività che copre l'intervallo.
+   * `anchor` è il punto in cui si è rilasciato, per il popover.
+   */
+  onCreateSpan?: (from: Date, to: Date, anchor: { x: number; y: number }) => void;
   /** Colore di un'attività (per cliente/sottotipo); `null` → accento. */
   colorOf?: (entry: Entry) => string | null;
   /** Giorno del patrono ("MM-GG"): reso come festivo. */
@@ -36,12 +42,14 @@ const MAX_NAMES = 3;
  * colore (cliente/sottotipo), larga in proporzione alle ore, e i nomi delle
  * attività (max `MAX_NAMES` + "+N"); il click apre quel giorno nella vista
  * Giorno. Con un filtro attivo i segmenti/nomi corrispondenti spiccano e gli
- * altri sfumano (i giorni senza match si attenuano del tutto).
+ * altri sfumano (i giorni senza match si attenuano del tutto). Trascinando su
+ * più celle si seleziona un intervallo e al rilascio parte `onCreateSpan`.
  */
 export function MonthGrid({
   date,
   entries = [],
   onOpenDay,
+  onCreateSpan,
   colorOf,
   patronDay = "",
   highlight = null,
@@ -63,6 +71,35 @@ export function MonthGrid({
 
   const todayKey = isoDate(new Date());
 
+  // Selezione trascinata: indici in `cells`, dalla cella di partenza a quella
+  // sotto al puntatore. `dragged` fa da paraurti al click che segue il rilascio,
+  // che altrimenti aprirebbe anche il giorno di partenza.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const dragged = useRef(false);
+  const [sel, setSel] = useState<{ from: number; to: number } | null>(null);
+  const lo = sel ? Math.min(sel.from, sel.to) : -1;
+  const hi = sel ? Math.max(sel.from, sel.to) : -2;
+  const dragging = sel !== null;
+
+  // Rilasciando fuori dalla griglia la selezione non arriva a `onPointerUp`:
+  // senza questo resterebbe accesa e appiccicata al puntatore.
+  useEffect(() => {
+    if (!dragging) return;
+    const cancel = () => setSel(null);
+    window.addEventListener("pointerup", cancel);
+    return () => window.removeEventListener("pointerup", cancel);
+  }, [dragging]);
+
+  /** Indice della cella sotto al puntatore (griglia 7×6, gap trascurabile). */
+  function cellAt(clientX: number, clientY: number): number | null {
+    const r = gridRef.current?.getBoundingClientRect();
+    if (!r || r.width === 0 || r.height === 0) return null;
+    const col = Math.floor(((clientX - r.left) / r.width) * 7);
+    const row = Math.floor(((clientY - r.top) / r.height) * 6);
+    if (col < 0 || col > 6 || row < 0 || row > 5) return null;
+    return row * 7 + col;
+  }
+
   return (
     <div
       role="grid"
@@ -81,8 +118,48 @@ export function MonthGrid({
           </span>
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px bg-line">
-        {cells.map((d) => {
+      <div
+        ref={gridRef}
+        // `touch-none`: senza, su touch il browser si prende il gesto per lo
+        // scroll. La griglia ha altezza fissa e non scrolla, non toglie niente.
+        className="grid min-h-0 flex-1 touch-none select-none grid-cols-7 grid-rows-6 gap-px bg-line"
+        onPointerDown={(e) => {
+          if (!onCreateSpan || e.button !== 0) return;
+          const i = cellAt(e.clientX, e.clientY);
+          if (i === null) return;
+          dragged.current = false;
+          setSel({ from: i, to: i });
+        }}
+        onPointerMove={(e) => {
+          if (!sel) return;
+          const i = cellAt(e.clientX, e.clientY);
+          if (i === null || i === sel.to) return;
+          dragged.current = true;
+          setSel({ ...sel, to: i });
+        }}
+        onPointerUp={(e) => {
+          if (!sel) return;
+          const { from, to } = sel;
+          setSel(null);
+          // Il click di chiusura arriva subito dopo, e solo se premuta e
+          // rilasciata sono la stessa cella. Abbassare il paraurti qui e non nel
+          // click: dopo un trascinamento il click non arriva affatto, e resterebbe
+          // alzato a mangiarsi il primo Invio da tastiera su una cella.
+          setTimeout(() => {
+            dragged.current = false;
+          }, 0);
+          if (from === to) return; // click secco: lo gestisce la cella
+          onCreateSpan?.(cells[Math.min(from, to)], cells[Math.max(from, to)], {
+            x: e.clientX,
+            y: e.clientY,
+          });
+        }}
+        onPointerCancel={() => {
+          setSel(null);
+          dragged.current = false;
+        }}
+      >
+        {cells.map((d, idx) => {
           const outside = d.getMonth() !== month;
           const weekend = dowMon0(d) >= 5 || isHoliday(d, patronDay);
           const holName = holidayLabel(d, patronDay);
@@ -100,6 +177,10 @@ export function MonthGrid({
               : dayEntries.some((e) => entryMatchesFilter(e, highlight)));
           const dimmed = !!highlight && !matches;
           const LocIcon = dayLoc ? LOCATION_ICON[dayLoc] : null;
+          // ponytail: evidenzia ogni cella trascinata, weekend e festivi
+          // compresi — qui non arrivano `workingDays`. Quanti giorni riceveranno
+          // davvero l'attività lo dice il quick-add ("3 giorni").
+          const picked = idx >= lo && idx <= hi;
           return (
             <button
               key={d.toISOString()}
@@ -111,11 +192,20 @@ export function MonthGrid({
               aria-label={
                 count > 0 ? `${d.getDate()}: ${count} attività` : undefined
               }
-              onClick={() => onOpenDay?.(d)}
+              onClick={() => {
+                if (dragged.current) return;
+                onOpenDay?.(d);
+              }}
               className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
-                weekend ? "bg-weekend" : "bg-surface"
+                picked ? "bg-primary-wash" : weekend ? "bg-weekend" : "bg-surface"
               } ${outside ? "text-faint" : "text-ink"} ${
-                dimmed ? "opacity-40" : matches && highlight ? "ring-1 ring-inset ring-primary/50" : ""
+                picked
+                  ? "ring-2 ring-inset ring-primary"
+                  : dimmed
+                    ? "opacity-40"
+                    : matches && highlight
+                      ? "ring-1 ring-inset ring-primary/50"
+                      : ""
               }`}
             >
               <div className="flex w-full items-center justify-between">
