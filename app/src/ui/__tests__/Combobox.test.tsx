@@ -143,4 +143,16 @@ describe("Combobox", () => {
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onCreate).toHaveBeenCalledWith("Zeta");
   });
+
+  it("multi-selezione: spunta i selezionati, fa toggle e resta aperta", () => {
+    const onChange = vi.fn();
+    render(
+      <Combobox options={OPTS} value={null} selectedIds={["c2"]} onChange={onChange} label="Persone" />,
+    );
+    fireEvent.focus(screen.getByRole("combobox"));
+    expect(screen.getByRole("option", { name: "Beta Srl" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Acme Spa" }));
+    expect(onChange).toHaveBeenCalledWith("c1");
+    expect(screen.getAllByRole("option")).toHaveLength(3); // lista ancora aperta
+  });
 });

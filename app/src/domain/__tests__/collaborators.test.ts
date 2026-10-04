@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   collaboratorCandidateIds,
   rankCandidatesByHistory,
+  frequentPeople,
 } from "@/domain/collaborators";
 import type { Entry, Project } from "@/data/types";
 
@@ -124,5 +125,39 @@ describe("rankCandidatesByHistory", () => {
       "u2",
       "u1",
     ]);
+  });
+});
+
+describe("frequentPeople", () => {
+  const on = (day: number, collab: string[], contacts: string[] = []) =>
+    entry({
+      projectId: "p1",
+      clientId: "c1",
+      startsAt: `2026-01-${String(day).padStart(2, "0")}T09:00:00`,
+      collaboratorIds: collab,
+      contactIds: contacts,
+    });
+
+  it("tiene chi compare in almeno metà delle ultime attività, dal più frequente", () => {
+    const entries = [
+      on(1, ["u1", "u2"], ["k1"]),
+      on(2, ["u2"], ["k1"]),
+      on(3, ["u2", "u3"]),
+      on(4, ["u1", "u2"]),
+      entry({ projectId: "p2", collaboratorIds: ["u9"] }),
+    ];
+    expect(frequentPeople(entries, "p1", "c1")).toEqual({
+      collaboratorIds: ["u2", "u1"],
+      contactIds: ["k1"],
+    });
+  });
+
+  it("guarda solo le ultime `recent` attività", () => {
+    const entries = [on(1, ["vecchio"]), on(2, ["vecchio"]), on(3, ["u1"]), on(4, ["u1"])];
+    expect(frequentPeople(entries, "p1", "c1", 2).collaboratorIds).toEqual(["u1"]);
+  });
+
+  it("senza progetto né cliente: nessuno", () => {
+    expect(frequentPeople([on(1, ["u1"])], null, null).collaboratorIds).toEqual([]);
   });
 });
