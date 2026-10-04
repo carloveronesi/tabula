@@ -12,6 +12,7 @@ import { conflictsOnDay } from "@/domain/conflict";
 import { dayPresets, minutesToLabel, outsideWorkHours } from "@/domain/slots";
 import {
   collaboratorCandidateIds,
+  frequentPeople,
   rankCandidatesByHistory,
 } from "@/domain/collaborators";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
@@ -206,11 +207,12 @@ export function EntryEditor() {
   const selectedCollaborators = draft.collaboratorIds
     .map((id) => people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
+  // Lista a spunta: il team del progetto più chi è già spuntato pur venendo da
+  // fuori (ricerca globale), così lo si può togliere anche da qui.
   const collaboratorAddOptions = useMemo(
     () =>
       nameOptions(
-        candidateIds
-          .filter((id) => !draft.collaboratorIds.includes(id))
+        [...candidateIds, ...draft.collaboratorIds.filter((id) => !candidateIds.includes(id))]
           .map((id) => people.find((p) => p.id === id))
           .filter((p): p is NonNullable<typeof p> => !!p),
       ),
@@ -221,12 +223,8 @@ export function EntryEditor() {
   // resta il team; digitando la ricerca spazia qui.
   const collaboratorSearchOptions = useMemo(
     () =>
-      nameOptions(
-        [...people]
-          .filter((p) => !draft.collaboratorIds.includes(p.id))
-          .sort((a, b) => a.name.localeCompare(b.name)),
-      ),
-    [people, draft.collaboratorIds],
+      nameOptions([...people].sort((a, b) => a.name.localeCompare(b.name))),
+    [people],
   );
 
   // Referenti: contatti del cliente selezionato.
@@ -237,12 +235,45 @@ export function EntryEditor() {
     () =>
       nameOptions(
         contacts.filter(
-          (k) =>
-            k.clientId === draft.clientId && !draft.contactIds.includes(k.id),
+          (k) => k.clientId === draft.clientId || draft.contactIds.includes(k.id),
         ),
       ),
     [contacts, draft.clientId, draft.contactIds],
   );
+
+  // "Aggiungi i frequenti": chi c'è di solito su questo progetto/cliente e qui
+  // ancora manca. Solo persone che esistono ancora; referenti del cliente attuale.
+  const frequentToAdd = useMemo(() => {
+    const f = frequentPeople(archive, draft.projectId, draft.clientId);
+    return {
+      collaborators: f.collaboratorIds
+        .filter((id) => !draft.collaboratorIds.includes(id))
+        .map((id) => people.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => !!p),
+      contacts:
+        draft.type === "client"
+          ? f.contactIds
+              .filter((id) => !draft.contactIds.includes(id))
+              .map((id) => contacts.find((k) => k.id === id && k.clientId === draft.clientId))
+              .filter((k): k is NonNullable<typeof k> => !!k)
+          : [],
+    };
+  }, [archive, draft.projectId, draft.clientId, draft.type, draft.collaboratorIds, draft.contactIds, people, contacts]);
+  const frequentNames = [...frequentToAdd.collaborators, ...frequentToAdd.contacts].map(
+    (x) => x.name,
+  );
+  const addFrequent = () =>
+    setDraft((d) => ({
+      ...d,
+      collaboratorIds: [...d.collaboratorIds, ...frequentToAdd.collaborators.map((p) => p.id)],
+      contactIds: [...d.contactIds, ...frequentToAdd.contacts.map((k) => k.id)],
+    }));
+  const toggleCollaborator = (id: string) =>
+    draft.collaboratorIds.includes(id)
+      ? removeId("collaboratorIds", id)
+      : void addCollaborator(id);
+  const toggleContact = (id: string) =>
+    draft.contactIds.includes(id) ? removeId("contactIds", id) : addId("contactIds", id);
 
   async function createClient(name: string) {
     const id = nanoid();
@@ -547,6 +578,22 @@ export function EntryEditor() {
               </Field>
             </div>
 
+            {frequentNames.length > 0 && (
+              <Button
+                variant="subtle"
+                size="sm"
+                className="max-w-full self-start"
+                onClick={addFrequent}
+                title={`Aggiunge: ${frequentNames.join(", ")}`}
+              >
+                <Icons.IconUsers size={15} />
+                <span className="shrink-0">Aggiungi i frequenti</span>
+                <span className="truncate font-normal text-muted">
+                  · {frequentNames.join(", ")}
+                </span>
+              </Button>
+            )}
+
             <Field label="Collaboratori">
               <div className="space-y-2">
                 {selectedCollaborators.length > 0 && (
@@ -561,13 +608,13 @@ export function EntryEditor() {
                   </div>
                 )}
                 <Combobox
-                  key={`collab-${draft.collaboratorIds.length}`}
                   label="Aggiungi collaboratore"
                   placeholder="Cerca o crea…"
                   options={collaboratorAddOptions}
                   searchOptions={collaboratorSearchOptions}
                   value={null}
-                  onChange={(id) => void addCollaborator(id)}
+                  selectedIds={draft.collaboratorIds}
+                  onChange={toggleCollaborator}
                   onCreate={(name) => void createCollaborator(name)}
                 />
               </div>
@@ -590,12 +637,12 @@ export function EntryEditor() {
                   )}
                   {draft.clientId && (
                     <Combobox
-                      key={`contact-${draft.contactIds.length}`}
                       label="Aggiungi referente"
                       placeholder="Cerca o crea…"
                       options={contactAddOptions}
                       value={null}
-                      onChange={(id) => addId("contactIds", id)}
+                      selectedIds={draft.contactIds}
+                      onChange={toggleContact}
                       onCreate={(name) => void createContact(name)}
                     />
                   )}

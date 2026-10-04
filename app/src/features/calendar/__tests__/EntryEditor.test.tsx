@@ -347,6 +347,36 @@ const collabBox = screen.getByRole("combobox", {
     ]);
   });
 
+  it("aggiunge in un clic i collaboratori frequenti del progetto", async () => {
+    useInventoryStore.setState({
+      people: [
+        { id: "u1", name: "Mario" },
+        { id: "u2", name: "Lucia" },
+      ],
+    });
+    await db.entries.bulkAdd([
+      entry({ id: "a", projectId: "p1", clientId: "c1", collaboratorIds: ["u1", "u2"] }),
+      entry({ id: "b", projectId: "p1", clientId: "c1", collaboratorIds: ["u1"] }),
+      entry({ id: "c", projectId: "p1", clientId: "c1", collaboratorIds: [] }),
+    ]);
+    useEditorStore.getState().openCreate({
+      date: "2026-06-12",
+      startMin: 540,
+      endMin: 600,
+      clientId: "c1",
+      projectId: "p1",
+    });
+    render(<EntryEditor />);
+
+    // Mario c'è in 2 su 3, Lucia in 1 su 3: entra solo Mario.
+    fireEvent.click(await screen.findByRole("button", { name: /Aggiungi i frequenti/ }));
+    expect(screen.queryByRole("button", { name: /Aggiungi i frequenti/ })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Titolo"), { target: { value: "Call" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() => expect(useCalendarStore.getState().entries).toHaveLength(1));
+    expect(useCalendarStore.getState().entries[0].collaboratorIds).toEqual(["u1"]);
+  });
+
   it("crea un collaboratore al volo e lo lega al team del progetto", async () => {
     useInventoryStore.setState({
       people: [],

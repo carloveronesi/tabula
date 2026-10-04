@@ -33,6 +33,7 @@ import { tint } from "@/domain/colors";
 import { DayGrid, TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/DayGrid";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
+import { useEditorStore } from "@/store/editor";
 
 interface DayViewProps {
   date: Date;
@@ -232,7 +233,14 @@ export function DayView({
     }
   }
 
-  const ghost = drag?.kind === "create" ? createGeom(drag) : null;
+  // A drag finito il ghost resta finché il quick-add è aperto su questo slot:
+  // il popover copre la griglia e senza evidenza non si vede cosa si crea.
+  const quickAdd = useEditorStore((s) => s.quickAdd);
+  const pending =
+    quickAdd && !quickAdd.days && quickAdd.date === dayKey
+      ? entryRowSpan(quickAdd.startMin, quickAdd.endMin, slots)
+      : null;
+  const ghost = drag?.kind === "create" ? createGeom(drag) : drag ? null : pending;
   const dragConflict = drag ? isConflict(drag) : false;
 
   return (
@@ -269,7 +277,11 @@ export function DayView({
               right: 4,
             }}
             className={`pointer-events-none rounded border bg-primary-wash ${
-              dragConflict ? "border-danger" : "border-dashed border-primary"
+              dragConflict
+                ? "border-danger"
+                : drag
+                  ? "border-dashed border-primary"
+                  : "border-primary ring-2 ring-primary/40"
             }`}
           />
         )}

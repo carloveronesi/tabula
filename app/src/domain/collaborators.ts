@@ -59,3 +59,36 @@ export function rankCandidatesByHistory(
     .sort((a, b) => b.f - a.f || a.i - b.i)
     .map((x) => x.id);
 }
+
+/**
+ * Persone "di casa" su un progetto (o, in mancanza, su un cliente): chi compare
+ * in almeno metà delle ultime `recent` attività lì sopra. Collaboratori e
+ * referenti separati, ciascuno dal più frequente. Senza progetto né cliente, o
+ * senza storico, liste vuote. Pura.
+ */
+export function frequentPeople(
+  entries: Entry[],
+  projectId: Id | null,
+  clientId: Id | null,
+  recent = 10,
+): { collaboratorIds: Id[]; contactIds: Id[] } {
+  const last = entries
+    .filter((e) =>
+      projectId ? e.projectId === projectId : clientId ? e.clientId === clientId : false,
+    )
+    .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+    .slice(0, recent);
+  const threshold = Math.ceil(last.length / 2);
+  const pick = (ids: (e: Entry) => Id[]) => {
+    const freq = new Map<Id, number>();
+    for (const e of last) for (const id of ids(e)) freq.set(id, (freq.get(id) ?? 0) + 1);
+    return [...freq]
+      .filter(([, f]) => f >= threshold)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id);
+  };
+  return {
+    collaboratorIds: pick((e) => e.collaboratorIds),
+    contactIds: pick((e) => e.contactIds),
+  };
+}

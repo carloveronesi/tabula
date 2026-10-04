@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DayView } from "@/features/calendar/DayView";
+import { useEditorStore } from "@/store/editor";
 import type { Entry, ISODateTime } from "@/data/types";
 import type { WorkHours } from "@/domain/slots";
 
@@ -300,5 +301,21 @@ describe("DayView", () => {
     fireEvent.pointerUp(area, { pointerId: 1 });
     // 09:00 invariato, fine estesa di 30' → 540 … 630
     expect(onUpdateEntry).toHaveBeenCalledWith(e, "2026-06-10", 540, 630);
+  });
+});
+
+describe("DayView — slot del quick-add", () => {
+  it("resta evidenziato finché il quick-add è aperto su quel giorno", () => {
+    useEditorStore.setState({
+      quickAdd: { date: "2026-06-10", startMin: 840, endMin: 930, anchor: null },
+    });
+    const { rerender } = render(
+      <DayView date={new Date(2026, 5, 10)} entries={[]} workHours={WH} slotMinutes={30} />,
+    );
+    expect(screen.getByTestId("create-ghost")).toBeInTheDocument();
+
+    useEditorStore.setState({ quickAdd: null });
+    rerender(<DayView date={new Date(2026, 5, 10)} entries={[]} workHours={WH} slotMinutes={30} />);
+    expect(screen.queryByTestId("create-ghost")).toBeNull();
   });
 });

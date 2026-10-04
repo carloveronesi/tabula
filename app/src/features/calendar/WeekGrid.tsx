@@ -10,6 +10,7 @@ import { DayLocationPicker } from "@/features/calendar/DayLocationPicker";
 import { workWeekDays, dowMon0, isoDate, isHoliday, holidayLabel } from "@/domain/calendarNav";
 import {
   buildSlots,
+  entryRowSpan,
   fasciaEndLabel,
   lunchBoundary,
   minutesToLabel,
@@ -35,6 +36,7 @@ import { TIME_GUTTER, GRID_PAD_TOP, GRID_PAD_BOTTOM } from "@/features/calendar/
 import { LunchBand } from "@/features/calendar/LunchBand";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
+import { useEditorStore } from "@/store/editor";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -271,6 +273,12 @@ export function WeekGrid({
 
   // Anteprima del drag (ghost/creazione o blocco in movimento).
   const dragConflict = drag ? isConflict(drag) : false;
+  // A drag finito il ghost resta finché il quick-add è aperto su quello slot.
+  const quickAdd = useEditorStore((s) => s.quickAdd);
+  const pendingCol =
+    quickAdd && !quickAdd.days ? days.findIndex((d) => isoDate(d) === quickAdd.date) : -1;
+  const pendingGeom =
+    quickAdd && pendingCol >= 0 ? entryRowSpan(quickAdd.startMin, quickAdd.endMin, slots) : null;
   const preview =
     drag?.kind === "create"
       ? { col: drag.col, ...createGeom(drag), ghost: true }
@@ -280,7 +288,9 @@ export function WeekGrid({
             ...vGeom(drag, slotCount, boundary),
             ghost: false,
           }
-        : null;
+        : pendingGeom
+          ? { col: pendingCol, ...pendingGeom, ghost: true }
+          : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -522,7 +532,9 @@ export function WeekGrid({
                 dragConflict
                   ? "border border-danger ring-1 ring-danger"
                   : preview.ghost
-                    ? "border border-dashed border-primary"
+                    ? drag
+                      ? "border border-dashed border-primary"
+                      : "border border-primary ring-2 ring-primary/40"
                     : "shadow"
               }`}
               style={{

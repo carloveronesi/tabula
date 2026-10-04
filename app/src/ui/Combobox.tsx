@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/ui/cn";
 import { inputClasses } from "@/ui/Input";
-import { IconChevronDown } from "@/ui/icons";
+import { IconCheck, IconChevronDown } from "@/ui/icons";
 
 export interface ComboboxOption {
   id: string;
@@ -22,6 +22,12 @@ export interface ComboboxProps {
   emptyText?: string;
   /** Marca il campo come compilato da una proposta, da rivedere prima di salvare. */
   marked?: boolean;
+  /**
+   * Multi-selezione: le opzioni con questi id hanno la spunta, `onChange` va
+   * letto come "toggle" e la lista resta aperta tra una scelta e l'altra.
+   * `value` è ignorato.
+   */
+  selectedIds?: string[];
 }
 
 /**
@@ -38,7 +44,9 @@ export function Combobox({
   placeholder,
   emptyText = "Nessun risultato",
   marked = false,
+  selectedIds,
 }: ComboboxProps) {
+  const multi = selectedIds !== undefined;
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +58,7 @@ export function Combobox({
     return [...options, ...searchOptions.filter((o) => !seen.has(o.id))];
   }, [options, searchOptions]);
 
-  const selected = pool.find((o) => o.id === value) ?? null;
+  const selected = multi ? null : (pool.find((o) => o.id === value) ?? null);
 
   const [query, setQuery] = useState(selected?.label ?? "");
   const [open, setOpen] = useState(false);
@@ -87,12 +95,26 @@ export function Combobox({
 
   function select(opt: ComboboxOption) {
     onChange(opt.id);
+    if (multi) {
+      // Resta aperta: si spunta il prossimo. Svuota la ricerca solo se c'era,
+      // così la lista torna intera senza perdere la posizione di scorrimento.
+      if (query) {
+        setQuery("");
+        setHighlight(0);
+      }
+      return;
+    }
     setQuery(opt.label);
     setOpen(false);
   }
 
   function create() {
     onCreate?.(trimmed);
+    if (multi) {
+      setQuery("");
+      setHighlight(0);
+      return;
+    }
     setOpen(false);
   }
 
@@ -152,6 +174,7 @@ export function Combobox({
         <ul
           id={listId}
           role="listbox"
+          aria-multiselectable={multi || undefined}
           className={cn(
             "absolute z-dropdown mt-1 max-h-60 w-full overflow-auto rounded-lg",
             "border border-line bg-surface p-1 shadow",
@@ -162,7 +185,7 @@ export function Combobox({
           )}
           {filtered.map((opt, i) => {
             const active = i === highlight;
-            const isSelected = opt.id === value;
+            const isSelected = multi ? selectedIds.includes(opt.id) : opt.id === value;
             return (
               <li
                 key={opt.id}
@@ -176,9 +199,20 @@ export function Combobox({
                 className={cn(
                   "cursor-pointer rounded px-2 py-1.5 text-sm",
                   active ? "bg-raised text-ink" : "text-ink",
-                  isSelected && "font-medium text-primary",
+                  multi ? "flex items-center gap-2" : isSelected && "font-medium text-primary",
                 )}
               >
+                {multi && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "grid size-4 shrink-0 place-items-center rounded border",
+                      isSelected ? "border-primary bg-primary text-primary-ink" : "border-line",
+                    )}
+                  >
+                    {isSelected && <IconCheck size={12} strokeWidth={2.5} />}
+                  </span>
+                )}
                 {opt.label}
               </li>
             );
