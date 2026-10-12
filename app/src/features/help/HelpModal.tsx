@@ -74,10 +74,10 @@ const STEPS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: "Nel Mese, fai il punto",
+    title: "Nel Riepilogo, fai il punto",
     body: (
       <>
-        Dalla voce Mese nella barra a sinistra: giorni in presenza richiesti e
+        Dalla voce Riepilogo nella barra a sinistra (è il Mese del calendario): giorni in presenza richiesti e
         mancanti, ore totali, copertura delle giornate e
         ripartizione per cliente. Da lì esporti il mese in Excel.
       </>
