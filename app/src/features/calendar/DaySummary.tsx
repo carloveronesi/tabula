@@ -25,6 +25,8 @@ interface DaySummaryProps {
   onSetLocation?: (location: Location | null) => void;
   /** Sede predefinita, suggerita quando il giorno non ha sede. */
   suggestedLocation?: Location | null;
+  /** Il giorno mostrato è oggi: solo allora l'etichetta dice "Oggi". */
+  isToday?: boolean;
   /** Contenuto extra in coda alla sidebar (es. widget Da fare). */
   children?: ReactNode;
 }
@@ -47,6 +49,7 @@ export function DaySummary({
   location = null,
   onSetLocation,
   suggestedLocation = null,
+  isToday = false,
   children,
 }: DaySummaryProps) {
   const { totalMin, count, rows } = breakdown;
@@ -55,7 +58,9 @@ export function DaySummary({
     <aside className="hidden w-64 min-h-0 flex-none flex-col gap-3.5 overflow-y-auto lg:flex">
       {/* Stesso raggio della card timeline (`--radius-xl`): sono fratelli. */}
       <div className="rounded-xl border border-line bg-surface p-[18px] shadow-card">
-        <div className="text-[13px] font-medium text-muted">Oggi registrato</div>
+        <div className="text-[13px] font-medium text-muted">
+          {isToday ? "Oggi registrato" : "Registrato"}
+        </div>
         <div className="tnum mt-1 text-2xl font-semibold leading-tight tracking-tight text-ink">
           {formatHours(totalMin)}
         </div>
@@ -100,7 +105,8 @@ export function DaySummary({
               <DayLocationPicker
                 value={location}
                 onChange={onSetLocation}
-                suggested={suggestedLocation}
+                // Weekend, festivi e ferie piene: nessuna sede suggerita.
+                suggested={expectedMin > 0 ? suggestedLocation : null}
               />
             </div>
           </>
