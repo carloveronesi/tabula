@@ -113,7 +113,7 @@ describe("MonthSummary", () => {
         metas: { "2026-06-01": "office", "2026-06-03": "client", "2026-06-17": "office" },
       });
       render(<MonthSummary />);
-      expect(screen.getByText("/8 in presenza")).toBeInTheDocument();
+      expect(screen.getByText("· obiettivo 8")).toBeInTheDocument();
       // 3 in presenza (uno futuro): ne mancano 5, restano 9 giorni senza sede
       expect(screen.getByText("Mancano 5 · 9 giorni liberi")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Dettaglio" }));

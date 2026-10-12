@@ -21,7 +21,12 @@ interface UiState {
   activeDate: Date;
   /** Filtri da applicare all'apertura della Ricerca; consumato dalla vista. */
   searchSeed: SearchSeed | null;
+  /** Mese aperto dalla voce "Riepilogo" della rail (non dallo switch del
+   * calendario): decide quale voce della rail risulta attiva. */
+  summary: boolean;
   setView: (view: ViewMode) => void;
+  /** Apre il Mese come Riepilogo. */
+  openSummary: () => void;
   setActiveDate: (date: Date) => void;
   goPrev: () => void;
   goNext: () => void;
@@ -35,11 +40,13 @@ export const useUiStore = create<UiState>((set, get) => ({
   view: "month",
   activeDate: new Date(),
   searchSeed: null,
-  setView: (view) => set({ view }),
+  summary: false,
+  setView: (view) => set({ view, summary: false }),
+  openSummary: () => set({ view: "month", summary: true }),
   setActiveDate: (activeDate) => set({ activeDate }),
   goPrev: () => set({ activeDate: shiftFocus(get().activeDate, get().view, -1) }),
   goNext: () => set({ activeDate: shiftFocus(get().activeDate, get().view, 1) }),
   goToday: () => set({ activeDate: new Date() }),
-  openSearch: (seed) => set({ view: "search", searchSeed: seed }),
+  openSearch: (seed) => set({ view: "search", searchSeed: seed, summary: false }),
   consumeSearchSeed: () => set({ searchSeed: null }),
 }));

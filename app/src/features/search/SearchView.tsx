@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Entry, EntryType, Id } from "@/data/types";
 import { searchEntries } from "@/domain/search";
+import { workedMinutes } from "@/domain/time";
+import { formatHours } from "@/domain/format";
 import { allEntries } from "@/data/repositories";
 import { useInventoryStore } from "@/store/inventory";
 import { useEditorStore } from "@/store/editor";
 import { useUiStore } from "@/store";
+import { useSettingsStore } from "@/store/settings";
 import { Button, Combobox, Field, Input, Segmented, type SegmentedOption } from "@/ui";
 
 type TypeFilter = EntryType | "all";
@@ -37,6 +40,7 @@ export function SearchView() {
   const showDetail = useEditorStore((s) => s.showDetail);
   const searchSeed = useUiStore((s) => s.searchSeed);
   const consumeSearchSeed = useUiStore((s) => s.consumeSearchSeed);
+  const workHours = useSettingsStore((s) => s.settings.workHours);
 
   const [entries, setEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
@@ -47,6 +51,9 @@ export function SearchView() {
   const [contactId, setContactId] = useState<Id | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  // Filtri avanzati chiusi di default: la ricerca parte dal testo e i
+  // risultati restano sopra la piega.
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     void allEntries().then(setEntries);
@@ -57,6 +64,7 @@ export function SearchView() {
     if (!searchSeed) return;
     setCollaboratorId(searchSeed.collaboratorId ?? null);
     setContactId(searchSeed.contactId ?? null);
+    setShowFilters(true);
     consumeSearchSeed();
   }, [searchSeed, consumeSearchSeed]);
 
@@ -101,15 +109,11 @@ export function SearchView() {
     return [client, project].filter(Boolean).join(" · ");
   };
 
-  const active =
-    query.trim() !== "" ||
-    type !== "all" ||
-    clientId !== null ||
-    projectId !== null ||
-    collaboratorId !== null ||
-    contactId !== null ||
-    from !== "" ||
-    to !== "";
+  const filterCount = [clientId, projectId, collaboratorId, contactId, from, to].filter(
+    Boolean,
+  ).length;
+  const active = query.trim() !== "" || type !== "all" || filterCount > 0;
+  const totalMin = results.reduce((sum, e) => sum + workedMinutes(e, workHours), 0);
 
   const clearFilters = () => {
     setQuery("");
@@ -120,6 +124,7 @@ export function SearchView() {
     setContactId(null);
     setFrom("");
     setTo("");
+    setShowFilters(false);
   };
 
   return (
@@ -132,76 +137,94 @@ export function SearchView() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <Segmented
-        label="Tipo"
-        options={TYPE_FILTERS}
-        value={type}
-        onChange={setType}
-      />
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Cliente">
-          <Combobox
-            label="Cliente"
-            placeholder="Tutti"
-            options={clientOptions}
-            value={clientId}
-            onChange={(id) => {
-              setClientId(id);
-              setProjectId(null); // il progetto dipende dal cliente
-            }}
-          />
-        </Field>
-        <Field label="Progetto">
-          <Combobox
-            label="Progetto"
-            placeholder="Tutti"
-            options={projectOptions}
-            value={projectId}
-            onChange={setProjectId}
-          />
-        </Field>
-        <Field label="Collaboratore">
-          <Combobox
-            label="Collaboratore"
-            placeholder="Tutti"
-            options={peopleOptions}
-            value={collaboratorId}
-            onChange={setCollaboratorId}
-          />
-        </Field>
-        <Field label="Referente">
-          <Combobox
-            label="Referente"
-            placeholder="Tutti"
-            options={contactOptions}
-            value={contactId}
-            onChange={setContactId}
-          />
-        </Field>
-        <Field label="Dal">
-          <Input
-            type="date"
-            aria-label="Dal"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </Field>
-        <Field label="Al">
-          <Input
-            type="date"
-            aria-label="Al"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </Field>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Segmented
+          label="Tipo"
+          options={TYPE_FILTERS}
+          value={type}
+          onChange={setType}
+        />
+        <Button
+          variant={filterCount > 0 ? "outline" : "ghost"}
+          size="sm"
+          aria-expanded={showFilters}
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          {filterCount > 0 ? `Filtri (${filterCount})` : "Filtri"}
+        </Button>
       </div>
+
+      {showFilters && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Cliente">
+            <Combobox
+              label="Cliente"
+              placeholder="Tutti"
+              options={clientOptions}
+              value={clientId}
+              onChange={(id) => {
+                setClientId(id);
+                setProjectId(null); // il progetto dipende dal cliente
+              }}
+            />
+          </Field>
+          <Field label="Progetto">
+            <Combobox
+              label="Progetto"
+              placeholder="Tutti"
+              options={projectOptions}
+              value={projectId}
+              onChange={setProjectId}
+            />
+          </Field>
+          <Field label="Collaboratore">
+            <Combobox
+              label="Collaboratore"
+              placeholder="Tutti"
+              options={peopleOptions}
+              value={collaboratorId}
+              onChange={setCollaboratorId}
+            />
+          </Field>
+          <Field label="Referente">
+            <Combobox
+              label="Referente"
+              placeholder="Tutti"
+              options={contactOptions}
+              value={contactId}
+              onChange={setContactId}
+            />
+          </Field>
+          <Field label="Dal">
+            <Input
+              type="date"
+              aria-label="Dal"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </Field>
+          <Field label="Al">
+            <Input
+              type="date"
+              aria-label="Al"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </Field>
+        </div>
+      )}
 
       {active && (
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs text-muted">
             {results.length}{" "}
             {results.length === 1 ? "risultato" : "risultati"}
+            {totalMin > 0 && (
+              <>
+                {" · "}
+                <span className="tnum text-ink">{formatHours(totalMin)}</span>
+              </>
+            )}
           </span>
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             Pulisci filtri

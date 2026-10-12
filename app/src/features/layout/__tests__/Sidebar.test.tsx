@@ -1,28 +1,36 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Sidebar } from "@/features/layout/Sidebar";
 import { useUiStore } from "@/store";
 
 beforeEach(() => {
-  useUiStore.setState({ view: "month", activeDate: new Date(2026, 5, 15) });
+  useUiStore.setState({ view: "month", summary: false, activeDate: new Date(2026, 5, 15) });
 });
 
 describe("Sidebar", () => {
   it("espone la navigazione tra sezioni", () => {
     render(<Sidebar />);
     expect(screen.getByRole("navigation", { name: "Sezioni" })).toBeInTheDocument();
-    for (const label of ["Calendario", "Mese", "Progetti", "Da fare", "Ricerca", "Impostazioni"]) {
+    for (const label of ["Calendario", "Riepilogo", "Progetti", "Da fare", "Ricerca", "Impostazioni"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
   });
 
-  it("Mese apre la vista mensile ed è l'unica voce attiva lì", () => {
+  it("Riepilogo apre il Mese ed è l'unica voce attiva lì", () => {
     useUiStore.setState({ view: "day" });
     render(<Sidebar />);
-    fireEvent.click(screen.getByRole("button", { name: "Mese" }));
+    fireEvent.click(screen.getByRole("button", { name: "Riepilogo" }));
     expect(useUiStore.getState().view).toBe("month");
-    expect(screen.getByRole("button", { name: "Mese" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Riepilogo" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("il Mese aperto dallo switch del calendario lascia attivo Calendario", () => {
+    useUiStore.setState({ view: "day" });
+    render(<Sidebar />);
+    act(() => useUiStore.getState().setView("month"));
+    expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Riepilogo" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("cambia vista al click su una sezione", () => {

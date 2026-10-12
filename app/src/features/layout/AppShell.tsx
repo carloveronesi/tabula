@@ -45,6 +45,7 @@ import {
   duplicateEntry,
   saveAsTemplate,
   deleteEntry,
+  startNewEntry,
 } from "@/features/layout/entryActions";
 
 /**
@@ -285,14 +286,7 @@ export function AppShell() {
                 <DaySummary
                   breakdown={breakdown}
                   expectedMin={dayExpectedMin}
-                  onAdd={(anchor) =>
-                    openQuickAdd({
-                      date: dayKey,
-                      startMin: 540,
-                      endMin: 600,
-                      anchor: anchor ?? null,
-                    })
-                  }
+                  onAdd={(anchor) => startNewEntry(anchor ?? null)}
                   onPaste={canPaste ? () => void pasteEntry() : undefined}
                   onImportCalls={() => openTeamsImport(dayKey)}
                   onImportCalendar={() => openCalendarImport(dayKey)}
@@ -300,6 +294,7 @@ export function AppShell() {
                   location={locations[dayKey] ?? null}
                   onSetLocation={(loc) => void setLocation(dayKey, loc)}
                   suggestedLocation={settings.defaultLocation}
+                  isToday={dayKey === isoDate(new Date())}
                 >
                   <DayTodoWidget onOpenTodo={() => setView("todo")} />
                 </DaySummary>

@@ -348,9 +348,11 @@ export function MonthGrid({
                         );
                       })}
                     </div>
-                    {missingPct > 0 && (
+                    {/* Sul giorno vuoto la barra vuota basta: "−100%" su
+                        ogni feriale scoperto era solo rumore. */}
+                    {missingPct > 0 && count > 0 && (
                       <span
-                        className="flex-none text-[10px] font-medium leading-none text-muted"
+                        className="flex-none text-[11px] font-medium leading-none text-muted"
                         title={`${missingPct}% della giornata non compilato`}
                       >
                         −{missingPct}%

@@ -525,6 +525,9 @@ export function QuickAddPopover() {
           </>
         ) : (
           <span className="tnum inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink">
+            {/* Sempre visibile: aperto da "Nuova" fuori dalla griglia, o
+                spostato dall'AI, il giorno non si deduce dallo slot. */}
+            <span className="text-muted">{dayLabel(date)}</span>
             {minutesToLabel(startMin)}
             <span className="text-faint">–</span>
             {minutesToLabel(endMin)}
@@ -536,11 +539,6 @@ export function QuickAddPopover() {
             className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
             style={{ backgroundColor: dotColor }}
           />
-        )}
-        {/* La data compare solo se l'AI ha spostato l'attività su un altro
-            giorno: senza, uno slot finito su ieri lo scopri a consuntivo. */}
-        {!days && date !== slotDate && (
-          <span className="text-xs text-muted">{dayLabel(date)}</span>
         )}
       </div>
 

@@ -1,10 +1,9 @@
 import { useUiStore, type ViewMode } from "@/store";
-import { useEditorStore } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { formatPeriod } from "@/domain/format";
-import { isoDate } from "@/domain/calendarNav";
 import { canRedo, canUndo } from "@/domain/history";
 import { TimerControl } from "@/features/layout/TimerControl";
+import { startNewEntry } from "@/features/layout/entryActions";
 import { Button, IconButton, Segmented, type SegmentedOption } from "@/ui";
 import {
   IconChevronLeft,
@@ -47,16 +46,12 @@ export function TopBar() {
   const goNext = useUiStore((s) => s.goNext);
   const goToday = useUiStore((s) => s.goToday);
   const setView = useUiStore((s) => s.setView);
-  const openCreate = useEditorStore((s) => s.openCreate);
   const history = useCalendarStore((s) => s.history);
   const undo = useCalendarStore((s) => s.undo);
   const redo = useCalendarStore((s) => s.redo);
 
   const calendar = isCalendar(view);
   const period = formatPeriod(activeDate, view);
-
-  const newEntry = () =>
-    openCreate({ date: isoDate(activeDate), startMin: 540, endMin: 600 });
 
   return (
     <header className="sticky top-0 z-sticky flex flex-nowrap items-center justify-between gap-x-4 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
@@ -112,7 +107,10 @@ export function TopBar() {
         <Button
           variant="primary"
           size="sm"
-          onClick={newEntry}
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            startNewEntry({ x: r.right, y: r.bottom });
+          }}
           title="Nuova attività (n)"
           aria-label="Nuova attività"
         >
