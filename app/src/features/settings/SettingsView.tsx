@@ -54,8 +54,7 @@ export function SettingsView() {
   return (
     <div className="mx-auto w-full max-w-3xl">
       <header className="mb-6">
-        <h2 className="text-2xl font-semibold tracking-tight">Impostazioni</h2>
-        <p className="mt-1 text-sm text-muted">
+        <p className="text-sm text-muted">
           I tuoi dati restano sul dispositivo. L'unica cosa che esce dal browser
           è quello che mandi tu all'AI, se la attivi.
         </p>

@@ -11,7 +11,7 @@ describe("Sidebar", () => {
   it("espone la navigazione tra sezioni", () => {
     render(<Sidebar />);
     expect(screen.getByRole("navigation", { name: "Sezioni" })).toBeInTheDocument();
-    for (const label of ["Calendario", "Riepilogo", "Progetti", "Todo", "Ricerca", "Impostazioni"]) {
+    for (const label of ["Calendario", "Riepilogo", "Progetti", "Da fare", "Ricerca", "Impostazioni"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
   });
@@ -53,6 +53,14 @@ describe("Sidebar", () => {
     },
   );
 
+  it("rientrando nel Calendario da un'altra sezione riparte da oggi", () => {
+    useUiStore.setState({ view: "todo", activeDate: new Date(2026, 8, 5) });
+    render(<Sidebar />);
+    fireEvent.click(screen.getByRole("button", { name: "Calendario" }));
+    expect(useUiStore.getState().view).toBe("day");
+    expect(useUiStore.getState().activeDate.toDateString()).toBe(new Date().toDateString());
+  });
+
   it("Aiuto apre il pannello senza cambiare vista", () => {
     render(<Sidebar />);
     expect(screen.queryByText("Il flusso di una giornata")).not.toBeInTheDocument();
@@ -68,7 +76,7 @@ describe("Sidebar", () => {
   it("marca la sezione attiva con aria-pressed", () => {
     useUiStore.setState({ view: "todo" });
     render(<Sidebar />);
-    expect(screen.getByRole("button", { name: "Todo" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Da fare" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

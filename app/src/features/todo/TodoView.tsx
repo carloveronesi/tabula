@@ -265,13 +265,12 @@ function TodoRow({
       data-testid={`todo-${t.id}`}
       data-overdue={overdue ? "true" : undefined}
       className={cn(
-        "relative overflow-hidden rounded-xl border border-line bg-surface shadow-card",
+        "relative overflow-hidden rounded-xl border bg-surface shadow-card",
+        // Bordo pieno, non striscia laterale: la scadenza in rosso dice il resto.
+        overdue ? "border-danger" : "border-line",
         t.done && "bg-raised/40",
       )}
     >
-      {overdue && (
-        <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-danger" />
-      )}
       <div className="flex items-center gap-3 px-3.5 py-3">
         <input
           type="checkbox"
@@ -553,12 +552,9 @@ export function TodoView() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-2xl font-semibold tracking-tight text-ink">Todo</h2>
-          <span className="text-sm text-muted">
-            {remaining > 0 ? `${remaining} da completare` : "Tutto fatto"}
-          </span>
-        </div>
+        <span className="text-sm text-muted">
+          {remaining > 0 ? `${remaining} da completare` : "Tutto fatto"}
+        </span>
         <Segmented
           label="Filtro todo"
           options={FILTERS}
@@ -608,7 +604,7 @@ export function TodoView() {
             </Group>
           )}
           {showTodo && todo.length > 0 && (
-            <Group label="Da fare" count={todo.length}>
+            <Group label="In programma" count={todo.length}>
               {todo.map((t) => (
                 <TodoRow
                   key={t.id}

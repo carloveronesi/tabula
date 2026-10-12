@@ -8,7 +8,7 @@ const VIEW_OPTIONS: { id: Settings["defaultView"]; label: string }[] = [
   { id: "week", label: "Settimana" },
   { id: "month", label: "Mese" },
   { id: "projects", label: "Progetti" },
-  { id: "todo", label: "Todo" },
+  { id: "todo", label: "Da fare" },
 ];
 
 /** Impostazioni generali: tema, vista iniziale, granularità del calendario. */

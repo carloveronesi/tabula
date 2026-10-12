@@ -37,6 +37,8 @@ import { LunchBand } from "@/features/calendar/LunchBand";
 import { useFitSlotHeight } from "@/features/calendar/useFitSlotHeight";
 import { NowLine } from "@/features/calendar/NowLine";
 import { useEditorStore } from "@/store/editor";
+import { workedMinutes } from "@/domain/time";
+import { formatHours } from "@/domain/format";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -300,19 +302,29 @@ export function WeekGrid({
           const today = isoDate(d) === todayKey;
           const holName = holidayLabel(d, patronDay);
           const key = isoDate(d);
+          const dayMin = entries
+            .filter((e) => e.startsAt.slice(0, 10) === key)
+            .reduce((sum, e) => sum + workedMinutes(e, workHours), 0);
           return (
             <div
               key={d.toISOString()}
               role="columnheader"
               className="flex flex-1 flex-col items-start gap-1.5 px-2 py-2.5"
             >
-              <span
-                // Il festivo lo dice già la colonna tinta (`bg-weekend`): non
-                // serve anche sbiadire il nome del giorno, che è testo da
-                // leggere e in `faint` non arriva a contrasto.
-                className={`text-xs font-semibold ${today ? "text-primary" : "text-muted"}`}
-              >
-                {dayLabel(d)}
+              <span className="flex w-full items-baseline justify-between gap-2">
+                <span
+                  // Il festivo lo dice già la colonna tinta (`bg-weekend`): non
+                  // serve anche sbiadire il nome del giorno, che è testo da
+                  // leggere e in `faint` non arriva a contrasto.
+                  className={`text-xs font-semibold ${today ? "text-primary" : "text-muted"}`}
+                >
+                  {dayLabel(d)}
+                </span>
+                {dayMin > 0 && (
+                  <span className="tnum text-xs text-muted" aria-label={`${formatHours(dayMin)} registrate`}>
+                    {formatHours(dayMin)}
+                  </span>
+                )}
               </span>
               {holName && (
                 <span

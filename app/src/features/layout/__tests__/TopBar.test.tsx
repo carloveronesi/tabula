@@ -67,7 +67,7 @@ describe("TopBar", () => {
   it("nelle viste non-calendario mostra il titolo di sezione e nasconde lo switch", () => {
     useUiStore.setState({ view: "todo" });
     render(<TopBar />);
-    expect(screen.getByRole("heading", { name: "Todo" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Da fare" })).toBeInTheDocument();
     expect(screen.queryByText("Settimana")).not.toBeInTheDocument();
   });
 });

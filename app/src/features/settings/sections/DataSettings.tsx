@@ -18,7 +18,7 @@ const ROWS: { key: keyof ImportSummary; label: string }[] = [
   { key: "projects", label: "Progetti" },
   { key: "people", label: "Persone" },
   { key: "contacts", label: "Contatti" },
-  { key: "todos", label: "Todo" },
+  { key: "todos", label: "Da fare" },
   { key: "days", label: "Giornate" },
 ];
 

@@ -21,7 +21,7 @@ const CALENDAR_VIEWS: SegmentedOption<ViewMode>[] = [
 
 const SECTION_LABEL: Partial<Record<ViewMode, string>> = {
   projects: "Progetti",
-  todo: "Todo",
+  todo: "Da fare",
   search: "Ricerca",
   settings: "Impostazioni",
 };

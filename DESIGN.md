@@ -98,13 +98,14 @@ di tutto il resto. Il mono è riservato al `code` inline. Scala **rem fissa** (~
 ## Layout
 
 **Sidebar** (`features/layout/Sidebar.tsx`): rail verticale a sinistra (~76px),
-icona + etichetta per ogni sezione (Calendario, Riepilogo, Progetti, Todo, e in
-basso Aiuto, Ricerca, Impostazioni); voce attiva su `--primary-wash` con
+icona + etichetta per ogni sezione (Calendario, Riepilogo, Progetti, Da fare, e
+in basso Aiuto, Ricerca, Impostazioni); voce attiva su `--primary-wash` con
 indicatore a filo. Il **mese è una scala del calendario**: "Calendario" resta
 attivo su giorno/settimana/mese. **Riepilogo** apre la stessa vista `month` come
 ingresso diretto per fare il punto, ed è attivo solo se ci si è entrati da lì
-(`summary` nello store UI): cambiare scala dalla TopBar non fa saltare la rail. **TopBar** snella: toolbar del *calendario* (prec/oggi/succ in
-cluster pill, titolo periodo, switch giorno/settimana/mese, annulla/ripeti,
+(`summary` nello store UI): cambiare scala dalla TopBar non fa saltare la rail.
+Rientrando nel Calendario da un'altra voce si riparte da oggi. **TopBar** snella:
+toolbar del *calendario* (prec/oggi/succ in cluster pill, titolo periodo, switch giorno/settimana/mese, annulla/ripeti,
 "Nuova"); per le viste non-calendario mostra solo il titolo di sezione.
 Lo header **non va mai a capo** (`flex-nowrap`): l'altezza-slot è misurata, e un
 header che raddoppia fa saltare la griglia. Sotto `xl` il cluster destro collassa

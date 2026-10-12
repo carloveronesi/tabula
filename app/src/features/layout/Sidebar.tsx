@@ -29,7 +29,7 @@ const PRIMARY: Dest[] = [
   { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week", "month"] },
   { label: "Riepilogo", icon: IconMonth, target: "month" },
   { label: "Progetti", icon: IconProjects, target: "projects" },
-  { label: "Todo", icon: IconTodo, target: "todo" },
+  { label: "Da fare", icon: IconTodo, target: "todo" },
 ];
 
 const SECONDARY: Dest[] = [
@@ -80,6 +80,7 @@ function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSe
 export function Sidebar() {
   const view = useUiStore((s) => s.view);
   const setView = useUiStore((s) => s.setView);
+  const goToday = useUiStore((s) => s.goToday);
   const summary = useUiStore((s) => s.summary);
   const openSummary = useUiStore((s) => s.openSummary);
   const [help, setHelp] = useState(false);
@@ -89,7 +90,6 @@ export function Sidebar() {
     if (d.label === "Calendario") return d.match!.includes(view) && !(view === "month" && summary);
     return view === d.target;
   };
-  const select = (d: Dest) => (d.label === "Riepilogo" ? openSummary() : setView(d.target));
 
   return (
     <nav
@@ -105,7 +105,18 @@ export function Sidebar() {
       />
       <div className="flex w-full flex-1 flex-col gap-1">
         {PRIMARY.map((d) => (
-          <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => select(d)} />
+          <NavItem
+            key={d.label}
+            dest={d}
+            active={isActive(d)}
+            onSelect={() => {
+              if (d.label === "Riepilogo") return openSummary();
+              // Rientrando nel Calendario da un'altra voce si riparte da oggi,
+              // non dall'ultimo periodo navigato.
+              if (d.target === "day" && !isActive(d)) goToday();
+              setView(d.target);
+            }}
+          />
         ))}
       </div>
       <div className="flex w-full flex-col gap-1">
