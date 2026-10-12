@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   collaboratorCandidateIds,
   rankCandidatesByHistory,
+  rankByUsage,
   frequentPeople,
 } from "@/domain/collaborators";
 import type { Entry, Project } from "@/data/types";
@@ -124,6 +125,39 @@ describe("rankCandidatesByHistory", () => {
     expect(rankCandidatesByHistory(["u2", "u1"], entries, null, null)).toEqual([
       "u2",
       "u1",
+    ]);
+  });
+});
+
+describe("rankCandidatesByHistory — ripiego", () => {
+  it("senza storico sul progetto ordina per cliente, poi per storico globale", () => {
+    const entries = [
+      entry({ projectId: "p2", clientId: "c1", collaboratorIds: ["u3"] }),
+      entry({ projectId: "pX", clientId: "c9", collaboratorIds: ["u2", "u4"] }),
+      entry({ projectId: "pX", clientId: "c9", collaboratorIds: ["u2"] }),
+    ];
+    // p1 nuovo: u3 per il cliente, poi u2 (×2 altrove), u4 (×1), u1 (mai)
+    expect(rankCandidatesByHistory(["u1", "u4", "u2", "u3"], entries, "p1", "c1")).toEqual([
+      "u3",
+      "u2",
+      "u4",
+      "u1",
+    ]);
+  });
+});
+
+describe("rankByUsage", () => {
+  it("più citati in cima, a parità ordine d'ingresso", () => {
+    const entries = [
+      entry({ contactIds: ["k2"] }),
+      entry({ contactIds: ["k2", "k3"] }),
+    ];
+    const items = [{ id: "k1" }, { id: "k3" }, { id: "k2" }, { id: "k4" }];
+    expect(rankByUsage(items, entries, (e) => e.contactIds).map((x) => x.id)).toEqual([
+      "k2",
+      "k3",
+      "k1",
+      "k4",
     ]);
   });
 });

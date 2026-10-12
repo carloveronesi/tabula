@@ -317,6 +317,7 @@ export function AppShell() {
                   patronDay={settings.patronDay}
                   highlight={monthFilter}
                   locations={monthLocations}
+                  workHours={settings.workHours}
                   planning={
                     planning
                       ? {

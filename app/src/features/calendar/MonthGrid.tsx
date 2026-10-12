@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import type { Entry, Location } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
-import { durationMinutes } from "@/domain/time";
+import { workedMinutes } from "@/domain/time";
+import type { WorkHours } from "@/domain/slots";
+import { dailyWorkMinutes } from "@/domain/capacity";
 import { LOCATION_LABEL, isPresent } from "@/domain/presence";
-import { isoDate, monthGridDates, dowMon0, isHoliday, holidayLabel } from "@/domain/calendarNav";
+import {
+  isoDate,
+  monthGridDates,
+  dowMon0,
+  isHoliday,
+  holidayLabel,
+} from "@/domain/calendarNav";
 import { IconHome, IconBuilding, IconBriefcase } from "@/ui/icons";
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
@@ -22,13 +30,22 @@ interface MonthGridProps {
    * Trascinamento su più giorni: crea un'attività che copre l'intervallo.
    * `anchor` è il punto in cui si è rilasciato, per il popover.
    */
-  onCreateSpan?: (from: Date, to: Date, anchor: { x: number; y: number }) => void;
+  onCreateSpan?: (
+    from: Date,
+    to: Date,
+    anchor: { x: number; y: number },
+  ) => void;
   /** Colore di un'attività (per cliente/sottotipo); `null` → accento. */
   colorOf?: (entry: Entry) => string | null;
   /** Giorno del patrono ("MM-GG"): reso come festivo. */
   patronDay?: string;
   /** Filtro di evidenziazione dal riepilogo: i giorni senza match sfumano. */
   highlight?: SummaryFilter | null;
+  /**
+   * Orario di lavoro: la barra di ogni giorno è in scala sulla giornata piena,
+   * così la parte vuota è il tempo non compilato. Senza, la barra è relativa.
+   */
+  workHours?: WorkHours;
   /** Sede per data: mostra un'icona (remoto/ufficio/cliente) sul giorno. */
   locations?: Record<string, Location>;
   /**
@@ -49,7 +66,8 @@ const MAX_NAMES = 3;
 /**
  * Vista Mese: griglia 6×7. Le celle fuori dal mese corrente sono marcate
  * (`data-outside`). Ogni giorno con attività mostra una barra segmentata per
- * colore (cliente/sottotipo), larga in proporzione alle ore, e i nomi delle
+ * colore (cliente/sottotipo) in scala sulla giornata piena — il vuoto con la
+ * percentuale è il non compilato, anche sui feriali già passati e vuoti — e i nomi delle
  * attività (max `MAX_NAMES` + "+N"); il click apre quel giorno nella vista
  * Giorno. Con un filtro attivo i segmenti/nomi corrispondenti spiccano e gli
  * altri sfumano (i giorni senza match si attenuano del tutto). Trascinando su
@@ -65,7 +83,9 @@ export function MonthGrid({
   highlight = null,
   locations = {},
   planning = null,
+  workHours,
 }: MonthGridProps) {
+  const fullDay = workHours ? dailyWorkMinutes(workHours) : 0;
   const month = date.getMonth();
   const cells = monthGridDates(date);
 
@@ -116,7 +136,10 @@ export function MonthGrid({
       role="grid"
       className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line"
     >
-      <div role="row" className="grid grid-cols-7 border-b border-line bg-surface">
+      <div
+        role="row"
+        className="grid grid-cols-7 border-b border-line bg-surface"
+      >
         {DAY_NAMES.map((name, i) => (
           <span
             key={name}
@@ -178,7 +201,19 @@ export function MonthGrid({
           const dayKey = isoDate(d);
           const dayEntries = byDay.get(dayKey) ?? [];
           const count = dayEntries.length;
-          const totalMin = dayEntries.reduce((s, e) => s + durationMinutes(e), 0);
+          const minsOf = (e: Entry) =>
+            workHours ? workedMinutes(e, workHours) : 0;
+          const totalMin = dayEntries.reduce((s, e) => s + minsOf(e), 0);
+          // Scala: la giornata piena (o il totale, se la supera). Il resto è vuoto.
+          const scale = Math.max(fullDay, totalMin);
+          const missingPct =
+            fullDay > 0
+              ? Math.round((Math.max(0, fullDay - totalMin) / fullDay) * 100)
+              : 0;
+          // Feriali trascorsi del mese: la barra c'è anche vuota, per far vedere il buco.
+          const showBar =
+            count > 0 ||
+            (fullDay > 0 && !outside && !weekend && dayKey < todayKey);
           const dayLoc = locations[dayKey] ?? null;
           // Il filtro per sede è una proprietà del giorno; gli altri delle entry.
           const matches =
@@ -187,8 +222,10 @@ export function MonthGrid({
               ? dayLoc === highlight.location
               : dayEntries.some((e) => entryMatchesFilter(e, highlight)));
           const dimmed = !!highlight && !matches;
-          const suggestedDay = !!planning && !outside && planning.suggested.includes(dayKey);
-          const plannable = !!planning && !outside && planning.plannable.has(dayKey);
+          const suggestedDay =
+            !!planning && !outside && planning.suggested.includes(dayKey);
+          const plannable =
+            !!planning && !outside && planning.plannable.has(dayKey);
           const LocIcon = dayLoc
             ? LOCATION_ICON[dayLoc]
             : suggestedDay
@@ -221,7 +258,11 @@ export function MonthGrid({
                 else onOpenDay?.(d);
               }}
               className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
-                picked ? "bg-primary-wash" : weekend ? "bg-weekend" : "bg-surface"
+                picked
+                  ? "bg-primary-wash"
+                  : weekend
+                    ? "bg-weekend"
+                    : "bg-surface"
               } ${outside ? "text-faint" : "text-ink"} ${
                 picked
                   ? "ring-2 ring-inset ring-primary"
@@ -254,8 +295,12 @@ export function MonthGrid({
                 </span>
                 {LocIcon && !outside && (
                   <span
-                    aria-label={dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"}
-                    title={dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"}
+                    aria-label={
+                      dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"
+                    }
+                    title={
+                      dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"
+                    }
                     className={
                       planning && isPresent(dayLoc)
                         ? "text-primary"
@@ -276,30 +321,41 @@ export function MonthGrid({
                   {holName}
                 </span>
               )}
-              {count > 0 && (
+              {showBar && (
                 <div className="flex w-full flex-col gap-1">
-                  <div className="flex h-1 w-full gap-px overflow-hidden rounded-pill">
-                    {dayEntries.map((e) => {
-                      const color = colorOf?.(e) ?? null;
-                      const match =
-                        !highlight ||
-                        highlight.kind === "location" ||
-                        entryMatchesFilter(e, highlight);
-                      const width =
-                        totalMin > 0
-                          ? (durationMinutes(e) / totalMin) * 100
-                          : 100 / count;
-                      return (
-                        <span
-                          key={e.id}
-                          title={e.title}
-                          style={{ width: `${width}%`, backgroundColor: color ?? undefined }}
-                          className={`h-full ${color ? "" : "bg-primary"} ${
-                            match ? "" : "opacity-25"
-                          }`}
-                        />
-                      );
-                    })}
+                  <div className="flex w-full items-center gap-1.5">
+                    <div className="flex h-1.5 min-w-0 flex-1 gap-px overflow-hidden rounded-pill bg-line">
+                      {dayEntries.map((e) => {
+                        const color = colorOf?.(e) ?? null;
+                        const match =
+                          !highlight ||
+                          highlight.kind === "location" ||
+                          entryMatchesFilter(e, highlight);
+                        const width =
+                          scale > 0 ? (minsOf(e) / scale) * 100 : 100 / count;
+                        return (
+                          <span
+                            key={e.id}
+                            title={e.title}
+                            style={{
+                              width: `${width}%`,
+                              backgroundColor: color ?? undefined,
+                            }}
+                            className={`h-full ${color ? "" : "bg-primary"} ${
+                              match ? "" : "opacity-25"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    {missingPct > 0 && (
+                      <span
+                        className="flex-none text-[10px] font-medium leading-none text-muted"
+                        title={`${missingPct}% della giornata non compilato`}
+                      >
+                        −{missingPct}%
+                      </span>
+                    )}
                   </div>
                   <ul className="flex w-full flex-col gap-px">
                     {dayEntries.slice(0, MAX_NAMES).map((e) => {
