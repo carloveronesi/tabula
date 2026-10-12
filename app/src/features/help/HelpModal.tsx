@@ -74,10 +74,11 @@ const STEPS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: "A fine mese, apri il Riepilogo",
+    title: "Nel Mese, fai il punto",
     body: (
       <>
-        Ore totali, copertura delle giornate, presenze rispetto agli obiettivi e
+        Dalla voce Mese nella barra a sinistra: giorni in presenza richiesti e
+        mancanti, ore totali, copertura delle giornate e
         ripartizione per cliente. Da lì esporti il mese in Excel.
       </>
     ),
@@ -99,7 +100,7 @@ const FEATURES: { name: string; body: string }[] = [
   },
   {
     name: "Presenze",
-    body: "Sede del giorno e obiettivi percentuali (per esempio una quota minima in ufficio). Nel Mese ogni giorno porta l'icona della sede.",
+    body: "Sede del giorno e un obiettivo di presenza: ufficio e cliente valgono entrambi. Nel Mese vedi quanti giorni servono, quanti ne mancano e quanti restano liberi; con «Pianifica» li piazzi sulla griglia, partendo dai tuoi giorni preferiti.",
   },
   {
     name: "Riepilogo ed export",

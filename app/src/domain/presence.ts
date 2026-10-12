@@ -1,7 +1,7 @@
 /**
- * Presenze: ripartizione delle sedi (remoto/ufficio/cliente) di un periodo e
- * confronto con gli obiettivi. Logica pura — la UI passa i giorni feriali del
- * periodo e le sedi registrate.
+ * Presenze: quanti giorni del mese vanno fatti in presenza (ufficio o cliente)
+ * e a che punto sei. Logica pura — la UI passa i feriali del mese, le ferie e
+ * le sedi registrate.
  */
 import type { ISODate, Location } from "@/data/types";
 
@@ -13,66 +13,93 @@ export const LOCATION_LABEL: Record<Location, string> = {
   client: "Cliente",
 };
 
-export interface PresenceTargets {
-  officeTargetPct: number;
-  clientTargetPct: number;
-}
+/** Ufficio e cliente valgono entrambi come presenza. */
+export const isPresent = (loc: Location | null | undefined) =>
+  loc === "office" || loc === "client";
 
-export interface PresenceRow {
-  location: Location;
-  days: number;
-  /** Quota sui giorni feriali del periodo (0–100, arrotondata). */
-  pct: number;
-  /** Obiettivo per la sede, o `null` se non impostato (remoto, o target a 0). */
-  targetPct: number | null;
-}
-
-export interface PresenceBreakdown {
-  /** Giorni feriali (lavorativi) del periodo: il denominatore delle quote. */
+export interface MonthPresence {
+  /** Feriali del mese. */
   workingDays: number;
-  /** Giorni feriali con una sede registrata. */
-  tracked: number;
-  /** Giorni feriali senza sede registrata. */
-  untracked: number;
-  rows: PresenceRow[];
+  /** Feriali di ferie intera: escono dalla base. */
+  vacationDays: number;
+  /** Feriali meno ferie: la base dell'obiettivo. */
+  baseDays: number;
+  /** Giorni in presenza richiesti (per eccesso); 0 se l'obiettivo non è impostato. */
+  required: number;
+  /** Giorni per sede sulla base: registrati, o la predefinita sui giorni trascorsi. */
+  days: Record<Location, number>;
+  /** Ufficio + cliente, trascorsi e già pianificati. */
+  present: number;
+  /** Di cui pianificati (giorni futuri con sede ufficio/cliente). */
+  planned: number;
+  /** Giorni futuri ancora senza sede: dove si possono piazzare le presenze. */
+  open: number;
+  /** Gli stessi, in ordine di data. */
+  openDates: ISODate[];
+  /** Presenze che mancano all'obiettivo. */
+  missing: number;
 }
 
 /**
- * Ripartizione delle presenze sui **giorni feriali** del periodo: per ciascuno
- * dei `workingDates` legge la sede da `metas` e calcola le quote sul totale dei
- * feriali (così le percentuali sono confrontabili con gli obiettivi mensili).
- * Le sedi su giorni non feriali sono ignorate. Un target a 0 vale "non impostato".
- *
- * Se `defaultLocation` è valorizzato, i giorni feriali **senza** sede registrata
- * contano come quella sede ("predefinita salvo eccezioni"): in tal caso non
- * restano giorni non tracciati.
+ * Bilancio presenze del mese sui feriali meno le ferie intere. Un giorno già
+ * trascorso (≤ `today`) senza sede conta come `defaultLocation`; uno futuro
+ * senza sede resta "da decidere" (`open`).
  */
-export function presenceBreakdown(
+export function monthPresence(
   workingDates: ISODate[],
+  vacationDates: ReadonlySet<ISODate>,
   metas: Record<ISODate, Location>,
-  targets: PresenceTargets,
-  defaultLocation: Location | null = null,
-): PresenceBreakdown {
-  const workingDays = workingDates.length;
-  const counts: Record<Location, number> = { remote: 0, office: 0, client: 0 };
-  let tracked = 0;
-  for (const date of workingDates) {
-    const loc = metas[date] ?? defaultLocation;
-    if (loc) {
-      counts[loc] += 1;
-      if (metas[date]) tracked += 1;
+  targetPct: number,
+  defaultLocation: Location,
+  today: ISODate,
+): MonthPresence {
+  const base = workingDates.filter((d) => !vacationDates.has(d));
+  const days: Record<Location, number> = { remote: 0, office: 0, client: 0 };
+  let planned = 0;
+  const openDates: ISODate[] = [];
+  for (const d of base) {
+    const loc = metas[d] ?? (d <= today ? defaultLocation : null);
+    if (!loc) {
+      openDates.push(d);
+      continue;
     }
+    days[loc] += 1;
+    if (d > today && isPresent(loc)) planned += 1;
   }
-  const target: Record<Location, number | null> = {
-    remote: null,
-    office: targets.officeTargetPct > 0 ? targets.officeTargetPct : null,
-    client: targets.clientTargetPct > 0 ? targets.clientTargetPct : null,
+  const present = days.office + days.client;
+  const required = Math.ceil((base.length * targetPct) / 100);
+  return {
+    workingDays: workingDates.length,
+    vacationDays: workingDates.length - base.length,
+    baseDays: base.length,
+    required,
+    days,
+    present,
+    planned,
+    open: openDates.length,
+    openDates,
+    missing: Math.max(0, required - present),
   };
-  const rows: PresenceRow[] = LOCATIONS.map((location) => ({
-    location,
-    days: counts[location],
-    pct: workingDays > 0 ? Math.round((counts[location] / workingDays) * 100) : 0,
-    targetPct: target[location],
-  }));
-  return { workingDays, tracked, untracked: workingDays - tracked, rows };
+}
+
+/**
+ * Suggerimenti per il planning: i giorni ancora liberi che cadono in un giorno
+ * della settimana preferito (`dow`: 0 = lunedì), in ordine di data, fino a
+ * coprire le presenze mancanti. Se i preferiti non bastano ne restituisce meno.
+ */
+export function suggestPresenceDays(
+  p: MonthPresence,
+  preferredDays: number[],
+  dow: (d: ISODate) => number,
+): ISODate[] {
+  return p.openDates
+    .filter((d) => preferredDays.includes(dow(d)))
+    .slice(0, p.missing);
+}
+
+/** Click in planning: nessuna/remoto → ufficio → cliente → nessuna. */
+export function nextPlannedLocation(current: Location | null | undefined): Location | null {
+  if (current === "office") return "client";
+  if (current === "client") return null;
+  return "office";
 }

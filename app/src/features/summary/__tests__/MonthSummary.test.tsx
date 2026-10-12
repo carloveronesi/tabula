@@ -67,19 +67,14 @@ describe("MonthSummary", () => {
     });
     render(<MonthSummary />);
     // un solo giorno attivo a giugno (15), l'entry di maggio è esclusa
-    expect(screen.getByText(/su 1 giorno/)).toBeInTheDocument();
+    expect(screen.getByText(/su 1 giorno · /)).toBeInTheDocument();
   });
 
   it("click su una riga presenza fissa il filtro per sede", () => {
     useSettingsStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
-        // target > 0 → la riga Ufficio è sempre presente, a prescindere dalla data
-        presenceTracking: {
-          ...DEFAULT_SETTINGS.presenceTracking,
-          enabled: true,
-          officeTargetPct: 50,
-        },
+        presenceTracking: { enabled: true, targetPct: 50, preferredDays: [] },
       },
     });
     usePresenceStore.setState({ metas: { "2026-06-15": "office" } });
@@ -87,8 +82,77 @@ describe("MonthSummary", () => {
     render(
       <MonthSummary onHoverFilter={() => {}} onFixFilter={onFix} />,
     );
+    // il dettaglio per sede è chiuso di default
+    expect(screen.queryByText("Ufficio")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Dettaglio" }));
     fireEvent.click(screen.getByText("Ufficio"));
     expect(onFix).toHaveBeenCalledWith({ kind: "location", location: "office" });
+  });
+
+  it("presenze: richiesti sui feriali meno ferie, ufficio + cliente, mancanti", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12));
+    try {
+      useSettingsStore.setState({
+        settings: { ...DEFAULT_SETTINGS, presenceTracking: { enabled: true, targetPct: 40, preferredDays: [] } },
+      });
+      // giugno 2026: 21 feriali (il 2 è festa), il 26 è di ferie → base 20, 40% = 8
+      useCalendarStore.setState({
+        entries: [
+          entry({
+            id: "v",
+            type: "vacation",
+            clientId: null,
+            projectId: null,
+            startsAt: "2026-06-26T09:00:00",
+            endsAt: "2026-06-26T18:00:00",
+          }),
+        ],
+      });
+      usePresenceStore.setState({
+        metas: { "2026-06-01": "office", "2026-06-03": "client", "2026-06-17": "office" },
+      });
+      render(<MonthSummary />);
+      expect(screen.getByText("/8 in presenza")).toBeInTheDocument();
+      // 3 in presenza (uno futuro): ne mancano 5, restano 9 giorni senza sede
+      expect(screen.getByText("Mancano 5 · 9 giorni liberi")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Dettaglio" }));
+      expect(screen.getByText(/· 1 di ferie/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("planning: accetta i suggeriti come ufficio, solo quanti ne mancano", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12));
+    try {
+      // base 21 feriali, 10% → 3 richiesti; preferiti mar (1) e gio (3)
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_SETTINGS,
+          presenceTracking: { enabled: true, targetPct: 10, preferredDays: [1, 3] },
+        },
+      });
+      const setLocation = vi.fn(async () => {});
+      usePresenceStore.setState({ metas: {}, setLocation });
+      render(<MonthSummary planning onPlanningChange={() => {}} />);
+      fireEvent.click(screen.getByRole("button", { name: "Accetta suggeriti (3)" }));
+      await vi.waitFor(() => expect(setLocation).toHaveBeenCalledTimes(3));
+      expect(setLocation.mock.calls).toEqual([
+        ["2026-06-16", "office"],
+        ["2026-06-18", "office"],
+        ["2026-06-23", "office"],
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("le card mostrano giornate equivalenti e giorni toccati", () => {
+    render(<MonthSummary />);
+    // Acme: 2h + 1h su due giorni; giornata piena di default = 8h
+    expect(screen.getByText("0,4 gg · su 2 giorni")).toBeInTheDocument();
   });
 
   it("click su una card cliente fissa il filtro corrispondente", () => {

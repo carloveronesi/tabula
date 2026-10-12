@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPeriod, formatHours } from "@/domain/format";
+import { formatPeriod, formatHours, formatWorkDays } from "@/domain/format";
 
 const D = (y: number, m0: number, d: number) => new Date(y, m0, d);
 
@@ -34,5 +34,13 @@ describe("formatPeriod", () => {
   it("projects/todo → stringa vuota (nessun periodo)", () => {
     expect(formatPeriod(D(2026, 5, 13), "projects")).toBe("");
     expect(formatPeriod(D(2026, 5, 13), "todo")).toBe("");
+  });
+});
+
+describe("formatWorkDays", () => {
+  it("giornate equivalenti con una cifra decimale, alla italiana", () => {
+    expect(formatWorkDays(1260, 480)).toBe("2,6 gg"); // 21h su 8h
+    expect(formatWorkDays(480, 480)).toBe("1 gg");
+    expect(formatWorkDays(60, 0)).toBe("0 gg");
   });
 });

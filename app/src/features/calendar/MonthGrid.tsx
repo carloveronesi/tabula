@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Entry, Location } from "@/data/types";
 import { entryMatchesFilter, type SummaryFilter } from "@/domain/monthlyReport";
 import { durationMinutes } from "@/domain/time";
-import { LOCATION_LABEL } from "@/domain/presence";
+import { LOCATION_LABEL, isPresent } from "@/domain/presence";
 import { isoDate, monthGridDates, dowMon0, isHoliday, holidayLabel } from "@/domain/calendarNav";
 import { IconHome, IconBuilding, IconBriefcase } from "@/ui/icons";
 
@@ -31,6 +31,16 @@ interface MonthGridProps {
   highlight?: SummaryFilter | null;
   /** Sede per data: mostra un'icona (remoto/ufficio/cliente) sul giorno. */
   locations?: Record<string, Location>;
+  /**
+   * Modalità planning presenze: il click su un giorno pianificabile chiama
+   * `onCycle` invece di aprirlo, i `suggested` compaiono tratteggiati e il
+   * trascinamento è spento.
+   */
+  planning?: {
+    plannable: ReadonlySet<string>;
+    suggested: readonly string[];
+    onCycle: (dateISO: string) => void;
+  } | null;
 }
 
 /** Massimo di nomi di attività mostrati in una cella prima del "+N". */
@@ -54,6 +64,7 @@ export function MonthGrid({
   patronDay = "",
   highlight = null,
   locations = {},
+  planning = null,
 }: MonthGridProps) {
   const month = date.getMonth();
   const cells = monthGridDates(date);
@@ -124,7 +135,7 @@ export function MonthGrid({
         // scroll. La griglia ha altezza fissa e non scrolla, non toglie niente.
         className="grid min-h-0 flex-1 touch-none select-none grid-cols-7 grid-rows-6 gap-px bg-line"
         onPointerDown={(e) => {
-          if (!onCreateSpan || e.button !== 0) return;
+          if (!onCreateSpan || planning || e.button !== 0) return;
           const i = cellAt(e.clientX, e.clientY);
           if (i === null) return;
           dragged.current = false;
@@ -176,7 +187,13 @@ export function MonthGrid({
               ? dayLoc === highlight.location
               : dayEntries.some((e) => entryMatchesFilter(e, highlight)));
           const dimmed = !!highlight && !matches;
-          const LocIcon = dayLoc ? LOCATION_ICON[dayLoc] : null;
+          const suggestedDay = !!planning && !outside && planning.suggested.includes(dayKey);
+          const plannable = !!planning && !outside && planning.plannable.has(dayKey);
+          const LocIcon = dayLoc
+            ? LOCATION_ICON[dayLoc]
+            : suggestedDay
+              ? LOCATION_ICON.office
+              : null;
           // ponytail: evidenzia ogni cella trascinata, weekend e festivi
           // compresi — qui non arrivano `workingDays`. Quanti giorni riceveranno
           // davvero l'attività lo dice il quick-add ("3 giorni").
@@ -190,11 +207,18 @@ export function MonthGrid({
               data-today={today}
               data-dimmed={dimmed}
               aria-label={
-                count > 0 ? `${d.getDate()}: ${count} attività` : undefined
+                planning
+                  ? `${d.getDate()}: ${dayLoc ? LOCATION_LABEL[dayLoc] : suggestedDay ? "suggerito" : "nessuna sede"}`
+                  : count > 0
+                    ? `${d.getDate()}: ${count} attività`
+                    : undefined
               }
+              disabled={!!planning && !plannable}
+              data-suggested={suggestedDay || undefined}
               onClick={() => {
                 if (dragged.current) return;
-                onOpenDay?.(d);
+                if (planning) planning.onCycle(dayKey);
+                else onOpenDay?.(d);
               }}
               className={`tnum group flex min-h-0 flex-col items-start gap-1 overflow-hidden p-2 text-left text-xs transition-[background-color,opacity] duration-[var(--dur-fast)] ease-out hover:bg-raised ${
                 picked ? "bg-primary-wash" : weekend ? "bg-weekend" : "bg-surface"
@@ -206,6 +230,16 @@ export function MonthGrid({
                     : matches && highlight
                       ? "ring-1 ring-inset ring-primary/50"
                       : ""
+              } ${
+                planning
+                  ? plannable
+                    ? suggestedDay
+                      ? "outline-dashed outline-2 -outline-offset-4 outline-primary/60"
+                      : isPresent(dayLoc)
+                        ? "ring-2 ring-inset ring-primary"
+                        : ""
+                    : "opacity-50"
+                  : ""
               }`}
             >
               <div className="flex w-full items-center justify-between">
@@ -220,11 +254,17 @@ export function MonthGrid({
                 </span>
                 {LocIcon && !outside && (
                   <span
-                    aria-label={LOCATION_LABEL[dayLoc!]}
-                    title={LOCATION_LABEL[dayLoc!]}
-                    className="text-muted"
+                    aria-label={dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"}
+                    title={dayLoc ? LOCATION_LABEL[dayLoc] : "Ufficio (suggerito)"}
+                    className={
+                      planning && isPresent(dayLoc)
+                        ? "text-primary"
+                        : suggestedDay && !dayLoc
+                          ? "text-primary/60"
+                          : "text-muted"
+                    }
                   >
-                    <LocIcon size={13} />
+                    <LocIcon size={planning ? 16 : 13} />
                   </span>
                 )}
               </div>

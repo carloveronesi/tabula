@@ -17,12 +17,16 @@ export interface SubtypeSlice {
 export interface ClientSlice {
   clientId: Id;
   minutes: number;
+  /** Giorni distinti con almeno un'attività su questo cliente. */
+  days: number;
   bySubtype: SubtypeSlice[];
 }
 
 export interface TypeSlice {
   type: EntryType;
   minutes: number;
+  /** Giorni distinti con almeno un'attività di questo tipo. */
+  days: number;
   bySubtype: SubtypeSlice[];
 }
 
@@ -108,8 +112,9 @@ export function monthlyReport(
   let totalMin = 0;
   const activeDaySet = new Set<string>();
   const entriesByDay = new Map<string, Entry[]>();
-  const clientMap = new Map<Id, { minutes: number; bySubtype: Map<Id | null, number> }>();
-  const typeMap = new Map<EntryType, { minutes: number; bySubtype: Map<Id | null, number> }>();
+  type Acc = { minutes: number; days: Set<string>; bySubtype: Map<Id | null, number> };
+  const clientMap = new Map<Id, Acc>();
+  const typeMap = new Map<EntryType, Acc>();
 
   for (const e of entries) {
     const min = workedMinutes(e, workHours);
@@ -123,18 +128,20 @@ export function monthlyReport(
     if (e.type === "client" && e.clientId) {
       let c = clientMap.get(e.clientId);
       if (!c) {
-        c = { minutes: 0, bySubtype: new Map() };
+        c = { minutes: 0, days: new Set(), bySubtype: new Map() };
         clientMap.set(e.clientId, c);
       }
       c.minutes += min;
+      c.days.add(day);
       addSubtype(c.bySubtype, e.subtypeId, min);
     } else if (OTHER_TYPES.includes(e.type)) {
       let t = typeMap.get(e.type);
       if (!t) {
-        t = { minutes: 0, bySubtype: new Map() };
+        t = { minutes: 0, days: new Set(), bySubtype: new Map() };
         typeMap.set(e.type, t);
       }
       t.minutes += min;
+      t.days.add(day);
       addSubtype(t.bySubtype, e.subtypeId, min);
     }
   }
@@ -154,12 +161,18 @@ export function monthlyReport(
     .map(([clientId, v]) => ({
       clientId,
       minutes: v.minutes,
+      days: v.days.size,
       bySubtype: subtypeSlices(v.bySubtype),
     }))
     .sort((a, b) => b.minutes - a.minutes);
 
   const byOtherType: TypeSlice[] = [...typeMap]
-    .map(([type, v]) => ({ type, minutes: v.minutes, bySubtype: subtypeSlices(v.bySubtype) }))
+    .map(([type, v]) => ({
+      type,
+      minutes: v.minutes,
+      days: v.days.size,
+      bySubtype: subtypeSlices(v.bySubtype),
+    }))
     .sort((a, b) => b.minutes - a.minutes);
 
   return {

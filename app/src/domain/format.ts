@@ -12,6 +12,12 @@ export function formatHours(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+/** Minuti → giornate equivalenti su una giornata di `dayMin`: "2,6 gg", "1 gg". */
+export function formatWorkDays(minutes: number, dayMin: number): string {
+  const days = dayMin > 0 ? minutes / dayMin : 0;
+  return `${days.toLocaleString("it-IT", { maximumFractionDigits: 1 })} gg`;
+}
+
 const fmt = (date: Date, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("it-IT", opts).format(date);
 

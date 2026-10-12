@@ -11,12 +11,18 @@ describe("Sidebar", () => {
   it("espone la navigazione tra sezioni", () => {
     render(<Sidebar />);
     expect(screen.getByRole("navigation", { name: "Sezioni" })).toBeInTheDocument();
-    for (const label of ["Calendario", "Progetti", "Todo", "Ricerca", "Impostazioni"]) {
+    for (const label of ["Calendario", "Mese", "Progetti", "Todo", "Ricerca", "Impostazioni"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
-    // Il mese è una scala del calendario, non una sezione: nessuna voce che
-    // apra `month` con un secondo nome.
-    expect(screen.queryByRole("button", { name: "Riepilogo" })).toBeNull();
+  });
+
+  it("Mese apre la vista mensile ed è l'unica voce attiva lì", () => {
+    useUiStore.setState({ view: "day" });
+    render(<Sidebar />);
+    fireEvent.click(screen.getByRole("button", { name: "Mese" }));
+    expect(useUiStore.getState().view).toBe("month");
+    expect(screen.getByRole("button", { name: "Mese" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Calendario" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("cambia vista al click su una sezione", () => {
@@ -25,8 +31,8 @@ describe("Sidebar", () => {
     expect(useUiStore.getState().view).toBe("projects");
   });
 
-  it.each(["day", "week", "month"] as const)(
-    "Calendario è attivo anche in %s e porta al Giorno",
+  it.each(["day", "week"] as const)(
+    "Calendario è attivo in %s e porta al Giorno",
     (view) => {
       useUiStore.setState({ view });
       render(<Sidebar />);

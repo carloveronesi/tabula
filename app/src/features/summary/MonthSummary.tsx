@@ -1,14 +1,15 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { EntryType, Id, Location } from "@/data/types";
 import {
   monthlyReport,
   type SummaryFilter,
   type SubtypeSlice,
 } from "@/domain/monthlyReport";
-import { formatHours } from "@/domain/format";
+import { formatHours, formatWorkDays } from "@/domain/format";
+import { dailyWorkMinutes } from "@/domain/capacity";
 import { colorFromKey } from "@/domain/colors";
-import { presenceBreakdown, LOCATION_LABEL } from "@/domain/presence";
-import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
+import { LOCATIONS, LOCATION_LABEL } from "@/domain/presence";
+import { isoDate } from "@/domain/calendarNav";
 import { cn } from "@/ui/cn";
 import { Button } from "@/ui/Button";
 import { useUiStore } from "@/store";
@@ -17,6 +18,7 @@ import { useInventoryStore } from "@/store/inventory";
 import { usePresenceStore } from "@/store/presence";
 import { useSettingsStore } from "@/store/settings";
 import { exportMonthReport } from "./exportReport";
+import { useMonthPresence } from "./useMonthPresence";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -44,6 +46,9 @@ interface MonthSummaryProps {
   fixedFilter?: SummaryFilter | null;
   onHoverFilter?: (f: SummaryFilter | null) => void;
   onFixFilter?: (f: SummaryFilter | null) => void;
+  /** Modalità planning delle presenze sulla griglia (assente = niente bottone). */
+  planning?: boolean;
+  onPlanningChange?: (on: boolean) => void;
 }
 
 function Eyebrow({ children }: { children: ReactNode }) {
@@ -60,6 +65,8 @@ function FilterCard({
   eyebrow,
   label,
   minutes,
+  days,
+  dayMin,
   max,
   subtypes,
   subtypeLabel,
@@ -75,6 +82,10 @@ function FilterCard({
   eyebrow?: string;
   label: string;
   minutes: number;
+  /** Giorni distinti toccati, mostrati con le giornate equivalenti. */
+  days: number;
+  /** Durata della giornata piena, per le giornate equivalenti. */
+  dayMin: number;
   max: number;
   subtypes: SubtypeSlice[];
   subtypeLabel: (id: Id | null) => string;
@@ -118,9 +129,12 @@ function FilterCard({
               <div className="truncate text-[13px] font-semibold text-ink">{label}</div>
             </div>
           </div>
-          <div className="tnum shrink-0 text-[13px] font-semibold text-ink">
+          <div className="tnum shrink-0 text-[14px] font-semibold text-ink">
             {formatHours(minutes)}
           </div>
+        </div>
+        <div className="tnum mt-0.5 pl-[18px] text-[11.5px] text-muted">
+          {formatWorkDays(minutes, dayMin)} · su {days} {days === 1 ? "giorno" : "giorni"}
         </div>
         <div className="mt-2 h-1 overflow-hidden rounded-pill bg-line">
           <div
@@ -170,11 +184,12 @@ export function MonthSummary({
   fixedFilter = null,
   onHoverFilter,
   onFixFilter,
+  planning = false,
+  onPlanningChange,
 }: MonthSummaryProps) {
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
   const settings = useSettingsStore((s) => s.settings);
-  const metas = usePresenceStore((s) => s.metas);
   const activeDate = useUiStore((s) => s.activeDate);
 
   const interactive = !!onHoverFilter && !!onFixFilter;
@@ -183,29 +198,33 @@ export function MonthSummary({
 
   const monthKey = isoDate(activeDate).slice(0, 7);
 
-  // Feriali del mese già trascorsi (≤ oggi): base condivisa per copertura e
-  // presenze, così il mese corrente non conta i giorni feriali futuri.
-  const workingElapsed = useMemo(() => {
-    const working = workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay);
-    const todayISO = isoDate(new Date());
-    return working.filter((d) => d <= todayISO);
-  }, [activeDate, settings.workingDays, settings.patronDay]);
-
-  const report = useMemo(() => {
-    const monthEntries = entries.filter((e) => e.startsAt.slice(0, 7) === monthKey);
-    return monthlyReport(monthEntries, workingElapsed, settings.workHours, settings.slotMinutes);
-  }, [entries, monthKey, workingElapsed, settings.workHours, settings.slotMinutes]);
-
-  const presence = useMemo(
-    () =>
-      presenceBreakdown(
-        workingElapsed,
-        metas,
-        settings.presenceTracking,
-        settings.defaultLocation,
-      ),
-    [workingElapsed, metas, settings.presenceTracking, settings.defaultLocation],
+  const todayISO = isoDate(new Date());
+  // Presenze sull'intero mese, per pianificare.
+  const { workingDates, presence, suggested } = useMonthPresence();
+  const setLocation = usePresenceStore((s) => s.setLocation);
+  const acceptSuggested = async () => {
+    for (const d of suggested) await setLocation(d, "office");
+  };
+  const preferredDays = settings.presenceTracking.preferredDays;
+  const [presenceDetail, setPresenceDetail] = useState(false);
+  const monthEntries = useMemo(
+    () => entries.filter((e) => e.startsAt.slice(0, 7) === monthKey),
+    [entries, monthKey],
   );
+
+  // Copertura sui soli feriali già trascorsi (≤ oggi): il mese corrente non
+  // conta i giorni futuri.
+  const report = useMemo(
+    () =>
+      monthlyReport(
+        monthEntries,
+        workingDates.filter((d) => d <= todayISO),
+        settings.workHours,
+        settings.slotMinutes,
+      ),
+    [monthEntries, workingDates, todayISO, settings.workHours, settings.slotMinutes],
+  );
+
   const showPresence = settings.presenceTracking.enabled;
 
   const clientName = (id: Id) => clients.find((c) => c.id === id)?.name ?? "Cliente";
@@ -221,12 +240,174 @@ export function MonthSummary({
   // Barre delle card in scala unica: quota sul tempo totale tracciato nel mese,
   // così Clienti e Altre attività sono confrontabili e la barra = fetta del mese.
   const total = report.totalMin;
+  const dayMin = dailyWorkMinutes(settings.workHours);
 
   const empty =
     report.totalMin === 0 && !(showPresence && presence.workingDays > 0);
 
   const sections = (
     <>
+      {showPresence && presence.workingDays > 0 && (
+        <div>
+          {/* Compatto: il cuore del mese sono le ore; il dettaglio per sede si apre a richiesta. */}
+          <div className="flex items-baseline justify-between">
+            <Eyebrow>Presenze</Eyebrow>
+            <span className="tnum text-[12.5px] font-semibold text-ink">
+              {presence.required > 0 ? (
+                <>
+                  {presence.present}
+                  <span className="text-muted">/{presence.required} in presenza</span>
+                </>
+              ) : (
+                <>
+                  {presence.present}
+                  <span className="text-muted"> su {presence.baseDays} giorni</span>
+                </>
+              )}
+            </span>
+          </div>
+          {presence.required > 0 && (
+            <>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-line">
+                <div
+                  className="h-full rounded-pill bg-primary"
+                  style={{
+                    width: `${Math.min(100, (presence.present / presence.required) * 100)}%`,
+                  }}
+                />
+              </div>
+              <div
+                className={cn(
+                  "mt-1.5 text-xs",
+                  presence.missing > presence.open ? "text-danger" : "text-muted",
+                )}
+              >
+                {presence.missing === 0
+                  ? "Obiettivo coperto"
+                  : presence.missing > presence.open
+                    ? `Mancano ${presence.missing}, ma ${
+                        presence.open === 1
+                          ? "resta 1 giorno libero"
+                          : `restano ${presence.open} giorni liberi`
+                      }`
+                    : `Mancano ${presence.missing} · ${presence.open} ${
+                        presence.open === 1 ? "giorno libero" : "giorni liberi"
+                      }`}
+              </div>
+            </>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {onPlanningChange &&
+              (planning ? (
+                <div className="w-full space-y-2 rounded-lg border border-primary/40 bg-primary-wash p-2.5 text-xs text-ink/80">
+                  <p>
+                    Clicca un giorno: Ufficio → Cliente → nessuna.
+                    {suggested.length > 0 && " I tratteggiati sono i suggeriti."}
+                  </p>
+                  {preferredDays.length === 0 ? (
+                    <p className="text-muted">
+                      Scegli i giorni preferiti in Impostazioni → Presenze per avere
+                      suggerimenti.
+                    </p>
+                  ) : (
+                    presence.missing > suggested.length && (
+                      <p className="text-muted">
+                        I giorni preferiti liberi non bastano: ne servono altri{" "}
+                        {presence.missing - suggested.length}.
+                      </p>
+                    )
+                  )}
+                  <div className="flex gap-2">
+                    {suggested.length > 0 && (
+                      <Button variant="primary" size="sm" onClick={() => void acceptSuggested()}>
+                        Accetta suggeriti ({suggested.length})
+                      </Button>
+                    )}
+                    <Button variant="subtle" size="sm" onClick={() => onPlanningChange(false)}>
+                      Fatto
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="subtle" size="sm" onClick={() => onPlanningChange(true)}>
+                  Pianifica
+                </Button>
+              ))}
+            {!planning && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-expanded={presenceDetail}
+                onClick={() => setPresenceDetail((v) => !v)}
+              >
+                {presenceDetail ? "Nascondi dettaglio" : "Dettaglio"}
+              </Button>
+            )}
+          </div>
+          {presenceDetail && !planning && (
+            <div className="mt-2 rounded-lg border border-line bg-raised/40 p-2">
+          <div className="tnum text-xs text-muted">
+              <span className="font-semibold text-ink">{presence.workingDays}</span> giorni
+              lavorativi
+              {presence.vacationDays > 0 && ` · ${presence.vacationDays} di ferie`}
+              {presence.planned > 0 && ` · ${presence.planned} pianificati`}
+            </div>
+            <ul className="mt-1.5 space-y-0.5">
+              {LOCATIONS.filter((l) => presence.days[l] > 0).map((location) => {
+                const days = presence.days[location];
+                const filter: SummaryFilter = { kind: "location", location };
+                const active = sameFilter(activeFilter, filter);
+                const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
+                return (
+                  <li
+                    key={location}
+                    className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
+                  >
+                    <button
+                      type="button"
+                      disabled={!interactive}
+                      onMouseEnter={interactive ? () => onHover(filter) : undefined}
+                      onMouseLeave={interactive ? () => onHover(null) : undefined}
+                      onClick={interactive ? () => onFix(active ? null : filter) : undefined}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
+                        interactive && "cursor-pointer hover:bg-raised",
+                        active && "bg-primary-wash",
+                      )}
+                    >
+                      <span className="w-16 shrink-0 text-muted">{LOCATION_LABEL[location]}</span>
+                      <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
+                        <div
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-pill",
+                            location === "remote" ? "bg-muted/50" : "bg-primary",
+                          )}
+                          style={{ width: `${(days / presence.baseDays) * 100}%` }}
+                        />
+                      </div>
+                      <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                        {days}
+                        <span className="text-muted">g</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {presence.open > 0 && (
+                <li className="flex items-center gap-2 px-1.5 py-1 text-[12.5px]">
+                  <span className="flex-1 text-muted">Da decidere</span>
+                  <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                    {presence.open}
+                    <span className="text-muted">g</span>
+                  </span>
+                </li>
+              )}
+            </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <Eyebrow>Ore nel mese</Eyebrow>
         <div className="tnum mt-1.5 text-[40px] font-bold leading-none tracking-tight text-ink">
@@ -261,64 +442,6 @@ export function MonthSummary({
         </div>
       )}
 
-      {showPresence && presence.workingDays > 0 && (
-        <div>
-          <Eyebrow>Presenze</Eyebrow>
-          <ul className="mt-2 space-y-1">
-            {presence.rows
-              .filter((r) => r.days > 0 || r.targetPct !== null)
-              .map((r) => {
-                const reached = r.targetPct !== null && r.pct >= r.targetPct;
-                const filter: SummaryFilter = { kind: "location", location: r.location };
-                const active = sameFilter(activeFilter, filter);
-                const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
-                return (
-                  <li
-                    key={r.location}
-                    className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
-                  >
-                    <button
-                      type="button"
-                      disabled={!interactive}
-                      onMouseEnter={interactive ? () => onHover(filter) : undefined}
-                      onMouseLeave={interactive ? () => onHover(null) : undefined}
-                      onClick={interactive ? () => onFix(active ? null : filter) : undefined}
-                      className={cn(
-                        "flex w-full items-baseline gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
-                        interactive && "cursor-pointer hover:bg-raised",
-                        active && "bg-primary-wash",
-                      )}
-                    >
-                      <span className="w-14 shrink-0 text-muted">{LOCATION_LABEL[r.location]}</span>
-                      <span className="tnum font-semibold text-ink">
-                        {r.days}
-                        <span className="text-muted">g</span>
-                      </span>
-                      <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-pill bg-primary"
-                          style={{ width: `${r.pct}%` }}
-                        />
-                      </div>
-                      <span className="tnum shrink-0 text-muted">{r.pct}%</span>
-                      {r.targetPct !== null && (
-                        <span
-                          className={cn(
-                            "tnum w-10 shrink-0 text-right text-[11px] font-semibold",
-                            reached ? "text-primary" : "text-muted",
-                          )}
-                        >
-                          {reached ? "✓" : `${r.targetPct}%`}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
-        </div>
-      )}
-
       {report.byClient.length > 0 && (
         <div>
           <Eyebrow>Clienti</Eyebrow>
@@ -331,6 +454,8 @@ export function MonthSummary({
                   color={clientColor(c.clientId)}
                   label={clientName(c.clientId)}
                   minutes={c.minutes}
+                  days={c.days}
+                  dayMin={dayMin}
                   max={total}
                   subtypes={c.bySubtype}
                   subtypeLabel={subtypeLabel}
@@ -359,6 +484,8 @@ export function MonthSummary({
                   color={TYPE_DOT[t.type as Exclude<EntryType, "client">]}
                   label={TYPE_LABEL[t.type]}
                   minutes={t.minutes}
+                  days={t.days}
+                  dayMin={dayMin}
                   max={total}
                   subtypes={t.bySubtype}
                   subtypeLabel={subtypeLabel}

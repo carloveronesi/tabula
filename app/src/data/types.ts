@@ -154,8 +154,10 @@ export interface Settings {
   lastBackupAt?: number; // epoch ms dell'ultimo export riuscito, per il promemoria
   presenceTracking: {
     enabled: boolean;
-    officeTargetPct: number;
-    clientTargetPct: number;
+    /** Quota minima di feriali in presenza (ufficio + cliente), 0–100; 0 = nessuna. */
+    targetPct: number;
+    /** Giorni della settimana preferiti per la presenza (0 = lunedì), per i suggerimenti. */
+    preferredDays: number[];
   };
   ai: AiSettings;
 }

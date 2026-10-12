@@ -144,6 +144,31 @@ describe("MonthGrid", () => {
     ).toHaveAttribute("data-dimmed", "true");
   });
 
+  it("in planning il click cicla la sede invece di aprire il giorno", () => {
+    const onOpenDay = vi.fn();
+    const onCycle = vi.fn();
+    render(
+      <MonthGrid
+        date={DATE}
+        onOpenDay={onOpenDay}
+        planning={{
+          plannable: new Set(["2026-06-17", "2026-06-18"]),
+          suggested: ["2026-06-18"],
+          onCycle,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("gridcell", { name: "17: nessuna sede" }));
+    expect(onCycle).toHaveBeenCalledWith("2026-06-17");
+    expect(onOpenDay).not.toHaveBeenCalled();
+    // il suggerito è marcato; un giorno non pianificabile è spento
+    expect(screen.getByRole("gridcell", { name: "18: suggerito" })).toHaveAttribute(
+      "data-suggested",
+      "true",
+    );
+    expect(screen.getByRole("gridcell", { name: "16: nessuna sede" })).toBeDisabled();
+  });
+
   it("il click su un giorno chiama onOpenDay con quella data", () => {
     const onOpenDay = vi.fn();
     render(<MonthGrid date={DATE} onOpenDay={onOpenDay} />);
