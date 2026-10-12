@@ -109,7 +109,7 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   all'obiettivo, e ripartizione **per cliente** (ore, giornate equivalenti e giorni toccati) con
   scomposizione per sottotipo.
 - Vive nella **sidebar della vista Mese** (con evidenziazione della griglia al
-  passaggio sui filtri); la voce **«Riepilogo»** del menu porta direttamente lì.
+  passaggio sui filtri); la voce **«Mese»** della barra laterale porta direttamente lì.
 - **Esporta report**: scarica il mese come file Excel (fogli *Giornaliero* e
   *Totale* con ore per cliente/progetto), generato in locale senza dipendenze.
 
