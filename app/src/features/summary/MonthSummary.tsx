@@ -51,9 +51,10 @@ interface MonthSummaryProps {
   onPlanningChange?: (on: boolean) => void;
 }
 
+/** Etichetta di sezione: peso e colore, non maiuscolo spaziato (vedi PRODUCT.md). */
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted">
+    <div className="text-[13px] font-medium text-muted">
       {children}
     </div>
   );
@@ -62,7 +63,6 @@ function Eyebrow({ children }: { children: ReactNode }) {
 /** Riga-card filtrabile per un cliente o un tipo, con scomposizione per sottotipo. */
 function FilterCard({
   color,
-  eyebrow,
   label,
   minutes,
   days,
@@ -79,7 +79,6 @@ function FilterCard({
   onFix,
 }: {
   color: string;
-  eyebrow?: string;
   label: string;
   minutes: number;
   /** Giorni distinti toccati, mostrati con le giornate equivalenti. */
@@ -106,11 +105,9 @@ function FilterCard({
         onMouseLeave={interactive ? () => onHover(null) : undefined}
         onClick={interactive ? () => onFix(active ? null : filter) : undefined}
         className={cn(
-          "flex flex-col rounded-lg border px-3 py-2.5",
+          "-mx-2 flex flex-col rounded-lg px-2 py-2",
           interactive && "cursor-pointer",
-          active
-            ? "border-primary bg-primary-wash"
-            : "border-line bg-raised/40 " + (interactive ? "hover:border-primary/40" : ""),
+          active ? "bg-primary-wash" : interactive && "hover:bg-raised",
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -120,14 +117,7 @@ function FilterCard({
               className="h-2.5 w-2.5 flex-none rounded-[3px]"
               style={{ backgroundColor: color }}
             />
-            <div className="min-w-0">
-              {eyebrow && (
-                <div className="truncate text-[11px] font-bold uppercase tracking-wider text-muted">
-                  {eyebrow}
-                </div>
-              )}
-              <div className="truncate text-[13px] font-semibold text-ink">{label}</div>
-            </div>
+            <div className="truncate text-[13px] font-semibold text-ink">{label}</div>
           </div>
           <div className="tnum shrink-0 text-[14px] font-semibold text-ink">
             {formatHours(minutes)}
@@ -157,7 +147,7 @@ function FilterCard({
                       style={{ backgroundColor: c }}
                     />
                   )}
-                  <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted">
+                  <span className="truncate text-xs text-muted">
                     {subtypeLabel(s.subtypeId)}
                   </span>
                 </div>
@@ -255,8 +245,8 @@ export function MonthSummary({
             <span className="tnum text-[12.5px] font-semibold text-ink">
               {presence.required > 0 ? (
                 <>
-                  {presence.present}
-                  <span className="text-muted">/{presence.required} in presenza</span>
+                  {presence.present} in presenza
+                  <span className="font-normal text-muted"> · obiettivo {presence.required}</span>
                 </>
               ) : (
                 <>
@@ -410,7 +400,7 @@ export function MonthSummary({
 
       <div>
         <Eyebrow>Ore nel mese</Eyebrow>
-        <div className="tnum mt-1.5 text-[40px] font-bold leading-none tracking-tight text-ink">
+        <div className="tnum mt-1 text-2xl font-semibold leading-tight tracking-tight text-ink">
           {formatHours(report.totalMin)}
         </div>
         <div className="mt-2 text-[12.5px] text-muted">
@@ -445,7 +435,7 @@ export function MonthSummary({
       {report.byClient.length > 0 && (
         <div>
           <Eyebrow>Clienti</Eyebrow>
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-1 space-y-0.5">
             {report.byClient.map((c) => {
               const filter: SummaryFilter = { kind: "client", clientId: c.clientId };
               return (
@@ -475,7 +465,7 @@ export function MonthSummary({
       {report.byOtherType.length > 0 && (
         <div>
           <Eyebrow>Altre attività</Eyebrow>
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-1 space-y-0.5">
             {report.byOtherType.map((t) => {
               const filter: SummaryFilter = { kind: "type", type: t.type };
               return (
