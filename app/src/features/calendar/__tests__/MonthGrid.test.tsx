@@ -123,6 +123,15 @@ describe("MonthGrid", () => {
     expect(cell16).toHaveAttribute("data-dimmed", "true");
   });
 
+  it("con l'orario la barra è in scala sulla giornata e mostra il non compilato", () => {
+    const wh = { morningStart: 540, morningEnd: 780, afternoonStart: 840, afternoonEnd: 1080 };
+    const e = { ...entry("a", "2026-06-10T09:00:00"), endsAt: "2026-06-10T11:00:00" };
+    render(<MonthGrid date={DATE} entries={[e]} workHours={wh} />);
+    // 2h su 8h: manca il 75%
+    expect(screen.getByTitle("75% della giornata non compilato")).toHaveTextContent("−75%");
+    expect(screen.getByTitle("a")).toHaveStyle({ width: "25%" });
+  });
+
   it("mostra l'icona della sede sui giorni con una location", () => {
     render(<MonthGrid date={DATE} locations={{ "2026-06-15": "office" }} />);
     expect(screen.getByLabelText("Ufficio")).toBeInTheDocument();
