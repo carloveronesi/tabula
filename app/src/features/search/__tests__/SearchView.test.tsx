@@ -85,6 +85,7 @@ describe("SearchView", () => {
 
   it("filtra per cliente senza testo", async () => {
     render(<SearchView />);
+    fireEvent.click(screen.getByRole("button", { name: "Filtri" }));
     const clientBox = screen.getByRole("combobox", { name: "Cliente" });
     fireEvent.focus(clientBox);
     fireEvent.mouseDown(screen.getByRole("option", { name: "ACME" }));
@@ -97,6 +98,7 @@ describe("SearchView", () => {
 
   it("filtra per intervallo di date", async () => {
     render(<SearchView />);
+    fireEvent.click(screen.getByRole("button", { name: "Filtri" }));
     fireEvent.change(screen.getByLabelText("Dal"), {
       target: { value: "2026-04-01" },
     });
@@ -104,6 +106,24 @@ describe("SearchView", () => {
       expect(screen.getByText("Standup Beta")).toBeInTheDocument(),
     );
     expect(screen.queryByText("Kickoff Alfa")).not.toBeInTheDocument();
+  });
+
+  it("i filtri avanzati partono chiusi", () => {
+    render(<SearchView />);
+    expect(screen.queryByLabelText("Dal")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filtri" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("accanto al conteggio mostra le ore dei risultati", async () => {
+    await db.entries.put(
+      entry("3", "2026-06-02T09:00:00", { title: "Review Gamma", endsAt: "2026-06-02T11:30:00" }),
+    );
+    render(<SearchView />);
+    fireEvent.change(screen.getByLabelText("Cerca"), { target: { value: "gamma" } });
+    expect(await screen.findByText("2h 30m")).toBeInTheDocument();
   });
 
   it("Pulisci filtri ripristina lo stato iniziale", async () => {
