@@ -94,6 +94,20 @@ describe("monthlyReport", () => {
     ]);
   });
 
+  it("conta i giorni distinti toccati da ogni cliente", () => {
+    const r = monthlyReport(
+      [
+        entry({ date: "2026-06-01", start: 540, end: 600, clientId: "c1" }),
+        entry({ date: "2026-06-01", start: 600, end: 660, clientId: "c1" }),
+        entry({ date: "2026-06-03", start: 540, end: 600, clientId: "c1" }),
+      ],
+      [],
+      WH,
+      30,
+    );
+    expect(r.byClient[0].days).toBe(2);
+  });
+
   it("altri tipi (interno/ferie/evento) separati dai clienti", () => {
     const r = monthlyReport(
       [

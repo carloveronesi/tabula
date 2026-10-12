@@ -94,7 +94,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 - Nel **Mese** vedi i giorni lavorativi, quanti ne servono in presenza (le ferie
   escono dalla base), quanti ne hai fatti o pianificati e quanti giorni restano
   liberi per piazzare quelli mancanti.
-- **Pianifica presenze**: dal pannello del Mese la griglia passa in modalità
+- **Pianifica**: dal blocco Presenze del Mese (compatto, con il dettaglio per sede
+  a richiesta) la griglia passa in modalità
   planning. Il click su un giorno cicla Ufficio → Cliente → nessuna; i **giorni
   preferiti** (Impostazioni) compaiono tratteggiati come suggeriti, fino a coprire
   i mancanti, e si confermano in un colpo con «Accetta suggeriti».
@@ -105,7 +106,8 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 - Sintesi del mese: **ore totali** e media, **giorni compilati** (copertura della
   giornata lavorativa) con ore registrate vs. attese, **presenze** rispetto
-  all'obiettivo, e ripartizione **per cliente** con scomposizione per sottotipo.
+  all'obiettivo, e ripartizione **per cliente** (ore, giornate equivalenti e giorni toccati) con
+  scomposizione per sottotipo.
 - Vive nella **sidebar della vista Mese** (con evidenziazione della griglia al
   passaggio sui filtri); la voce **«Riepilogo»** del menu porta direttamente lì.
 - **Esporta report**: scarica il mese come file Excel (fogli *Giornaliero* e

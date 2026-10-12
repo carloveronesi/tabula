@@ -67,7 +67,7 @@ describe("MonthSummary", () => {
     });
     render(<MonthSummary />);
     // un solo giorno attivo a giugno (15), l'entry di maggio è esclusa
-    expect(screen.getByText(/su 1 giorno/)).toBeInTheDocument();
+    expect(screen.getByText(/su 1 giorno · /)).toBeInTheDocument();
   });
 
   it("click su una riga presenza fissa il filtro per sede", () => {
@@ -82,6 +82,9 @@ describe("MonthSummary", () => {
     render(
       <MonthSummary onHoverFilter={() => {}} onFixFilter={onFix} />,
     );
+    // il dettaglio per sede è chiuso di default
+    expect(screen.queryByText("Ufficio")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Dettaglio" }));
     fireEvent.click(screen.getByText("Ufficio"));
     expect(onFix).toHaveBeenCalledWith({ kind: "location", location: "office" });
   });
@@ -110,9 +113,10 @@ describe("MonthSummary", () => {
         metas: { "2026-06-01": "office", "2026-06-03": "client", "2026-06-17": "office" },
       });
       render(<MonthSummary />);
-      expect(screen.getByText("/8")).toBeInTheDocument();
+      expect(screen.getByText("/8 in presenza")).toBeInTheDocument();
       // 3 in presenza (uno futuro): ne mancano 5, restano 9 giorni senza sede
-      expect(screen.getByText(/Mancano 5 · 9 giorni liberi · 1 pianificati/)).toBeInTheDocument();
+      expect(screen.getByText("Mancano 5 · 9 giorni liberi")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Dettaglio" }));
       expect(screen.getByText(/· 1 di ferie/)).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
@@ -143,6 +147,12 @@ describe("MonthSummary", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("le card mostrano giornate equivalenti e giorni toccati", () => {
+    render(<MonthSummary />);
+    // Acme: 2h + 1h su due giorni; giornata piena di default = 8h
+    expect(screen.getByText("0,4 gg · su 2 giorni")).toBeInTheDocument();
   });
 
   it("click su una card cliente fissa il filtro corrispondente", () => {

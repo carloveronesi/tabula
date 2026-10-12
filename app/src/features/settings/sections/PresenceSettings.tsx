@@ -98,7 +98,7 @@ export function PresenceSettings() {
                 })}
               </div>
               <p className="text-xs text-muted">
-                Nel Mese, «Pianifica presenze» propone questi giorni fino a coprire
+                Nel Mese, «Pianifica» propone questi giorni fino a coprire
                 l'obiettivo.
               </p>
             </Field>

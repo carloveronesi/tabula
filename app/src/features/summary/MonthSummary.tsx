@@ -1,11 +1,12 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { EntryType, Id, Location } from "@/data/types";
 import {
   monthlyReport,
   type SummaryFilter,
   type SubtypeSlice,
 } from "@/domain/monthlyReport";
-import { formatHours } from "@/domain/format";
+import { formatHours, formatWorkDays } from "@/domain/format";
+import { dailyWorkMinutes } from "@/domain/capacity";
 import { colorFromKey } from "@/domain/colors";
 import { LOCATIONS, LOCATION_LABEL } from "@/domain/presence";
 import { isoDate } from "@/domain/calendarNav";
@@ -64,6 +65,8 @@ function FilterCard({
   eyebrow,
   label,
   minutes,
+  days,
+  dayMin,
   max,
   subtypes,
   subtypeLabel,
@@ -79,6 +82,10 @@ function FilterCard({
   eyebrow?: string;
   label: string;
   minutes: number;
+  /** Giorni distinti toccati, mostrati con le giornate equivalenti. */
+  days: number;
+  /** Durata della giornata piena, per le giornate equivalenti. */
+  dayMin: number;
   max: number;
   subtypes: SubtypeSlice[];
   subtypeLabel: (id: Id | null) => string;
@@ -122,9 +129,12 @@ function FilterCard({
               <div className="truncate text-[13px] font-semibold text-ink">{label}</div>
             </div>
           </div>
-          <div className="tnum shrink-0 text-[13px] font-semibold text-ink">
+          <div className="tnum shrink-0 text-[14px] font-semibold text-ink">
             {formatHours(minutes)}
           </div>
+        </div>
+        <div className="tnum mt-0.5 pl-[18px] text-[11.5px] text-muted">
+          {formatWorkDays(minutes, dayMin)} · su {days} {days === 1 ? "giorno" : "giorni"}
         </div>
         <div className="mt-2 h-1 overflow-hidden rounded-pill bg-line">
           <div
@@ -196,6 +206,7 @@ export function MonthSummary({
     for (const d of suggested) await setLocation(d, "office");
   };
   const preferredDays = settings.presenceTracking.preferredDays;
+  const [presenceDetail, setPresenceDetail] = useState(false);
   const monthEntries = useMemo(
     () => entries.filter((e) => e.startsAt.slice(0, 7) === monthKey),
     [entries, monthKey],
@@ -229,6 +240,7 @@ export function MonthSummary({
   // Barre delle card in scala unica: quota sul tempo totale tracciato nel mese,
   // così Clienti e Altre attività sono confrontabili e la barra = fetta del mese.
   const total = report.totalMin;
+  const dayMin = dailyWorkMinutes(settings.workHours);
 
   const empty =
     report.totalMin === 0 && !(showPresence && presence.workingDays > 0);
@@ -237,16 +249,25 @@ export function MonthSummary({
     <>
       {showPresence && presence.workingDays > 0 && (
         <div>
-          <Eyebrow>Presenze</Eyebrow>
+          {/* Compatto: il cuore del mese sono le ore; il dettaglio per sede si apre a richiesta. */}
+          <div className="flex items-baseline justify-between">
+            <Eyebrow>Presenze</Eyebrow>
+            <span className="tnum text-[12.5px] font-semibold text-ink">
+              {presence.required > 0 ? (
+                <>
+                  {presence.present}
+                  <span className="text-muted">/{presence.required} in presenza</span>
+                </>
+              ) : (
+                <>
+                  {presence.present}
+                  <span className="text-muted"> su {presence.baseDays} giorni</span>
+                </>
+              )}
+            </span>
+          </div>
           {presence.required > 0 && (
             <>
-              <div className="mt-1.5 flex items-baseline gap-2">
-                <span className="tnum text-[32px] font-bold leading-none tracking-tight text-ink">
-                  {presence.present}
-                  <span className="text-muted">/{presence.required}</span>
-                </span>
-                <span className="text-[12.5px] text-muted">in presenza</span>
-              </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-line">
                 <div
                   className="h-full rounded-pill bg-primary"
@@ -262,111 +283,128 @@ export function MonthSummary({
                 )}
               >
                 {presence.missing === 0
-                  ? "Obiettivo raggiunto"
-                  : `Mancano ${presence.missing} · ${presence.open} ${
-                      presence.open === 1 ? "giorno libero" : "giorni liberi"
-                    }`}
-                {presence.planned > 0 && ` · ${presence.planned} pianificati`}
+                  ? "Obiettivo coperto"
+                  : presence.missing > presence.open
+                    ? `Mancano ${presence.missing}, ma ${
+                        presence.open === 1
+                          ? "resta 1 giorno libero"
+                          : `restano ${presence.open} giorni liberi`
+                      }`
+                    : `Mancano ${presence.missing} · ${presence.open} ${
+                        presence.open === 1 ? "giorno libero" : "giorni liberi"
+                      }`}
               </div>
             </>
           )}
-          {onPlanningChange &&
-            (planning ? (
-              <div className="mt-3 space-y-2 rounded-lg border border-primary/40 bg-primary-wash p-2.5 text-xs text-ink/80">
-                <p>
-                  Clicca un giorno: Ufficio → Cliente → nessuna.
-                  {suggested.length > 0 && " I tratteggiati sono i suggeriti."}
-                </p>
-                {preferredDays.length === 0 ? (
-                  <p className="text-muted">
-                    Scegli i giorni preferiti in Impostazioni → Presenze per avere
-                    suggerimenti.
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {onPlanningChange &&
+              (planning ? (
+                <div className="w-full space-y-2 rounded-lg border border-primary/40 bg-primary-wash p-2.5 text-xs text-ink/80">
+                  <p>
+                    Clicca un giorno: Ufficio → Cliente → nessuna.
+                    {suggested.length > 0 && " I tratteggiati sono i suggeriti."}
                   </p>
-                ) : (
-                  presence.missing > suggested.length && (
+                  {preferredDays.length === 0 ? (
                     <p className="text-muted">
-                      I giorni preferiti liberi non bastano: ne servono altri{" "}
-                      {presence.missing - suggested.length}.
+                      Scegli i giorni preferiti in Impostazioni → Presenze per avere
+                      suggerimenti.
                     </p>
-                  )
-                )}
-                <div className="flex gap-2">
-                  {suggested.length > 0 && (
-                    <Button variant="primary" size="sm" onClick={() => void acceptSuggested()}>
-                      Accetta suggeriti ({suggested.length})
-                    </Button>
+                  ) : (
+                    presence.missing > suggested.length && (
+                      <p className="text-muted">
+                        I giorni preferiti liberi non bastano: ne servono altri{" "}
+                        {presence.missing - suggested.length}.
+                      </p>
+                    )
                   )}
-                  <Button variant="subtle" size="sm" onClick={() => onPlanningChange(false)}>
-                    Fatto
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                variant="subtle"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => onPlanningChange(true)}
-              >
-                Pianifica presenze
-              </Button>
-            ))}
-          <div className="tnum mt-3 text-xs text-muted">
-            <span className="font-semibold text-ink">{presence.workingDays}</span> giorni
-            lavorativi
-            {presence.vacationDays > 0 && ` · ${presence.vacationDays} di ferie`}
-          </div>
-          <ul className="mt-1.5 space-y-0.5">
-            {LOCATIONS.filter((l) => presence.days[l] > 0).map((location) => {
-              const days = presence.days[location];
-              const filter: SummaryFilter = { kind: "location", location };
-              const active = sameFilter(activeFilter, filter);
-              const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
-              return (
-                <li
-                  key={location}
-                  className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
-                >
-                  <button
-                    type="button"
-                    disabled={!interactive}
-                    onMouseEnter={interactive ? () => onHover(filter) : undefined}
-                    onMouseLeave={interactive ? () => onHover(null) : undefined}
-                    onClick={interactive ? () => onFix(active ? null : filter) : undefined}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
-                      interactive && "cursor-pointer hover:bg-raised",
-                      active && "bg-primary-wash",
+                  <div className="flex gap-2">
+                    {suggested.length > 0 && (
+                      <Button variant="primary" size="sm" onClick={() => void acceptSuggested()}>
+                        Accetta suggeriti ({suggested.length})
+                      </Button>
                     )}
-                  >
-                    <span className="w-16 shrink-0 text-muted">{LOCATION_LABEL[location]}</span>
-                    <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
-                      <div
-                        className={cn(
-                          "absolute inset-y-0 left-0 rounded-pill",
-                          location === "remote" ? "bg-muted/50" : "bg-primary",
-                        )}
-                        style={{ width: `${(days / presence.baseDays) * 100}%` }}
-                      />
-                    </div>
-                    <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
-                      {days}
-                      <span className="text-muted">g</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-            {presence.open > 0 && (
-              <li className="flex items-center gap-2 px-1.5 py-1 text-[12.5px]">
-                <span className="flex-1 text-muted">Da decidere</span>
-                <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
-                  {presence.open}
-                  <span className="text-muted">g</span>
-                </span>
-              </li>
+                    <Button variant="subtle" size="sm" onClick={() => onPlanningChange(false)}>
+                      Fatto
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="subtle" size="sm" onClick={() => onPlanningChange(true)}>
+                  Pianifica
+                </Button>
+              ))}
+            {!planning && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-expanded={presenceDetail}
+                onClick={() => setPresenceDetail((v) => !v)}
+              >
+                {presenceDetail ? "Nascondi dettaglio" : "Dettaglio"}
+              </Button>
             )}
-          </ul>
+          </div>
+          {presenceDetail && !planning && (
+            <div className="mt-2 rounded-lg border border-line bg-raised/40 p-2">
+          <div className="tnum text-xs text-muted">
+              <span className="font-semibold text-ink">{presence.workingDays}</span> giorni
+              lavorativi
+              {presence.vacationDays > 0 && ` · ${presence.vacationDays} di ferie`}
+              {presence.planned > 0 && ` · ${presence.planned} pianificati`}
+            </div>
+            <ul className="mt-1.5 space-y-0.5">
+              {LOCATIONS.filter((l) => presence.days[l] > 0).map((location) => {
+                const days = presence.days[location];
+                const filter: SummaryFilter = { kind: "location", location };
+                const active = sameFilter(activeFilter, filter);
+                const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
+                return (
+                  <li
+                    key={location}
+                    className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
+                  >
+                    <button
+                      type="button"
+                      disabled={!interactive}
+                      onMouseEnter={interactive ? () => onHover(filter) : undefined}
+                      onMouseLeave={interactive ? () => onHover(null) : undefined}
+                      onClick={interactive ? () => onFix(active ? null : filter) : undefined}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
+                        interactive && "cursor-pointer hover:bg-raised",
+                        active && "bg-primary-wash",
+                      )}
+                    >
+                      <span className="w-16 shrink-0 text-muted">{LOCATION_LABEL[location]}</span>
+                      <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
+                        <div
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-pill",
+                            location === "remote" ? "bg-muted/50" : "bg-primary",
+                          )}
+                          style={{ width: `${(days / presence.baseDays) * 100}%` }}
+                        />
+                      </div>
+                      <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                        {days}
+                        <span className="text-muted">g</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {presence.open > 0 && (
+                <li className="flex items-center gap-2 px-1.5 py-1 text-[12.5px]">
+                  <span className="flex-1 text-muted">Da decidere</span>
+                  <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                    {presence.open}
+                    <span className="text-muted">g</span>
+                  </span>
+                </li>
+              )}
+            </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -416,6 +454,8 @@ export function MonthSummary({
                   color={clientColor(c.clientId)}
                   label={clientName(c.clientId)}
                   minutes={c.minutes}
+                  days={c.days}
+                  dayMin={dayMin}
                   max={total}
                   subtypes={c.bySubtype}
                   subtypeLabel={subtypeLabel}
@@ -444,6 +484,8 @@ export function MonthSummary({
                   color={TYPE_DOT[t.type as Exclude<EntryType, "client">]}
                   label={TYPE_LABEL[t.type]}
                   minutes={t.minutes}
+                  days={t.days}
+                  dayMin={dayMin}
                   max={total}
                   subtypes={t.bySubtype}
                   subtypeLabel={subtypeLabel}
