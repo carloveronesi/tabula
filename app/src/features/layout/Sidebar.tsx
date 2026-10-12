@@ -21,11 +21,13 @@ type Dest = {
   match?: ViewMode[];
 };
 
-// Il Mese ha una voce sua: è dove si leggono le presenze e il riepilogo del
-// mese, e ci si torna spesso. "Calendario" resta il giorno/settimana.
+// Il Mese è una scala del Calendario (switch nella TopBar). "Riepilogo" è
+// l'ingresso diretto per fare il punto sul mese: apre la stessa vista ma resta
+// attivo solo se ci sei entrato da qui, così la rail non salta da sola quando
+// cambi scala.
 const PRIMARY: Dest[] = [
-  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week"] },
-  { label: "Mese", icon: IconMonth, target: "month" },
+  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week", "month"] },
+  { label: "Riepilogo", icon: IconMonth, target: "month" },
   { label: "Progetti", icon: IconProjects, target: "projects" },
   { label: "Todo", icon: IconTodo, target: "todo" },
 ];
@@ -78,10 +80,16 @@ function NavItem({ dest, active, onSelect }: { dest: Dest; active: boolean; onSe
 export function Sidebar() {
   const view = useUiStore((s) => s.view);
   const setView = useUiStore((s) => s.setView);
+  const summary = useUiStore((s) => s.summary);
+  const openSummary = useUiStore((s) => s.openSummary);
   const [help, setHelp] = useState(false);
 
-  const isActive = (d: Dest) =>
-    d.match ? d.match.includes(view) : view === d.target;
+  const isActive = (d: Dest) => {
+    if (d.label === "Riepilogo") return view === "month" && summary;
+    if (d.label === "Calendario") return d.match!.includes(view) && !(view === "month" && summary);
+    return view === d.target;
+  };
+  const select = (d: Dest) => (d.label === "Riepilogo" ? openSummary() : setView(d.target));
 
   return (
     <nav
@@ -97,7 +105,7 @@ export function Sidebar() {
       />
       <div className="flex w-full flex-1 flex-col gap-1">
         {PRIMARY.map((d) => (
-          <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => setView(d.target)} />
+          <NavItem key={d.label} dest={d} active={isActive(d)} onSelect={() => select(d)} />
         ))}
       </div>
       <div className="flex w-full flex-col gap-1">
