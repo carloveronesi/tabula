@@ -130,6 +130,8 @@ describe("MonthGrid", () => {
     // 2h su 8h: manca il 75%
     expect(screen.getByTitle("75% della giornata non compilato")).toHaveTextContent("−75%");
     expect(screen.getByTitle("a")).toHaveStyle({ width: "25%" });
+    // I feriali vuoti hanno la barra vuota ma niente "−100%".
+    expect(screen.getAllByTitle(/non compilato/)).toHaveLength(1);
   });
 
   it("mostra l'icona della sede sui giorni con una location", () => {
