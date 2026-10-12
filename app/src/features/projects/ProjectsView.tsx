@@ -46,12 +46,6 @@ function ProjectItem({
           active ? "bg-raised shadow-sm" : "hover:bg-raised",
         )}
       >
-        {active && (
-          <span
-            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r"
-            style={{ background: color }}
-          />
-        )}
         <span className="flex w-full items-center gap-2.5">
           <span
             className="h-2 w-2 flex-none rounded-sm"
@@ -232,8 +226,7 @@ export function ProjectsView() {
     <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside className="flex w-72 flex-none flex-col border-r border-line bg-surface">
         <div className="px-3 pt-4">
-          <div className="mb-3 flex items-baseline justify-between px-1">
-            <h2 className="text-lg font-bold tracking-tight text-ink">Progetti</h2>
+          <div className="mb-3 px-1">
             <span className="tnum text-xs text-muted">{activeCount} attivi</span>
           </div>
           <label className="flex h-9 items-center gap-2 rounded-lg border border-line bg-bg px-3 focus-within:border-primary">

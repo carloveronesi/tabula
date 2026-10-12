@@ -38,6 +38,20 @@ function entry(id: string, startsAt: ISODateTime, endsAt: ISODateTime): Entry {
 }
 
 describe("WeekGrid", () => {
+  it("nell'intestazione mostra le ore registrate del giorno", () => {
+    render(
+      <WeekGrid
+        date={DATE}
+        workingDays={[0, 1, 2, 3, 4]}
+        workHours={WH}
+        slotMinutes={30}
+        entries={[entry("a", "2026-06-09T09:00:00", "2026-06-09T11:30:00")]}
+      />,
+    );
+    expect(screen.getByLabelText("2h 30m registrate")).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/registrate$/)).toHaveLength(1);
+  });
+
   it("una colonna per ogni giorno lavorativo (lun–ven → 5)", () => {
     render(<WeekGrid date={DATE} workingDays={[0, 1, 2, 3, 4]} workHours={WH} slotMinutes={30} />);
     expect(screen.getAllByRole("columnheader")).toHaveLength(5);

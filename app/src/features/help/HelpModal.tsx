@@ -95,7 +95,7 @@ const FEATURES: { name: string; body: string }[] = [
     body: "Il lavoro è organizzato per cliente → progetto → sottotipo. Ogni progetto ha stato, obiettivi, team, ore stimate e sotto-attività, e mostra le ore consuntivate rispetto alla stima.",
   },
   {
-    name: "Todo",
+    name: "Da fare",
     body: "Cose da fare con sotto-attività, scadenza e progetto collegato. Quelle scadute o in scadenza compaiono da sole nella sidebar del Giorno.",
   },
   {

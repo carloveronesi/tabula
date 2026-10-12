@@ -98,7 +98,7 @@ di tutto il resto. Il mono è riservato al `code` inline. Scala **rem fissa** (~
 ## Layout
 
 **Sidebar** (`features/layout/Sidebar.tsx`): rail verticale a sinistra (~76px),
-icona + etichetta per ogni sezione (Calendario, Progetti, Todo, e in basso
+icona + etichetta per ogni sezione (Calendario, Progetti, Da fare, e in basso
 Ricerca, Impostazioni); voce attiva su `--primary-wash` con indicatore a filo.
 Il **mese non è una sezione** ma una scala del calendario: "Calendario" resta
 attivo su giorno/settimana/mese e non esiste una voce che apra `month` con un

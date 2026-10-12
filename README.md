@@ -75,7 +75,7 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
   fallback deterministico — sempre accompagnato dal titolo, mai solo colore.
 - **Statistiche di progetto**: ore consuntivate vs. stimate e andamento.
 
-### ✅ Todo
+### ✅ Da fare
 
 - Lista di cose da fare con **sotto-attività**, tag, scadenza e collegamento a un
   progetto.

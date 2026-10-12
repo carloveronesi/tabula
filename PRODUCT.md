@@ -17,7 +17,7 @@ e rivedere il tempo con il minimo attrito, senza che lo strumento si metta in me
 Tabula è una PWA locale (dati su IndexedDB, nessun backend) per il tracciamento
 giornaliero delle attività — un diario di lavoro. Mostra la giornata/settimana/mese
 come un calendario, con blocchi-evento collegati a clienti, progetti e sottotipi,
-più viste di sintesi (Progetti, Todo, Riepilogo). Il successo è la frizione zero:
+più viste di sintesi (Progetti, Da fare, Riepilogo). Il successo è la frizione zero:
 aprire, annotare, chiudere; e, a fine periodo, ricavare numeri affidabili senza
 lavoro manuale.
 
