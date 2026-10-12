@@ -13,6 +13,7 @@ import { dayPresets, minutesToLabel, outsideWorkHours } from "@/domain/slots";
 import {
   collaboratorCandidateIds,
   frequentPeople,
+  rankByUsage,
   rankCandidatesByHistory,
 } from "@/domain/collaborators";
 import { rankProjectsByUsage } from "@/domain/projectUsage";
@@ -122,7 +123,7 @@ export function EntryEditor() {
     setConfirmingDelete(false);
   }, [open, base, seed]);
 
-  // Archivio completo: serve solo a ordinare i collaboratori per frequenza.
+  // Archivio completo: serve solo a ordinare progetti e persone per frequenza.
   // Caricato all'apertura. ponytail: scan dell'intera tabella entries a ogni
   // apertura; se diventa pesante, cache in uno store o indice per cliente.
   const [archive, setArchive] = useState<Entry[]>([]);
@@ -220,25 +221,36 @@ export function EntryEditor() {
   );
   // Pool per la sola ricerca: tutte le persone (di ogni progetto), così si può
   // ripescare chi collabora altrove senza ridigitarlo. Il dropdown a campo vuoto
-  // resta il team; digitando la ricerca spazia qui.
+  // resta il team; digitando la ricerca spazia qui. Più frequenti in cima, poi
+  // alfabetico.
   const collaboratorSearchOptions = useMemo(
     () =>
-      nameOptions([...people].sort((a, b) => a.name.localeCompare(b.name))),
-    [people],
+      nameOptions(
+        rankByUsage(
+          [...people].sort((a, b) => a.name.localeCompare(b.name)),
+          archive,
+          (e) => e.collaboratorIds,
+        ),
+      ),
+    [people, archive],
   );
 
-  // Referenti: contatti del cliente selezionato.
+  // Referenti: contatti del cliente selezionato, i più citati in cima.
   const selectedContacts = draft.contactIds
     .map((id) => contacts.find((k) => k.id === id))
     .filter((k): k is NonNullable<typeof k> => !!k);
   const contactAddOptions = useMemo(
     () =>
       nameOptions(
-        contacts.filter(
-          (k) => k.clientId === draft.clientId || draft.contactIds.includes(k.id),
+        rankByUsage(
+          contacts.filter(
+            (k) => k.clientId === draft.clientId || draft.contactIds.includes(k.id),
+          ),
+          archive,
+          (e) => e.contactIds,
         ),
       ),
-    [contacts, draft.clientId, draft.contactIds],
+    [contacts, draft.clientId, draft.contactIds, archive],
   );
 
   // "Aggiungi i frequenti": chi c'è di solito su questo progetto/cliente e qui

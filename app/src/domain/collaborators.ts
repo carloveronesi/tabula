@@ -32,10 +32,17 @@ export function collaboratorCandidateIds(
   return out;
 }
 
+/** Quante volte ogni id compare nelle entry (via `idsOf`). */
+function usageCount(entries: Entry[], idsOf: (e: Entry) => Id[]): Map<Id, number> {
+  const freq = new Map<Id, number>();
+  for (const e of entries) for (const id of idsOf(e)) freq.set(id, (freq.get(id) ?? 0) + 1);
+  return freq;
+}
+
 /**
- * Riordina i candidati per frequenza di collaborazione reale: chi compare più
- * spesso come collaboratore sulle entry di quel progetto (o, in mancanza, di
- * quel cliente) sale in cima. A parità di frequenza — e per chi non ha storico —
+ * Riordina i candidati per frequenza di collaborazione reale: prima conta il
+ * progetto, poi il cliente, poi tutto lo storico — così anche su un progetto
+ * nuovo i colleghi abituali stanno in cima. A parità (e per chi non ha storico)
  * si conserva l'ordine d'ingresso (il team del progetto). Pura.
  */
 export function rankCandidatesByHistory(
@@ -44,20 +51,31 @@ export function rankCandidatesByHistory(
   projectId: Id | null,
   clientId: Id | null,
 ): Id[] {
-  const freq = new Map<Id, number>();
-  for (const e of entries) {
-    const match = projectId
-      ? e.projectId === projectId
-      : clientId
-        ? e.clientId === clientId
-        : false;
-    if (!match) continue;
-    for (const id of e.collaboratorIds) freq.set(id, (freq.get(id) ?? 0) + 1);
-  }
+  const collab = (e: Entry) => e.collaboratorIds;
+  const onProject = usageCount(projectId ? entries.filter((e) => e.projectId === projectId) : [], collab);
+  const onClient = usageCount(clientId ? entries.filter((e) => e.clientId === clientId) : [], collab);
+  const overall = usageCount(entries, collab);
+  const key = (id: Id) => [onProject.get(id) ?? 0, onClient.get(id) ?? 0, overall.get(id) ?? 0];
   return candidateIds
-    .map((id, i) => ({ id, i, f: freq.get(id) ?? 0 }))
-    .sort((a, b) => b.f - a.f || a.i - b.i)
+    .map((id, i) => ({ id, i, k: key(id) }))
+    .sort((a, b) => b.k[0] - a.k[0] || b.k[1] - a.k[1] || b.k[2] - a.k[2] || a.i - b.i)
     .map((x) => x.id);
+}
+
+/**
+ * Ordina persone (collaboratori o referenti) per quante attività le citano,
+ * più frequenti in cima; a parità conserva l'ordine d'ingresso. Pura.
+ */
+export function rankByUsage<T extends { id: Id }>(
+  items: T[],
+  entries: Entry[],
+  idsOf: (e: Entry) => Id[],
+): T[] {
+  const freq = usageCount(entries, idsOf);
+  return items
+    .map((x, i) => ({ x, i, f: freq.get(x.id) ?? 0 }))
+    .sort((a, b) => b.f - a.f || a.i - b.i)
+    .map((y) => y.x);
 }
 
 /**
