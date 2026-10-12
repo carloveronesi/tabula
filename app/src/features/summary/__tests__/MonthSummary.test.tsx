@@ -74,7 +74,7 @@ describe("MonthSummary", () => {
     useSettingsStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
-        presenceTracking: { enabled: true, targetPct: 50 },
+        presenceTracking: { enabled: true, targetPct: 50, preferredDays: [] },
       },
     });
     usePresenceStore.setState({ metas: { "2026-06-15": "office" } });
@@ -91,7 +91,7 @@ describe("MonthSummary", () => {
     vi.setSystemTime(new Date(2026, 5, 15, 12));
     try {
       useSettingsStore.setState({
-        settings: { ...DEFAULT_SETTINGS, presenceTracking: { enabled: true, targetPct: 40 } },
+        settings: { ...DEFAULT_SETTINGS, presenceTracking: { enabled: true, targetPct: 40, preferredDays: [] } },
       });
       // giugno 2026: 21 feriali (il 2 è festa), il 26 è di ferie → base 20, 40% = 8
       useCalendarStore.setState({
@@ -114,6 +114,32 @@ describe("MonthSummary", () => {
       // 3 in presenza (uno futuro): ne mancano 5, restano 9 giorni senza sede
       expect(screen.getByText(/Mancano 5 · 9 giorni liberi · 1 pianificati/)).toBeInTheDocument();
       expect(screen.getByText(/· 1 di ferie/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("planning: accetta i suggeriti come ufficio, solo quanti ne mancano", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12));
+    try {
+      // base 21 feriali, 10% → 3 richiesti; preferiti mar (1) e gio (3)
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_SETTINGS,
+          presenceTracking: { enabled: true, targetPct: 10, preferredDays: [1, 3] },
+        },
+      });
+      const setLocation = vi.fn(async () => {});
+      usePresenceStore.setState({ metas: {}, setLocation });
+      render(<MonthSummary planning onPlanningChange={() => {}} />);
+      fireEvent.click(screen.getByRole("button", { name: "Accetta suggeriti (3)" }));
+      await vi.waitFor(() => expect(setLocation).toHaveBeenCalledTimes(3));
+      expect(setLocation.mock.calls).toEqual([
+        ["2026-06-16", "office"],
+        ["2026-06-18", "office"],
+        ["2026-06-23", "office"],
+      ]);
     } finally {
       vi.useRealTimers();
     }

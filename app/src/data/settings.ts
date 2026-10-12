@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   internalColors: {},
   lastUsedByClient: {},
   patronDay: "",
-  presenceTracking: { enabled: false, targetPct: 0 },
+  presenceTracking: { enabled: false, targetPct: 0, preferredDays: [] },
   ai: { enabled: false, baseUrl: "", apiKey: "", model: "" },
 };
 
@@ -80,7 +80,14 @@ function presenceSettings(value: unknown): Settings["presenceTracking"] {
     typeof o.targetPct === "number"
       ? o.targetPct
       : num(o.officeTargetPct, 0) + num(o.clientTargetPct, 0);
-  return { enabled: o.enabled === true, targetPct: Math.min(100, Math.max(0, target)) };
+  const preferred = Array.isArray(o.preferredDays)
+    ? o.preferredDays.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 6)
+    : [];
+  return {
+    enabled: o.enabled === true,
+    targetPct: Math.min(100, Math.max(0, target)),
+    preferredDays: preferred,
+  };
 }
 
 /**

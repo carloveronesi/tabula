@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { monthPresence } from "@/domain/presence";
+import { monthPresence, suggestPresenceDays, nextPlannedLocation } from "@/domain/presence";
 
 // Lun 5 – ven 9 ottobre 2026; "oggi" è mercoledì 7.
 const WEEK = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"];
@@ -44,5 +44,36 @@ describe("monthPresence", () => {
     expect(p.required).toBe(0);
     expect(p.missing).toBe(0);
     expect(p.present).toBe(3);
+  });
+});
+
+describe("suggestPresenceDays", () => {
+  // giorni della settimana di WEEK: 5 = lun (0) … 9 = ven (4)
+  const dow = (d: string) => Number(d.slice(8)) - 5;
+
+  it("solo giorni liberi e preferiti, fino ai mancanti", () => {
+    // oggi = 5: liberi 6..9; preferiti mar (1), gio (3), ven (4); mancano 2
+    const p = monthPresence(WEEK, none, {}, 40, "remote", "2026-10-05");
+    expect(p.missing).toBe(2);
+    expect(suggestPresenceDays(p, [1, 3, 4], dow)).toEqual(["2026-10-06", "2026-10-08"]);
+  });
+
+  it("se i preferiti non bastano ne suggerisce meno", () => {
+    const p = monthPresence(WEEK, none, {}, 100, "remote", "2026-10-05");
+    expect(suggestPresenceDays(p, [1], dow)).toEqual(["2026-10-06"]);
+  });
+
+  it("obiettivo raggiunto: nessun suggerimento", () => {
+    const p = monthPresence(WEEK, none, {}, 40, "office", "2026-10-07");
+    expect(suggestPresenceDays(p, [3, 4], dow)).toEqual([]);
+  });
+});
+
+describe("nextPlannedLocation", () => {
+  it("cicla ufficio → cliente → nessuna; remoto riparte da ufficio", () => {
+    expect(nextPlannedLocation(null)).toBe("office");
+    expect(nextPlannedLocation("office")).toBe("client");
+    expect(nextPlannedLocation("client")).toBeNull();
+    expect(nextPlannedLocation("remote")).toBe("office");
   });
 });

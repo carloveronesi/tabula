@@ -100,7 +100,7 @@ const FEATURES: { name: string; body: string }[] = [
   },
   {
     name: "Presenze",
-    body: "Sede del giorno e un obiettivo di presenza: ufficio e cliente valgono entrambi. Nel Mese vedi quanti giorni servono, quanti ne mancano e quanti restano liberi; ogni giorno porta l'icona della sede.",
+    body: "Sede del giorno e un obiettivo di presenza: ufficio e cliente valgono entrambi. Nel Mese vedi quanti giorni servono, quanti ne mancano e quanti restano liberi; con «Pianifica presenze» li piazzi sulla griglia, partendo dai tuoi giorni preferiti.",
   },
   {
     name: "Riepilogo ed export",

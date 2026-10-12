@@ -34,6 +34,8 @@ export interface MonthPresence {
   planned: number;
   /** Giorni futuri ancora senza sede: dove si possono piazzare le presenze. */
   open: number;
+  /** Gli stessi, in ordine di data. */
+  openDates: ISODate[];
   /** Presenze che mancano all'obiettivo. */
   missing: number;
 }
@@ -54,11 +56,11 @@ export function monthPresence(
   const base = workingDates.filter((d) => !vacationDates.has(d));
   const days: Record<Location, number> = { remote: 0, office: 0, client: 0 };
   let planned = 0;
-  let open = 0;
+  const openDates: ISODate[] = [];
   for (const d of base) {
     const loc = metas[d] ?? (d <= today ? defaultLocation : null);
     if (!loc) {
-      open += 1;
+      openDates.push(d);
       continue;
     }
     days[loc] += 1;
@@ -74,7 +76,30 @@ export function monthPresence(
     days,
     present,
     planned,
-    open,
+    open: openDates.length,
+    openDates,
     missing: Math.max(0, required - present),
   };
+}
+
+/**
+ * Suggerimenti per il planning: i giorni ancora liberi che cadono in un giorno
+ * della settimana preferito (`dow`: 0 = lunedì), in ordine di data, fino a
+ * coprire le presenze mancanti. Se i preferiti non bastano ne restituisce meno.
+ */
+export function suggestPresenceDays(
+  p: MonthPresence,
+  preferredDays: number[],
+  dow: (d: ISODate) => number,
+): ISODate[] {
+  return p.openDates
+    .filter((d) => preferredDays.includes(dow(d)))
+    .slice(0, p.missing);
+}
+
+/** Click in planning: nessuna/remoto → ufficio → cliente → nessuna. */
+export function nextPlannedLocation(current: Location | null | undefined): Location | null {
+  if (current === "office") return "client";
+  if (current === "client") return null;
+  return "office";
 }

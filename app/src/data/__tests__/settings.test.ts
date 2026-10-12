@@ -64,7 +64,7 @@ describe("normalizeSettings", () => {
     const s = normalizeSettings({
       presenceTracking: { enabled: true, officeTargetPct: 40, clientTargetPct: 10 },
     });
-    expect(s.presenceTracking).toEqual({ enabled: true, targetPct: 50 });
+    expect(s.presenceTracking).toEqual({ enabled: true, targetPct: 50, preferredDays: [] });
   });
 });
 
@@ -97,7 +97,11 @@ describe("migrateSettings", () => {
       ...DEFAULT_SETTINGS,
       presenceTracking: { enabled: true, officeTargetPct: 80, clientTargetPct: 40 },
     } as unknown as Settings;
-    expect(migrateSettings(stored).presenceTracking).toEqual({ enabled: true, targetPct: 100 });
+    expect(migrateSettings(stored).presenceTracking).toEqual({
+      enabled: true,
+      targetPct: 100,
+      preferredDays: [],
+    });
   });
 });
 

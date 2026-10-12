@@ -7,9 +7,8 @@ import {
 } from "@/domain/monthlyReport";
 import { formatHours } from "@/domain/format";
 import { colorFromKey } from "@/domain/colors";
-import { monthPresence, LOCATIONS, LOCATION_LABEL } from "@/domain/presence";
-import { availableMinutes } from "@/domain/capacity";
-import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
+import { LOCATIONS, LOCATION_LABEL } from "@/domain/presence";
+import { isoDate } from "@/domain/calendarNav";
 import { cn } from "@/ui/cn";
 import { Button } from "@/ui/Button";
 import { useUiStore } from "@/store";
@@ -18,6 +17,7 @@ import { useInventoryStore } from "@/store/inventory";
 import { usePresenceStore } from "@/store/presence";
 import { useSettingsStore } from "@/store/settings";
 import { exportMonthReport } from "./exportReport";
+import { useMonthPresence } from "./useMonthPresence";
 
 const TYPE_LABEL: Record<EntryType, string> = {
   client: "Cliente",
@@ -45,6 +45,9 @@ interface MonthSummaryProps {
   fixedFilter?: SummaryFilter | null;
   onHoverFilter?: (f: SummaryFilter | null) => void;
   onFixFilter?: (f: SummaryFilter | null) => void;
+  /** Modalità planning delle presenze sulla griglia (assente = niente bottone). */
+  planning?: boolean;
+  onPlanningChange?: (on: boolean) => void;
 }
 
 function Eyebrow({ children }: { children: ReactNode }) {
@@ -171,11 +174,12 @@ export function MonthSummary({
   fixedFilter = null,
   onHoverFilter,
   onFixFilter,
+  planning = false,
+  onPlanningChange,
 }: MonthSummaryProps) {
   const entries = useCalendarStore((s) => s.entries);
   const clients = useInventoryStore((s) => s.clients);
   const settings = useSettingsStore((s) => s.settings);
-  const metas = usePresenceStore((s) => s.metas);
   const activeDate = useUiStore((s) => s.activeDate);
 
   const interactive = !!onHoverFilter && !!onFixFilter;
@@ -185,10 +189,13 @@ export function MonthSummary({
   const monthKey = isoDate(activeDate).slice(0, 7);
 
   const todayISO = isoDate(new Date());
-  const workingDates = useMemo(
-    () => workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay),
-    [activeDate, settings.workingDays, settings.patronDay],
-  );
+  // Presenze sull'intero mese, per pianificare.
+  const { workingDates, presence, suggested } = useMonthPresence();
+  const setLocation = usePresenceStore((s) => s.setLocation);
+  const acceptSuggested = async () => {
+    for (const d of suggested) await setLocation(d, "office");
+  };
+  const preferredDays = settings.presenceTracking.preferredDays;
   const monthEntries = useMemo(
     () => entries.filter((e) => e.startsAt.slice(0, 7) === monthKey),
     [entries, monthKey],
@@ -207,35 +214,6 @@ export function MonthSummary({
     [monthEntries, workingDates, todayISO, settings.workHours, settings.slotMinutes],
   );
 
-  // Presenze sull'intero mese, per pianificare: le ferie intere escono dalla base.
-  const presence = useMemo(() => {
-    const vacation = new Set(
-      workingDates.filter(
-        (d) =>
-          availableMinutes(
-            [d],
-            monthEntries.filter((e) => e.startsAt.slice(0, 10) === d),
-            settings.workHours,
-          ) === 0,
-      ),
-    );
-    return monthPresence(
-      workingDates,
-      vacation,
-      metas,
-      settings.presenceTracking.targetPct,
-      settings.defaultLocation,
-      todayISO,
-    );
-  }, [
-    workingDates,
-    monthEntries,
-    metas,
-    todayISO,
-    settings.workHours,
-    settings.presenceTracking.targetPct,
-    settings.defaultLocation,
-  ]);
   const showPresence = settings.presenceTracking.enabled;
 
   const clientName = (id: Id) => clients.find((c) => c.id === id)?.name ?? "Cliente";
@@ -292,6 +270,47 @@ export function MonthSummary({
               </div>
             </>
           )}
+          {onPlanningChange &&
+            (planning ? (
+              <div className="mt-3 space-y-2 rounded-lg border border-primary/40 bg-primary-wash p-2.5 text-xs text-ink/80">
+                <p>
+                  Clicca un giorno: Ufficio → Cliente → nessuna.
+                  {suggested.length > 0 && " I tratteggiati sono i suggeriti."}
+                </p>
+                {preferredDays.length === 0 ? (
+                  <p className="text-muted">
+                    Scegli i giorni preferiti in Impostazioni → Presenze per avere
+                    suggerimenti.
+                  </p>
+                ) : (
+                  presence.missing > suggested.length && (
+                    <p className="text-muted">
+                      I giorni preferiti liberi non bastano: ne servono altri{" "}
+                      {presence.missing - suggested.length}.
+                    </p>
+                  )
+                )}
+                <div className="flex gap-2">
+                  {suggested.length > 0 && (
+                    <Button variant="primary" size="sm" onClick={() => void acceptSuggested()}>
+                      Accetta suggeriti ({suggested.length})
+                    </Button>
+                  )}
+                  <Button variant="subtle" size="sm" onClick={() => onPlanningChange(false)}>
+                    Fatto
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="subtle"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => onPlanningChange(true)}
+              >
+                Pianifica presenze
+              </Button>
+            ))}
           <div className="tnum mt-3 text-xs text-muted">
             <span className="font-semibold text-ink">{presence.workingDays}</span> giorni
             lavorativi

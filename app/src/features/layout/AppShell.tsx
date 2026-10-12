@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Entry, Location } from "@/data/types";
 import type { SummaryFilter } from "@/domain/monthlyReport";
 import { dateTimeAt } from "@/domain/time";
@@ -7,6 +7,7 @@ import { isoDate, workingDatesOfMonth, isWorkingDate } from "@/domain/calendarNa
 import { availableMinutes } from "@/domain/capacity";
 import { spanDays } from "@/domain/spanFill";
 import { dayBreakdown, entryLabel } from "@/domain/dayBreakdown";
+import { nextPlannedLocation } from "@/domain/presence";
 import { useUiStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarStore } from "@/store/calendar";
@@ -29,6 +30,7 @@ import { CalendarImportModal } from "@/features/calendar/import/CalendarImportMo
 import { useImportPreviewStore } from "@/features/calendar/import/importPreviewStore";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { MonthSummary } from "@/features/summary/MonthSummary";
+import { useMonthPresence } from "@/features/summary/useMonthPresence";
 import { ProjectsView } from "@/features/projects/ProjectsView";
 import { TodoView } from "@/features/todo/TodoView";
 import { DayTodoWidget } from "@/features/todo/DayTodoWidget";
@@ -83,6 +85,15 @@ export function AppShell() {
   const [hoverFilter, setHoverFilter] = useState<SummaryFilter | null>(null);
   const [fixedFilter, setFixedFilter] = useState<SummaryFilter | null>(null);
   const monthFilter = hoverFilter ?? fixedFilter;
+
+  // Planning presenze nel Mese: il click sui giorni cicla la sede. Si spegne
+  // uscendo dal Mese, così non resta acceso di nascosto.
+  const presenceOn = settings.presenceTracking.enabled;
+  const [planning, setPlanning] = useState(false);
+  useEffect(() => {
+    if (view !== "month" || !presenceOn) setPlanning(false);
+  }, [view, presenceOn]);
+  const { plannable, suggested } = useMonthPresence();
 
   // Sede effettiva per il Mese: i feriali non compilati prendono la predefinita
   // ("casa salvo eccezioni"); le sedi registrate hanno la precedenza.
@@ -306,6 +317,16 @@ export function AppShell() {
                   patronDay={settings.patronDay}
                   highlight={monthFilter}
                   locations={monthLocations}
+                  planning={
+                    planning
+                      ? {
+                          plannable,
+                          suggested,
+                          onCycle: (d) =>
+                            void setLocation(d, nextPlannedLocation(locations[d])),
+                        }
+                      : null
+                  }
                 />
               </div>
               <MonthSummary
@@ -313,6 +334,8 @@ export function AppShell() {
                 fixedFilter={fixedFilter}
                 onHoverFilter={setHoverFilter}
                 onFixFilter={setFixedFilter}
+                planning={planning}
+                onPlanningChange={presenceOn ? setPlanning : undefined}
               />
             </div>
           ) : view === "projects" ? (
