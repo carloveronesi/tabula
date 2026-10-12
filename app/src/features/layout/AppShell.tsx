@@ -300,6 +300,7 @@ export function AppShell() {
                   location={locations[dayKey] ?? null}
                   onSetLocation={(loc) => void setLocation(dayKey, loc)}
                   suggestedLocation={settings.defaultLocation}
+                  isToday={dayKey === isoDate(new Date())}
                 >
                   <DayTodoWidget onOpenTodo={() => setView("todo")} />
                 </DaySummary>
