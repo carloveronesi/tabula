@@ -72,11 +72,10 @@ describe("AppShell", () => {
     expect(useUiStore.getState().view).toBe("search");
   });
 
-  it("'n' apre l'editor per una nuova attività", () => {
+  it("'n' apre il quick-add per una nuova attività", () => {
     render(<AppShell />);
     fireEvent.keyDown(window, { key: "n" });
-    expect(useEditorStore.getState().open).toBe(true);
-    expect(useEditorStore.getState().base).toBeNull();
+    expect(useEditorStore.getState().quickAdd).not.toBeNull();
   });
 
   it("le scorciatoie sono inerti mentre si digita in un campo", () => {

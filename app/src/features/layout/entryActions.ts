@@ -6,7 +6,9 @@ import {
   duplicateEntry as buildDuplicate,
 } from "@/domain/duplicate";
 import { templateFromEntry } from "@/domain/activityTemplate";
-import { useEditorStore } from "@/store/editor";
+import { isoDate } from "@/domain/calendarNav";
+import { useUiStore } from "@/store";
+import { useEditorStore, type Anchor } from "@/store/editor";
 import { useCalendarStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
 import { useTemplateStore } from "@/store/templates";
@@ -18,6 +20,33 @@ import { useToastStore } from "@/store/toast";
  * sono richiamabili da bottone, scorciatoia o menu, senza dipendere dal render.
  * L'unica fonte di verità per copia/duplica/elimina vive qui.
  */
+
+/**
+ * Nuova attività da bottone, tasto N o "Aggiungi attività": un solo punto, così
+ * i tre ingressi non divergono. Fuori dal calendario la data è oggi (non l'ultimo
+ * periodo navigato, che falserebbe i totali); l'orario è la prima ora libera
+ * della giornata lavorativa. Apre il quick-add, da cui "Più dettagli" porta
+ * all'editor completo.
+ */
+export function startNewEntry(anchor: Anchor | null = null): void {
+  const { view, activeDate } = useUiStore.getState();
+  const { settings } = useSettingsStore.getState();
+  const { entries } = useCalendarStore.getState();
+
+  const calendar = view === "day" || view === "week" || view === "month";
+  const date = isoDate(calendar ? activeDate : new Date());
+  const wh = settings.workHours;
+  // ponytail: non salta la pausa pranzo, come duplicateEntry; l'orario resta
+  // modificabile nel quick-add.
+  const range = firstFreeRange(
+    entries,
+    date,
+    60,
+    { startMin: wh.morningStart, endMin: wh.afternoonEnd },
+    settings.slotMinutes,
+  ) ?? { startMin: wh.morningStart, endMin: wh.morningStart + 60 };
+  useEditorStore.getState().openQuickAdd({ date, ...range, anchor });
+}
 
 /** Copia l'attività negli appunti, pronta per "Incolla qui" o ⌘V. */
 export function copyEntry(entry: Entry): void {
