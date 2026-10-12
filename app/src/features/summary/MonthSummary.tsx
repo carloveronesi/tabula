@@ -7,7 +7,8 @@ import {
 } from "@/domain/monthlyReport";
 import { formatHours } from "@/domain/format";
 import { colorFromKey } from "@/domain/colors";
-import { presenceBreakdown, LOCATION_LABEL } from "@/domain/presence";
+import { monthPresence, LOCATIONS, LOCATION_LABEL } from "@/domain/presence";
+import { availableMinutes } from "@/domain/capacity";
 import { workingDatesOfMonth, isoDate } from "@/domain/calendarNav";
 import { cn } from "@/ui/cn";
 import { Button } from "@/ui/Button";
@@ -183,29 +184,58 @@ export function MonthSummary({
 
   const monthKey = isoDate(activeDate).slice(0, 7);
 
-  // Feriali del mese già trascorsi (≤ oggi): base condivisa per copertura e
-  // presenze, così il mese corrente non conta i giorni feriali futuri.
-  const workingElapsed = useMemo(() => {
-    const working = workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay);
-    const todayISO = isoDate(new Date());
-    return working.filter((d) => d <= todayISO);
-  }, [activeDate, settings.workingDays, settings.patronDay]);
-
-  const report = useMemo(() => {
-    const monthEntries = entries.filter((e) => e.startsAt.slice(0, 7) === monthKey);
-    return monthlyReport(monthEntries, workingElapsed, settings.workHours, settings.slotMinutes);
-  }, [entries, monthKey, workingElapsed, settings.workHours, settings.slotMinutes]);
-
-  const presence = useMemo(
-    () =>
-      presenceBreakdown(
-        workingElapsed,
-        metas,
-        settings.presenceTracking,
-        settings.defaultLocation,
-      ),
-    [workingElapsed, metas, settings.presenceTracking, settings.defaultLocation],
+  const todayISO = isoDate(new Date());
+  const workingDates = useMemo(
+    () => workingDatesOfMonth(activeDate, settings.workingDays, settings.patronDay),
+    [activeDate, settings.workingDays, settings.patronDay],
   );
+  const monthEntries = useMemo(
+    () => entries.filter((e) => e.startsAt.slice(0, 7) === monthKey),
+    [entries, monthKey],
+  );
+
+  // Copertura sui soli feriali già trascorsi (≤ oggi): il mese corrente non
+  // conta i giorni futuri.
+  const report = useMemo(
+    () =>
+      monthlyReport(
+        monthEntries,
+        workingDates.filter((d) => d <= todayISO),
+        settings.workHours,
+        settings.slotMinutes,
+      ),
+    [monthEntries, workingDates, todayISO, settings.workHours, settings.slotMinutes],
+  );
+
+  // Presenze sull'intero mese, per pianificare: le ferie intere escono dalla base.
+  const presence = useMemo(() => {
+    const vacation = new Set(
+      workingDates.filter(
+        (d) =>
+          availableMinutes(
+            [d],
+            monthEntries.filter((e) => e.startsAt.slice(0, 10) === d),
+            settings.workHours,
+          ) === 0,
+      ),
+    );
+    return monthPresence(
+      workingDates,
+      vacation,
+      metas,
+      settings.presenceTracking.targetPct,
+      settings.defaultLocation,
+      todayISO,
+    );
+  }, [
+    workingDates,
+    monthEntries,
+    metas,
+    todayISO,
+    settings.workHours,
+    settings.presenceTracking.targetPct,
+    settings.defaultLocation,
+  ]);
   const showPresence = settings.presenceTracking.enabled;
 
   const clientName = (id: Id) => clients.find((c) => c.id === id)?.name ?? "Cliente";
@@ -227,6 +257,100 @@ export function MonthSummary({
 
   const sections = (
     <>
+      {showPresence && presence.workingDays > 0 && (
+        <div>
+          <Eyebrow>Presenze</Eyebrow>
+          {presence.required > 0 && (
+            <>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className="tnum text-[32px] font-bold leading-none tracking-tight text-ink">
+                  {presence.present}
+                  <span className="text-muted">/{presence.required}</span>
+                </span>
+                <span className="text-[12.5px] text-muted">in presenza</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-line">
+                <div
+                  className="h-full rounded-pill bg-primary"
+                  style={{
+                    width: `${Math.min(100, (presence.present / presence.required) * 100)}%`,
+                  }}
+                />
+              </div>
+              <div
+                className={cn(
+                  "mt-1.5 text-xs",
+                  presence.missing > presence.open ? "text-danger" : "text-muted",
+                )}
+              >
+                {presence.missing === 0
+                  ? "Obiettivo raggiunto"
+                  : `Mancano ${presence.missing} · ${presence.open} ${
+                      presence.open === 1 ? "giorno libero" : "giorni liberi"
+                    }`}
+                {presence.planned > 0 && ` · ${presence.planned} pianificati`}
+              </div>
+            </>
+          )}
+          <div className="tnum mt-3 text-xs text-muted">
+            <span className="font-semibold text-ink">{presence.workingDays}</span> giorni
+            lavorativi
+            {presence.vacationDays > 0 && ` · ${presence.vacationDays} di ferie`}
+          </div>
+          <ul className="mt-1.5 space-y-0.5">
+            {LOCATIONS.filter((l) => presence.days[l] > 0).map((location) => {
+              const days = presence.days[location];
+              const filter: SummaryFilter = { kind: "location", location };
+              const active = sameFilter(activeFilter, filter);
+              const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
+              return (
+                <li
+                  key={location}
+                  className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
+                >
+                  <button
+                    type="button"
+                    disabled={!interactive}
+                    onMouseEnter={interactive ? () => onHover(filter) : undefined}
+                    onMouseLeave={interactive ? () => onHover(null) : undefined}
+                    onClick={interactive ? () => onFix(active ? null : filter) : undefined}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
+                      interactive && "cursor-pointer hover:bg-raised",
+                      active && "bg-primary-wash",
+                    )}
+                  >
+                    <span className="w-16 shrink-0 text-muted">{LOCATION_LABEL[location]}</span>
+                    <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
+                      <div
+                        className={cn(
+                          "absolute inset-y-0 left-0 rounded-pill",
+                          location === "remote" ? "bg-muted/50" : "bg-primary",
+                        )}
+                        style={{ width: `${(days / presence.baseDays) * 100}%` }}
+                      />
+                    </div>
+                    <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                      {days}
+                      <span className="text-muted">g</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            {presence.open > 0 && (
+              <li className="flex items-center gap-2 px-1.5 py-1 text-[12.5px]">
+                <span className="flex-1 text-muted">Da decidere</span>
+                <span className="tnum w-8 shrink-0 text-right font-semibold text-ink">
+                  {presence.open}
+                  <span className="text-muted">g</span>
+                </span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
       <div>
         <Eyebrow>Ore nel mese</Eyebrow>
         <div className="tnum mt-1.5 text-[40px] font-bold leading-none tracking-tight text-ink">
@@ -258,64 +382,6 @@ export function MonthSummary({
             <span className="tnum text-ink/80">{formatHours(cov.registeredMin)}</span> registrate su{" "}
             <span className="tnum text-ink/80">{formatHours(cov.expectedMin)}</span> attese
           </div>
-        </div>
-      )}
-
-      {showPresence && presence.workingDays > 0 && (
-        <div>
-          <Eyebrow>Presenze</Eyebrow>
-          <ul className="mt-2 space-y-1">
-            {presence.rows
-              .filter((r) => r.days > 0 || r.targetPct !== null)
-              .map((r) => {
-                const reached = r.targetPct !== null && r.pct >= r.targetPct;
-                const filter: SummaryFilter = { kind: "location", location: r.location };
-                const active = sameFilter(activeFilter, filter);
-                const faded = !!fixedFilter && !sameFilter(fixedFilter, filter);
-                return (
-                  <li
-                    key={r.location}
-                    className={cn("transition-opacity duration-[var(--dur-fast)]", faded && "opacity-40")}
-                  >
-                    <button
-                      type="button"
-                      disabled={!interactive}
-                      onMouseEnter={interactive ? () => onHover(filter) : undefined}
-                      onMouseLeave={interactive ? () => onHover(null) : undefined}
-                      onClick={interactive ? () => onFix(active ? null : filter) : undefined}
-                      className={cn(
-                        "flex w-full items-baseline gap-2 rounded-md px-1.5 py-1 text-left text-[12.5px]",
-                        interactive && "cursor-pointer hover:bg-raised",
-                        active && "bg-primary-wash",
-                      )}
-                    >
-                      <span className="w-14 shrink-0 text-muted">{LOCATION_LABEL[r.location]}</span>
-                      <span className="tnum font-semibold text-ink">
-                        {r.days}
-                        <span className="text-muted">g</span>
-                      </span>
-                      <div className="relative h-1 flex-1 overflow-hidden rounded-pill bg-line">
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-pill bg-primary"
-                          style={{ width: `${r.pct}%` }}
-                        />
-                      </div>
-                      <span className="tnum shrink-0 text-muted">{r.pct}%</span>
-                      {r.targetPct !== null && (
-                        <span
-                          className={cn(
-                            "tnum w-10 shrink-0 text-right text-[11px] font-semibold",
-                            reached ? "text-primary" : "text-muted",
-                          )}
-                        >
-                          {reached ? "✓" : `${r.targetPct}%`}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
         </div>
       )}
 

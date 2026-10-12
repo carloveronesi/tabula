@@ -3,6 +3,7 @@ import { useUiStore, type ViewMode } from "@/store";
 import { cn } from "@/ui/cn";
 import {
   IconCalendar,
+  IconMonth,
   IconProjects,
   IconTodo,
   IconSearch,
@@ -20,11 +21,11 @@ type Dest = {
   match?: ViewMode[];
 };
 
-// Il mese è una scala del calendario, non una sezione: niente voce "Riepilogo"
-// che aprirebbe la stessa vista con un altro nome, e "Calendario" resta attivo
-// anche su `month` (ci si arriva dallo switch Giorno/Settimana/Mese in TopBar).
+// Il Mese ha una voce sua: è dove si leggono le presenze e il riepilogo del
+// mese, e ci si torna spesso. "Calendario" resta il giorno/settimana.
 const PRIMARY: Dest[] = [
-  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week", "month"] },
+  { label: "Calendario", icon: IconCalendar, target: "day", match: ["day", "week"] },
+  { label: "Mese", icon: IconMonth, target: "month" },
   { label: "Progetti", icon: IconProjects, target: "projects" },
   { label: "Todo", icon: IconTodo, target: "todo" },
 ];

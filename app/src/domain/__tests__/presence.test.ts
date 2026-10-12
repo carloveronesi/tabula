@@ -1,67 +1,48 @@
 import { describe, it, expect } from "vitest";
-import { presenceBreakdown } from "@/domain/presence";
-import type { Location } from "@/data/types";
+import { monthPresence } from "@/domain/presence";
 
-const noTargets = { officeTargetPct: 0, clientTargetPct: 0 };
-const row = (b: ReturnType<typeof presenceBreakdown>, loc: Location) =>
-  b.rows.find((r) => r.location === loc)!;
+// Lun 5 – ven 9 ottobre 2026; "oggi" è mercoledì 7.
+const WEEK = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"];
+const TODAY = "2026-10-07";
+const none = new Set<string>();
 
-describe("presenceBreakdown", () => {
-  it("calcola le quote sui giorni feriali, non sui soli giorni con sede", () => {
-    // 4 feriali, 2 con sede: ufficio è 1/4 = 25%, non 1/2.
-    const b = presenceBreakdown(
-      ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"],
-      { "2026-06-01": "office", "2026-06-02": "client" },
-      noTargets,
+describe("monthPresence", () => {
+  it("ufficio e cliente valgono entrambi come presenza", () => {
+    const p = monthPresence(
+      WEEK,
+      none,
+      { "2026-10-05": "office", "2026-10-06": "client" },
+      40,
+      "remote",
+      TODAY,
     );
-    expect(b.workingDays).toBe(4);
-    expect(b.tracked).toBe(2);
-    expect(b.untracked).toBe(2);
-    expect(row(b, "office").pct).toBe(25);
-    expect(row(b, "client").pct).toBe(25);
-    expect(row(b, "remote").pct).toBe(0);
+    expect(p.required).toBe(2); // 40% di 5
+    expect(p.present).toBe(2);
+    expect(p.missing).toBe(0);
   });
 
-  it("ignora le sedi su giorni non feriali", () => {
-    const b = presenceBreakdown(
-      ["2026-06-01"],
-      { "2026-06-01": "office", "2026-06-06": "client" }, // 06 sabato, fuori
-      noTargets,
-    );
-    expect(b.workingDays).toBe(1);
-    expect(b.tracked).toBe(1);
-    expect(row(b, "client").days).toBe(0);
+  it("le ferie intere escono dalla base; i richiesti si arrotondano per eccesso", () => {
+    const p = monthPresence(WEEK, new Set(["2026-10-09"]), {}, 40, "remote", TODAY);
+    expect(p.workingDays).toBe(5);
+    expect(p.vacationDays).toBe(1);
+    expect(p.baseDays).toBe(4);
+    expect(p.required).toBe(2); // 1,6 → 2
   });
 
-  it("restituisce sempre le tre sedi in ordine fisso", () => {
-    const b = presenceBreakdown([], {}, noTargets);
-    expect(b.workingDays).toBe(0);
-    expect(b.rows.map((r) => r.location)).toEqual(["remote", "office", "client"]);
-    expect(b.rows.every((r) => r.pct === 0 && r.days === 0)).toBe(true);
+  it("trascorsi senza sede = predefinita; futuri senza sede = da decidere", () => {
+    const p = monthPresence(WEEK, none, { "2026-10-08": "office" }, 60, "remote", TODAY);
+    expect(p.days.remote).toBe(3); // 5, 6, 7 (oggi compreso)
+    expect(p.days.office).toBe(1);
+    expect(p.planned).toBe(1); // l'8 è futuro ma già fissato
+    expect(p.open).toBe(1); // il 9
+    expect(p.required).toBe(3);
+    expect(p.missing).toBe(2);
   });
 
-  it("con defaultLocation i feriali non compilati contano come predefinita", () => {
-    // 4 feriali, 1 esplicito (cliente), default = ufficio → ufficio 3/4, cliente 1/4
-    const b = presenceBreakdown(
-      ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"],
-      { "2026-06-02": "client" },
-      noTargets,
-      "office",
-    );
-    expect(row(b, "office").days).toBe(3);
-    expect(row(b, "office").pct).toBe(75);
-    expect(row(b, "client").days).toBe(1);
-    expect(b.tracked).toBe(1); // solo quello esplicito resta "registrato"
-    expect(b.untracked).toBe(3);
-  });
-
-  it("espone i target di ufficio/cliente; remoto non ne ha; 0 = non impostato", () => {
-    const b = presenceBreakdown(["2026-06-01"], {}, {
-      officeTargetPct: 50,
-      clientTargetPct: 0,
-    });
-    expect(row(b, "office").targetPct).toBe(50);
-    expect(row(b, "client").targetPct).toBeNull();
-    expect(row(b, "remote").targetPct).toBeNull();
+  it("obiettivo a 0: niente richiesti, niente mancanti", () => {
+    const p = monthPresence(WEEK, none, {}, 0, "office", TODAY);
+    expect(p.required).toBe(0);
+    expect(p.missing).toBe(0);
+    expect(p.present).toBe(3);
   });
 });

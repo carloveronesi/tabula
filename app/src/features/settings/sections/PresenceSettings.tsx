@@ -11,7 +11,7 @@ const LOCATION_OPTIONS = LOCATIONS.map((id) => ({
 
 const toPct = (v: string) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
 
-/** Tracciamento presenze: attivazione e obiettivi percentuali. */
+/** Tracciamento presenze: attivazione e obiettivo percentuale. */
 export function PresenceSettings() {
   const settings = useSettingsStore((s) => s.settings);
   const saveSettings = useSettingsStore((s) => s.saveSettings);
@@ -28,7 +28,7 @@ export function PresenceSettings() {
     <div className="space-y-6">
       <SettingsSection
         title="Presenze"
-        description="Tieni traccia di dove lavori ogni giorno (remoto, ufficio, cliente) e confronta la ripartizione con i tuoi obiettivi. Quando è attivo, scegli la sede nel pannello del Giorno e nelle intestazioni della Settimana; il Riepilogo mostra le quote del periodo."
+        description="Tieni traccia di dove lavori ogni giorno (remoto, ufficio, cliente) e confronta i giorni in presenza con il tuo obiettivo. Quando è attivo, scegli la sede nel pannello del Giorno e nelle intestazioni della Settimana; il Mese mostra quanti giorni in presenza servono e quanti ne mancano."
       >
         <Segmented
           label="Tracciamento presenze"
@@ -49,30 +49,19 @@ export function PresenceSettings() {
                 options={LOCATION_OPTIONS}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Obiettivo ufficio (%)">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={presence.officeTargetPct}
-                  onChange={(e) =>
-                    setPresence({ officeTargetPct: toPct(e.target.value) })
-                  }
-                />
-              </Field>
-              <Field label="Obiettivo cliente (%)">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={presence.clientTargetPct}
-                  onChange={(e) =>
-                    setPresence({ clientTargetPct: toPct(e.target.value) })
-                  }
-                />
-              </Field>
-            </div>
+            <Field label="Obiettivo presenza (%)" className="max-w-xs">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={presence.targetPct}
+                onChange={(e) => setPresence({ targetPct: toPct(e.target.value) })}
+              />
+              <p className="text-xs text-muted">
+                Quota minima di giorni lavorativi in ufficio o dal cliente; le
+                ferie non contano. 0 = nessun obiettivo.
+              </p>
+            </Field>
           </>
         )}
       </SettingsSection>

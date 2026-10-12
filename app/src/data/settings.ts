@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   internalColors: {},
   lastUsedByClient: {},
   patronDay: "",
-  presenceTracking: { enabled: false, officeTargetPct: 0, clientTargetPct: 0 },
+  presenceTracking: { enabled: false, targetPct: 0 },
   ai: { enabled: false, baseUrl: "", apiKey: "", model: "" },
 };
 
@@ -71,6 +71,19 @@ function aiSettings(value: unknown): Settings["ai"] {
 }
 
 /**
+ * Presenze: un solo obiettivo (ufficio + cliente). I dati vecchi avevano due
+ * quote separate, che confluiscono nella loro somma.
+ */
+function presenceSettings(value: unknown): Settings["presenceTracking"] {
+  const o = asObject(value);
+  const target =
+    typeof o.targetPct === "number"
+      ? o.targetPct
+      : num(o.officeTargetPct, 0) + num(o.clientTargetPct, 0);
+  return { enabled: o.enabled === true, targetPct: Math.min(100, Math.max(0, target)) };
+}
+
+/**
  * Coerce dei sottotipi al modello corrente (lista unica): accetta sia la nuova
  * forma piatta sia la vecchia `{ client, internal }`, fondendole e deduplicando
  * per id (le voci client-first, così l'ordine resta prevedibile).
@@ -87,8 +100,8 @@ function flattenSubtypes(value: unknown): { id: string; label: string }[] {
 }
 
 /**
- * Porta al modello corrente i settings salvati (DB) o da export nativo: unica
- * responsabilità è fondere la vecchia forma dei sottotipi. Chiamato in lettura.
+ * Porta al modello corrente i settings salvati (DB) o da export nativo:
+ * fonde le vecchie forme (sottotipi, obiettivi presenze). Chiamato in lettura.
  */
 export function migrateSettings(stored: Settings | null | undefined): Settings {
   if (!stored) return DEFAULT_SETTINGS;
@@ -96,6 +109,9 @@ export function migrateSettings(stored: Settings | null | undefined): Settings {
     ...stored,
     subtypes: flattenSubtypes((stored as { subtypes?: unknown }).subtypes),
     ai: aiSettings((stored as { ai?: unknown }).ai),
+    presenceTracking: presenceSettings(
+      (stored as { presenceTracking?: unknown }).presenceTracking,
+    ),
   };
 }
 
@@ -109,7 +125,6 @@ export function migrateSettings(stored: Settings | null | undefined): Settings {
 export function normalizeSettings(source: SourceSettings | null): Settings {
   const s = asObject(source);
   const wh = asObject(s.workHours);
-  const presence = asObject(s.presenceTracking);
   const d = DEFAULT_SETTINGS;
 
   return {
@@ -145,11 +160,7 @@ export function normalizeSettings(source: SourceSettings | null): Settings {
     internalColors: stringRecord(s.internalColors),
     lastUsedByClient: {},
     patronDay: typeof s.patronDay === "string" ? s.patronDay : d.patronDay,
-    presenceTracking: {
-      enabled: presence.enabled === true,
-      officeTargetPct: num(presence.officeTargetPct, 0),
-      clientTargetPct: num(presence.clientTargetPct, 0),
-    },
+    presenceTracking: presenceSettings(s.presenceTracking),
     ai: aiSettings(s.ai),
   };
 }

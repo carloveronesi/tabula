@@ -89,16 +89,19 @@ Non c'è backend, non c'è login, non c'è telemetria: **i dati restano nel brow
 
 ### 🏢 Presenze
 
-- Traccia la **sede del giorno** (da remoto / ufficio / cliente) e monitora il
-  rispetto di obiettivi percentuali (es. % minima in ufficio o dal cliente).
+- Traccia la **sede del giorno** (da remoto / ufficio / cliente) e monitora un
+  **obiettivo di presenza** (% minima di giorni in ufficio *o* dal cliente).
+- Nel **Mese** vedi i giorni lavorativi, quanti ne servono in presenza (le ferie
+  escono dalla base), quanti ne hai fatti o pianificati e quanti giorni restano
+  liberi per piazzare quelli mancanti.
 - Nel **Mese** ogni giorno porta l'icona della sede e la sidebar permette di
   **filtrare per sede** per vedere a colpo d'occhio dove hai lavorato.
 
 ### 📊 Riepilogo
 
 - Sintesi del mese: **ore totali** e media, **giorni compilati** (copertura della
-  giornata lavorativa) con ore registrate vs. attese, **presenze** rispetto agli
-  obiettivi, e ripartizione **per cliente** con scomposizione per sottotipo.
+  giornata lavorativa) con ore registrate vs. attese, **presenze** rispetto
+  all'obiettivo, e ripartizione **per cliente** con scomposizione per sottotipo.
 - Vive nella **sidebar della vista Mese** (con evidenziazione della griglia al
   passaggio sui filtri); la voce **«Riepilogo»** del menu porta direttamente lì.
 - **Esporta report**: scarica il mese come file Excel (fogli *Giornaliero* e
@@ -149,7 +152,7 @@ Organizzate per sezioni:
 - **Generale** — tema chiaro / scuro / sistema, vista predefinita, granularità slot.
 - **Orari** — fasce mattino/pomeriggio, giorni lavorativi, giorno del patrono.
 - **Categorie** — sottotipi e colori per clienti e attività interne.
-- **Presenze** — abilitazione e obiettivi percentuali per sede.
+- **Presenze** — abilitazione, sede predefinita e obiettivo di presenza (%).
 - **AI** — attivazione, provider (preset o base URL), API key e modello, con
   *Prova connessione*.
 - **Dati** — import/export.

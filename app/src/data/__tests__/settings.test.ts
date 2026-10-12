@@ -60,15 +60,11 @@ describe("normalizeSettings", () => {
     expect(s.clientColors).toEqual({});
   });
 
-  it("presenceTracking normalizzato", () => {
+  it("presenceTracking: i due obiettivi vecchi confluiscono in uno solo", () => {
     const s = normalizeSettings({
-      presenceTracking: { enabled: true, officeTargetPct: 40, clientTargetPct: 0 },
+      presenceTracking: { enabled: true, officeTargetPct: 40, clientTargetPct: 10 },
     });
-    expect(s.presenceTracking).toEqual({
-      enabled: true,
-      officeTargetPct: 40,
-      clientTargetPct: 0,
-    });
+    expect(s.presenceTracking).toEqual({ enabled: true, targetPct: 50 });
   });
 });
 
@@ -94,6 +90,14 @@ describe("migrateSettings", () => {
   it("lascia intatta la lista già piatta", () => {
     const stored = { ...DEFAULT_SETTINGS, subtypes: [{ id: "kt", label: "KT" }] };
     expect(migrateSettings(stored).subtypes).toEqual([{ id: "kt", label: "KT" }]);
+  });
+
+  it("presenze salvate col vecchio formato → obiettivo unico (somma, max 100)", () => {
+    const stored = {
+      ...DEFAULT_SETTINGS,
+      presenceTracking: { enabled: true, officeTargetPct: 80, clientTargetPct: 40 },
+    } as unknown as Settings;
+    expect(migrateSettings(stored).presenceTracking).toEqual({ enabled: true, targetPct: 100 });
   });
 });
 
