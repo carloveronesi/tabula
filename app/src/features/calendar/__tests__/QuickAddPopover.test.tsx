@@ -433,8 +433,11 @@ describe("QuickAddPopover — interpretazione AI", () => {
     await waitFor(() =>
       expect(titolo).toHaveValue("Call sul rifacimento sito"),
     );
-    // il cliente arriva dal progetto, non dalla parola nella frase
-    expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("Acme");
+    // il cliente arriva dal progetto, non dalla parola nella frase. Il Combobox
+    // sincronizza il testo in un effetto, un commit dopo il titolo: va atteso.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("Acme"),
+    );
     expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("Sito Acme");
 
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
@@ -468,16 +471,10 @@ describe("QuickAddPopover — interpretazione AI", () => {
     }
 
     beforeEach(() => {
-      vi.stubGlobal(
-        "webkitSpeechRecognition",
-        function (this: typeof rec) {
-          this.onresult = null;
-          this.onend = null;
-          this.start = vi.fn();
-          this.stop = vi.fn();
-          rec = this;
-        },
-      );
+      vi.stubGlobal("webkitSpeechRecognition", function () {
+        rec = { onresult: null, onend: null, start: vi.fn(), stop: vi.fn() };
+        return rec;
+      });
     });
 
     it("senza AI attiva il microfono non compare", () => {
@@ -520,7 +517,9 @@ describe("QuickAddPopover — interpretazione AI", () => {
         (vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string,
       );
       expect(body.messages[1].content).toBe("call con Acme sul sito ieri");
-      expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("Sito Acme");
+      await waitFor(() =>
+        expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("Sito Acme"),
+      );
       // Niente salvataggio da solo: la proposta si controlla.
       expect(useCalendarStore.getState().entries).toHaveLength(0);
     });
