@@ -128,7 +128,9 @@ alcun bottone AI e non fa alcuna chiamata di rete.
 - **Quick-add in linguaggio naturale** — scrivi *«call con Acme sul portale, un'ora
   e mezza da stamattina»* e il popover propone cliente, progetto, sottotipo, orario
   e giorno. Ogni campo dedotto è **evidenziato** e resta correggibile; il testo
-  originale rimane a portata di mano finché non salvi.
+  originale rimane a portata di mano finché non salvi. Puoi anche **dettarla** col
+  microfono: quando hai finito di parlare la compilazione parte da sola, e riconosce
+  anche le ferie.
 - **Riconoscimento di colleghi e referenti** — i nomi citati nella frase vengono
   cercati **in locale** (nessuna chiamata, nessun nome inviato all'AI) tra il team
   del progetto e i contatti del cliente, e arrivano precompilati nell'editor completo.
@@ -174,7 +176,9 @@ Organizzate per sezioni:
   (niente CDN né tracker; icone inline, font di sistema). Anche l'**OCR**
   dell'import da screenshot è self-hosted e gira sul dispositivo — l'immagine non
   lascia mai il browser.
-- **L'unica cosa che può uscire dal browser è l'AI, se la attivi tu**, e solo nel
+- **L'unica cosa che può uscire dal browser è l'AI, se la attivi tu** (più l'audio
+  della dettatura, se usi il microfono: su Chrome il riconoscimento vocale passa dai
+  server di Google), e solo nel
   momento in cui la usi: parte il testo che le dai e — per il quick-add — i nomi
   di clienti e progetti attivi, che le servono per riconoscerli. Fanno eccezione
   il riassunto di un progetto e le domande che gli fai lì, che mandano le attività

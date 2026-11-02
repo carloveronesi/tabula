@@ -33,16 +33,20 @@ function defaultCtor(): SRConstructor | undefined {
  * Dettatura vocale (it-IT) in modalità toggle continuo: `toggle` avvia/ferma il
  * riconoscimento; ogni frase finale viene passata a `onText` per l'inserimento.
  * Su browser senza Web Speech API (es. Firefox) `supported` è `false` e l'UI
- * non mostra il microfono. `Ctor` è iniettabile per i test.
+ * non mostra il microfono. `Ctor` è iniettabile per i test. `onEnd` scatta alla
+ * fine vera dell'ascolto: fermato il microfono, l'ultima frase arriva ancora.
  */
 export function useDictation(
   onText: (text: string) => void,
   Ctor: SRConstructor | undefined = defaultCtor(),
+  onEnd?: () => void,
 ): { supported: boolean; listening: boolean; toggle: () => void } {
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const onTextRef = useRef(onText);
   onTextRef.current = onText;
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
 
   const ensureRec = useCallback(() => {
     if (recRef.current || !Ctor) return recRef.current;
@@ -61,7 +65,10 @@ export function useDictation(
     // ponytail: i browser fermano il riconoscimento dopo un silenzio lungo
     // anche con continuous=true; qui ci si ferma, niente auto-restart. Se
     // serve dettatura ininterrotta, riavviare in onend finché l'utente è attivo.
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      onEndRef.current?.();
+    };
     rec.onerror = () => setListening(false);
     recRef.current = rec;
     return rec;
