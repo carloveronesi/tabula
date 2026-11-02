@@ -137,7 +137,7 @@ export function QuickAddPopover() {
   // Ascolto finito: la lettura parte da un effetto, a titolo già aggiornato con
   // l'ultima frase (che può arrivare subito prima, nello stesso giro).
   const [heard, setHeard] = useState(false);
-  const dictation = useDictation(
+  const { supported: canDictate, listening, toggle: toggleDictation } = useDictation(
     (text) => setTitle((t) => (t && !/\s$/.test(t) ? `${t} ${text}` : t + text)),
     undefined,
     () => setHeard(true),
@@ -145,14 +145,17 @@ export function QuickAddPopover() {
 
   // Il componente resta montato a popover chiuso: il microfono va fermato qui.
   useEffect(() => {
-    if (!quickAdd && dictation.listening) dictation.toggle();
-  }, [quickAdd, dictation.listening, dictation.toggle]);
+    if (!quickAdd && listening) toggleDictation();
+  }, [quickAdd, listening, toggleDictation]);
 
+  // `interpret` cambia a ogni render: l'effetto legge l'ultima dal ref.
+  const interpretRef = useRef(interpret);
+  interpretRef.current = interpret;
   useEffect(() => {
     if (!heard) return;
     setHeard(false);
-    if (quickAdd) void interpret();
-  }, [heard]);
+    if (quickAdd) void interpretRef.current();
+  }, [heard, quickAdd]);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -535,20 +538,20 @@ export function QuickAddPopover() {
           className={cn(
             "w-full border-b border-line bg-transparent pb-2.5 text-base font-semibold text-ink",
             "placeholder:font-normal placeholder:text-faint focus:border-primary focus:outline-none",
-            ai.enabled && dictation.supported && "pr-9",
+            ai.enabled && canDictate && "pr-9",
           )}
         />
-        {ai.enabled && dictation.supported && (
+        {ai.enabled && canDictate && (
           <button
             type="button"
-            aria-label={dictation.listening ? "Ferma dettatura" : "Detta"}
-            aria-pressed={dictation.listening}
+            aria-label={listening ? "Ferma dettatura" : "Detta"}
+            aria-pressed={listening}
             disabled={aiBusy}
-            onClick={dictation.toggle}
+            onClick={toggleDictation}
             className={cn(
               "absolute right-0 top-0 inline-flex h-7 w-7 items-center justify-center rounded-lg",
               "transition-colors duration-[var(--dur-fast)] disabled:opacity-50",
-              dictation.listening
+              listening
                 ? "bg-primary-wash text-primary"
                 : "text-muted hover:text-ink",
             )}
@@ -633,7 +636,7 @@ export function QuickAddPopover() {
         </div>
       )}
 
-      {dictation.listening && (
+      {listening && (
         <p role="status" className="mt-3 text-xs text-muted">
           Ti ascolto… premi di nuovo il microfono quando hai finito.
         </p>
