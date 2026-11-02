@@ -86,4 +86,28 @@ describe("useDictation", () => {
 
     expect(result.current.listening).toBe(false);
   });
+
+  // Fermato il microfono, l'ultima frase arriva ancora: chi vuole il testo
+  // completo deve aspettare la fine vera, non il click.
+  it("onEnd scatta alla fine effettiva, dopo l'ultima frase", () => {
+    const rec = new FakeRec();
+    const calls: string[] = [];
+    const { result } = renderHook(() =>
+      useDictation(
+        (t) => calls.push(t),
+        function () {
+          return rec;
+        } as never,
+        () => calls.push("fine"),
+      ),
+    );
+
+    act(() => result.current.toggle());
+    act(() => result.current.toggle());
+    expect(calls).toEqual([]);
+
+    act(() => rec.emit("ultima frase"));
+    act(() => rec.onend?.());
+    expect(calls).toEqual(["ultima frase", "fine"]);
+  });
 });

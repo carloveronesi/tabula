@@ -198,7 +198,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             <p className="text-muted">
               Nel riquadro di inserimento rapido: <Kbd>Invio</Kbd> salva,{" "}
               <Kbd>{isMac ? "⌘Invio" : "Ctrl+Invio"}</Kbd> fa interpretare la
-              frase all'AI, <Kbd>Esc</Kbd> chiude. Le scorciatoie a lettera
+              frase all'AI (o detta col microfono: la legge da sola quando hai
+              finito), <Kbd>Esc</Kbd> chiude. Le scorciatoie a lettera
               singola restano zitte mentre stai scrivendo in un campo.
             </p>
           </div>
@@ -210,7 +211,9 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             niente server, niente statistiche d'uso. L'unica cosa che può uscire
             è quello che mandi tu all'AI, se l'hai attivata: il testo che le
             scrivi e, quando chiedi «Come va» su un progetto, le attività di
-            quel progetto — senza i nomi di colleghi e referenti. Per lo stesso
+            quel progetto — senza i nomi di colleghi e referenti. Se usi il
+            microfono, il riconoscimento vocale è quello del browser: su Chrome
+            l'audio passa dai server di Google. Per lo stesso
             motivo, <strong className="font-medium text-ink">esporta ogni
             tanto</strong> da Impostazioni → Dati: se svuoti i dati del browser,
             l'archivio se ne va con loro.

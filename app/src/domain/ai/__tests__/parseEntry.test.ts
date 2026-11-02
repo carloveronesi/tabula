@@ -78,6 +78,24 @@ describe("coerceHints", () => {
     ).toMatchObject({ kind: "internal", clientId: null, projectId: "p2" });
   });
 
+  it("riconosce le ferie e non tiene il cliente", () => {
+    expect(coerceHints({ title: "Ferie", kind: "vacation", clientId: "c1" }, inv, fallback)).toMatchObject({
+      kind: "vacation",
+      clientId: null,
+      projectId: null,
+    });
+  });
+
+  // "Call con Acme sul sito prima delle ferie": la parola non basta, un progetto
+  // riconosciuto dice che si è lavorato.
+  it("il progetto vince anche sulle ferie", () => {
+    expect(coerceHints({ title: "x", kind: "vacation", projectId: "p1" }, inv, fallback)).toMatchObject({
+      kind: "client",
+      clientId: "c1",
+      projectId: "p1",
+    });
+  });
+
   it("senza progetto valido tiene il cliente dichiarato", () => {
     const h = coerceHints({ title: "x", clientId: "c1", projectId: "boh" }, inv, fallback);
     expect(h).toMatchObject({ kind: "client", clientId: "c1", projectId: null });

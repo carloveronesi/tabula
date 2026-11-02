@@ -18,7 +18,7 @@ export interface EntryHints {
   dayOffset: number;
   startMin: number | null;
   durationMin: number | null;
-  kind: "client" | "internal";
+  kind: "client" | "internal" | "vacation";
   clientId: Id | null;
   projectId: Id | null;
   subtypeId: Id | null;
@@ -73,8 +73,8 @@ export function coerceHints(
       ? project.clientId === null
         ? "internal"
         : "client"
-      : o.kind === "internal"
-        ? "internal"
+      : o.kind === "internal" || o.kind === "vacation"
+        ? o.kind
         : "client";
 
   const clientId = project !== null
@@ -111,7 +111,7 @@ Rispondi SOLO con un oggetto JSON, senza commenti né blocchi di codice, con que
 - "dayOffset": intero, giorni rispetto al giorno che l'utente sta compilando ("ieri" = -1, "oggi"/non detto = 0)
 - "start": orario d'inizio "HH:MM", null se non detto
 - "durationMin": durata in minuti, null se non detta
-- "kind": "client" oppure "internal"
+- "kind": "client", "internal" oppure "vacation" (solo se l'utente dice di essere stato in ferie, non se le nomina e basta; in quel caso "title" è "Ferie")
 - "clientId", "projectId", "subtypeId": SOLO id presenti negli elenchi qui sotto, altrimenti null
 
 Non inventare id: se il cliente o il progetto nominato non è in elenco, rispondi null.`;

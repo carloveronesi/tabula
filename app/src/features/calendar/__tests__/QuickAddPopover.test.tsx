@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { db } from "@/data/db";
 import type { Client, Project } from "@/data/types";
 import { useEditorStore } from "@/store/editor";
@@ -447,6 +447,155 @@ describe("QuickAddPopover — interpretazione AI", () => {
     expect(saved.endsAt).toBe("2026-06-11T17:00:00");
     expect(saved.clientId).toBe("c1");
     expect(saved.projectId).toBe("p1");
+  });
+
+  describe("dettatura", () => {
+    /** Finto riconoscimento vocale del browser: l'ultima istanza creata. */
+    let rec: {
+      onresult: ((e: unknown) => void) | null;
+      onend: (() => void) | null;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    };
+
+    function say(text: string) {
+      act(() =>
+        rec.onresult?.({
+          resultIndex: 0,
+          results: [{ isFinal: true, 0: { transcript: text } }],
+        }),
+      );
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal(
+        "webkitSpeechRecognition",
+        function (this: typeof rec) {
+          this.onresult = null;
+          this.onend = null;
+          this.start = vi.fn();
+          this.stop = vi.fn();
+          rec = this;
+        },
+      );
+    });
+
+    it("senza AI attiva il microfono non compare", () => {
+      openSlot();
+      render(<QuickAddPopover />);
+      expect(screen.queryByRole("button", { name: "Detta" })).toBeNull();
+    });
+
+    it("senza riconoscimento vocale nel browser il microfono non compare", () => {
+      vi.stubGlobal("webkitSpeechRecognition", undefined);
+      enableAi();
+      openSlot();
+      render(<QuickAddPopover />);
+      expect(screen.queryByRole("button", { name: "Detta" })).toBeNull();
+    });
+
+    it("le frasi entrano nel campo, e alla fine dell'ascolto parte la lettura", async () => {
+      enableAi();
+      mockChat({ title: "Call sul sito", projectId: "p1" });
+      openSlot();
+      render(<QuickAddPopover />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Detta" }));
+      expect(rec.start).toHaveBeenCalledOnce();
+
+      say("call con Acme");
+      say("sul sito");
+      const titolo = screen.getByLabelText("Titolo");
+      expect(titolo).toHaveValue("call con Acme sul sito");
+      expect(fetch).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: "Ferma dettatura" }));
+      // L'ultima frase arriva dopo il click: va letta anche lei.
+      say("ieri");
+      expect(fetch).not.toHaveBeenCalled();
+      act(() => rec.onend?.());
+
+      await waitFor(() => expect(titolo).toHaveValue("Call sul sito"));
+      const body = JSON.parse(
+        (vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.messages[1].content).toBe("call con Acme sul sito ieri");
+      expect(screen.getByRole("combobox", { name: "Progetto" })).toHaveValue("Sito Acme");
+      // Niente salvataggio da solo: la proposta si controlla.
+      expect(useCalendarStore.getState().entries).toHaveLength(0);
+    });
+
+    it("un ascolto senza parole non chiama l'AI", () => {
+      enableAi();
+      mockChat({ title: "x" });
+      openSlot();
+      render(<QuickAddPopover />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Detta" }));
+      act(() => rec.onend?.());
+
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("chiudendo il popover il microfono si ferma e non parte la lettura", () => {
+      enableAi();
+      mockChat({ title: "x" });
+      openSlot();
+      render(<QuickAddPopover />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Detta" }));
+      say("call con Acme");
+      act(() => useEditorStore.getState().closeQuickAdd());
+      expect(rec.stop).toHaveBeenCalledOnce();
+
+      act(() => rec.onend?.());
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("ferie", () => {
+    it("senza orario detto coprono la giornata lavorativa, senza cliente", async () => {
+      enableAi();
+      mockChat({ title: "Ferie", dayOffset: -1, kind: "vacation" });
+      openSlot({ startMin: 900, endMin: 915 });
+      render(<QuickAddPopover />);
+
+      const titolo = screen.getByLabelText("Titolo");
+      fireEvent.change(titolo, { target: { value: "ieri ero in ferie" } });
+      fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+      await waitFor(() => expect(titolo).toHaveValue("Ferie"));
+
+      fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(1),
+      );
+      const saved = useCalendarStore.getState().entries[0];
+      expect(saved.type).toBe("vacation");
+      expect(saved.clientId).toBeNull();
+      // workHours di default: 9:00–18:00, il giorno prima dello slot
+      expect(saved.startsAt).toBe("2026-06-11T09:00:00");
+      expect(saved.endsAt).toBe("2026-06-11T18:00:00");
+    });
+
+    it("con un orario detto vale quello", async () => {
+      enableAi();
+      mockChat({ title: "Ferie", kind: "vacation", start: "14:00", durationMin: 240 });
+      openSlot();
+      render(<QuickAddPopover />);
+
+      const titolo = screen.getByLabelText("Titolo");
+      fireEvent.change(titolo, { target: { value: "ferie dalle 14 alle 18" } });
+      fireEvent.click(screen.getByRole("button", { name: /Interpreta/ }));
+      await waitFor(() => expect(titolo).toHaveValue("Ferie"));
+
+      fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+      await waitFor(() =>
+        expect(useCalendarStore.getState().entries).toHaveLength(1),
+      );
+      const saved = useCalendarStore.getState().entries[0];
+      expect(saved.startsAt).toBe("2026-06-12T14:00:00");
+      expect(saved.endsAt).toBe("2026-06-12T18:00:00");
+    });
   });
 
   it("un id inventato lascia il campo vuoto invece di riempirlo a caso", async () => {

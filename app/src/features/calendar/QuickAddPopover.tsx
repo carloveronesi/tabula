@@ -21,6 +21,7 @@ import { useTemplateStore } from "@/store/templates";
 import { useToastStore } from "@/store/toast";
 import { useSettingsStore } from "@/store/settings";
 import { Button, cn, Combobox, Icons, Segmented } from "@/ui";
+import { useDictation } from "@/ui/useDictation";
 
 // I segmenti sono anche il `type` della entry: "Ferie" serve sia alla mezza
 // giornata singola sia alla settimana intera trascinata sul Mese.
@@ -133,6 +134,25 @@ export function QuickAddPopover() {
   // Altezza reale del popover: serve a centrarlo senza sforare il viewport.
   // Il contenuto cresce (banner AI, template): la seguiamo con ResizeObserver.
   const [height, setHeight] = useState(0);
+  // Ascolto finito: la lettura parte da un effetto, a titolo già aggiornato con
+  // l'ultima frase (che può arrivare subito prima, nello stesso giro).
+  const [heard, setHeard] = useState(false);
+  const dictation = useDictation(
+    (text) => setTitle((t) => (t && !/\s$/.test(t) ? `${t} ${text}` : t + text)),
+    undefined,
+    () => setHeard(true),
+  );
+
+  // Il componente resta montato a popover chiuso: il microfono va fermato qui.
+  useEffect(() => {
+    if (!quickAdd && dictation.listening) dictation.toggle();
+  }, [quickAdd, dictation.listening, dictation.toggle]);
+
+  useEffect(() => {
+    if (!heard) return;
+    setHeard(false);
+    if (quickAdd) void interpret();
+  }, [heard]);
 
   // Re-inizializza ad ogni apertura su uno slot; al titolo va il focus, che alla
   // chiusura torna all'elemento di partenza (salvo escalation all'editor, che
@@ -352,8 +372,14 @@ export function QuickAddPopover() {
         ctrl.signal,
       );
       if (ctrl.signal.aborted) return;
-      const start = h.startMin ?? startMin;
-      const dur = h.durationMin ?? endMin - startMin;
+      // Le ferie senza orario sono la giornata intera, non lo slot cliccato: 15
+      // minuti di ferie toglierebbero 15 minuti dalla capacità del giorno.
+      const fullDay = h.kind === "vacation" ? spanSlots([slotDate], "vacation", workHours)[0] : null;
+      const start = h.startMin ?? fullDay?.startMin ?? startMin;
+      const end =
+        h.durationMin !== null
+          ? start + h.durationMin
+          : (fullDay?.endMin ?? start + endMin - startMin);
       setRawText(text);
       setTitle(h.title);
       setMode(h.kind);
@@ -364,7 +390,7 @@ export function QuickAddPopover() {
       setOverride({
         date: shiftDate(slotDate, h.dayOffset),
         startMin: start,
-        endMin: Math.min(start + dur, 24 * 60),
+        endMin: Math.min(end, 24 * 60),
       });
       // I nomi si cercano in codice, fra le sole persone legate al progetto
       // riconosciuto: sono pochi e sono nomi propri, non serve chiederlo al
@@ -491,25 +517,46 @@ export function QuickAddPopover() {
         />
       )}
 
-      <input
-        ref={inputRef}
-        aria-label="Titolo"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          // ⌘/Ctrl+Invio interpreta, Invio salva come sempre: chi non usa l'AI
-          // non incontra un comportamento diverso da prima.
-          if ((e.metaKey || e.ctrlKey) && canInterpret) void interpret();
-          else void save();
-        }}
-        placeholder="Cosa hai fatto?"
-        className={cn(
-          "w-full border-b border-line bg-transparent pb-2.5 text-base font-semibold text-ink",
-          "placeholder:font-normal placeholder:text-faint focus:border-primary focus:outline-none",
+      <div className="relative">
+        <input
+          ref={inputRef}
+          aria-label="Titolo"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            // ⌘/Ctrl+Invio interpreta, Invio salva come sempre: chi non usa l'AI
+            // non incontra un comportamento diverso da prima.
+            if ((e.metaKey || e.ctrlKey) && canInterpret) void interpret();
+            else void save();
+          }}
+          placeholder="Cosa hai fatto?"
+          className={cn(
+            "w-full border-b border-line bg-transparent pb-2.5 text-base font-semibold text-ink",
+            "placeholder:font-normal placeholder:text-faint focus:border-primary focus:outline-none",
+            ai.enabled && dictation.supported && "pr-9",
+          )}
+        />
+        {ai.enabled && dictation.supported && (
+          <button
+            type="button"
+            aria-label={dictation.listening ? "Ferma dettatura" : "Detta"}
+            aria-pressed={dictation.listening}
+            disabled={aiBusy}
+            onClick={dictation.toggle}
+            className={cn(
+              "absolute right-0 top-0 inline-flex h-7 w-7 items-center justify-center rounded-lg",
+              "transition-colors duration-[var(--dur-fast)] disabled:opacity-50",
+              dictation.listening
+                ? "bg-primary-wash text-primary"
+                : "text-muted hover:text-ink",
+            )}
+          >
+            <Icons.IconMic size={16} />
+          </button>
         )}
-      />
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {days ? (
@@ -584,6 +631,12 @@ export function QuickAddPopover() {
             marked={aiFilled.project}
           />
         </div>
+      )}
+
+      {dictation.listening && (
+        <p role="status" className="mt-3 text-xs text-muted">
+          Ti ascolto… premi di nuovo il microfono quando hai finito.
+        </p>
       )}
 
       {aiBusy && (
